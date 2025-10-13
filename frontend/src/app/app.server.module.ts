@@ -2,13 +2,13 @@ import { NgModule } from '@angular/core';
 import { ServerModule } from '@angular/platform-server';
 
 import { AppModule } from './app.module';
-import { MainAppComponent } from './main-app.component';
+import { AppComponent } from './app.component';
 
 @NgModule({
   imports: [
     AppModule,
     ServerModule,
   ],
-  bootstrap: [MainAppComponent],
+  bootstrap: [AppComponent],
 })
 export class AppServerModule {}
