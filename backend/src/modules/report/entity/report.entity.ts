@@ -1,4 +1,4 @@
-import { typeReportEntity } from "src/modules/typeReport/entity/type.report.entity";
+import { TypeReportEntity } from "src/modules/typeReport/entity/type.report.entity";
 import { UserEntity } from "src/modules/user/entity/user.entity";
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
@@ -8,8 +8,8 @@ export class ReportEntity{
     id:number;
     @ManyToOne(()=>UserEntity,(user)=>user.report, {onDelete:'CASCADE', nullable:false})
     user:UserEntity;
-    @ManyToOne(()=>typeReportEntity,(typeReport)=>typeReport.report, {onDelete:'CASCADE', nullable:false})
-    typeReport:typeReportEntity;
+    @ManyToOne(()=>TypeReportEntity,(typeReport)=>typeReport.report, {onDelete:'CASCADE', nullable:false})
+    typeReport:TypeReportEntity;
     @Column({type:'varchar', nullable:false})
     comments:string;
 

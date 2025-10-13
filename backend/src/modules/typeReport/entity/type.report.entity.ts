@@ -2,7 +2,7 @@ import { ReportEntity } from "src/modules/report/entity/report.entity";
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('type_report')
-export class typeReportEntity{
+export class TypeReportEntity{
     @PrimaryGeneratedColumn()
     id:number;
     @Column({type:'varchar', length:100, unique:true, nullable:false})

@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER } from './config/constants';
+import { SederServiceModule } from './config/seder-service/seder-service.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -24,7 +25,8 @@ import { DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER } from './config/constants'
       logging:true,
     }),
     inject:[ConfigService]
-  })
+  }),
+  SederServiceModule
 ],
   controllers: [AppController],
   providers: [AppService],
