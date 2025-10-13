@@ -34,12 +34,7 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [],
-            "server": "src/main.server.ts",
-            "outputMode": "server",
-            "ssr": {
-              "entry": "src/server.ts"
-            }
+            "scripts": []
           },
           "configurations": {
             "production": {
@@ -103,5 +98,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "96acf013-2d52-4212-b827-2b647218951c"
   }
 }
