@@ -20,7 +20,7 @@ import { DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER } from './config/constants'
       password: configService.get(DB_PASS),
       database: configService.get(DB_NAME),
       entities: [__dirname+'/**/*.entity{.ts,.js}'],
-      synchronize:true,
+      synchronize:false,
       logging:true,
     }),
     inject:[ConfigService]
