@@ -1,0 +1,292 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-5">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-fade-in">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-8 text-center">
+      <h2 class="text-3xl font-bold mb-2">Registro de Organización</h2>
+      <p class="opacity-90 text-lg">Únete a nuestra plataforma y comienza a recibir donaciones</p>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="p-8">
+      <!-- Información básica -->
+      <div class="mb-8">
+        <h3 class="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Información Básica</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="space-y-2">
+            <label for="name" class="block text-sm font-medium text-gray-700">Nombre de la Organización *</label>
+            <input 
+              type="text" 
+              id="name" 
+              formControlName="name" 
+              placeholder="Ej: Fundación Ayuda Social"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+              [class.border-red-500]="registerForm.get('name')?.invalid && registerForm.get('name')?.touched"
+              [class.bg-red-50]="registerForm.get('name')?.invalid && registerForm.get('name')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('name')">
+              <span>⚠</span>
+              {{ getFieldError('name') }}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="email" class="block text-sm font-medium text-gray-700">Email *</label>
+            <input 
+              type="email" 
+              id="email" 
+              formControlName="email" 
+              placeholder="contacto@organizacion.org"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+              [class.border-red-500]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+              [class.bg-red-50]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('email')">
+              <span>⚠</span>
+              {{ getFieldError('email') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label for="password" class="block text-sm font-medium text-gray-700">Contraseña *</label>
+            <input 
+              type="password" 
+              id="password" 
+              formControlName="password" 
+              placeholder="Mínimo 6 caracteres"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+              [class.border-red-500]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+              [class.bg-red-50]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('password')">
+              <span>⚠</span>
+              {{ getFieldError('password') }}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="confirmPassword" class="block text-sm font-medium text-gray-700">Confirmar Contraseña *</label>
+            <input 
+              type="password" 
+              id="confirmPassword" 
+              formControlName="confirmPassword" 
+              placeholder="Repite tu contraseña"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+              [class.border-red-500]="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched"
+              [class.bg-red-50]="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('confirmPassword')">
+              <span>⚠</span>
+              {{ getFieldError('confirmPassword') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información de contacto -->
+      <div class="mb-8">
+        <h3 class="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Información de Contacto</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="space-y-2">
+            <label for="phone" class="block text-sm font-medium text-gray-700">Teléfono *</label>
+            <input 
+              type="tel" 
+              id="phone" 
+              formControlName="phone" 
+              placeholder="+57 300 123 4567"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+              [class.border-red-500]="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched"
+              [class.bg-red-50]="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('phone')">
+              <span>⚠</span>
+              {{ getFieldError('phone') }}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="website" class="block text-sm font-medium text-gray-700">Sitio Web</label>
+            <input 
+              type="url" 
+              id="website" 
+              formControlName="website" 
+              placeholder="https://www.organizacion.org"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+              [class.border-red-500]="registerForm.get('website')?.invalid && registerForm.get('website')?.touched"
+              [class.bg-red-50]="registerForm.get('website')?.invalid && registerForm.get('website')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('website')">
+              <span>⚠</span>
+              {{ getFieldError('website') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 mb-6">
+          <label for="address" class="block text-sm font-medium text-gray-700">Dirección *</label>
+          <input 
+            type="text" 
+            id="address" 
+            formControlName="address" 
+            placeholder="Calle 123 #45-67, Barrio Centro"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+            [class.border-red-500]="registerForm.get('address')?.invalid && registerForm.get('address')?.touched"
+            [class.bg-red-50]="registerForm.get('address')?.invalid && registerForm.get('address')?.touched">
+          <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('address')">
+            <span>⚠</span>
+            {{ getFieldError('address') }}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label for="city" class="block text-sm font-medium text-gray-700">Ciudad *</label>
+            <input 
+              type="text" 
+              id="city" 
+              formControlName="city" 
+              placeholder="Bogotá"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+              [class.border-red-500]="registerForm.get('city')?.invalid && registerForm.get('city')?.touched"
+              [class.bg-red-50]="registerForm.get('city')?.invalid && registerForm.get('city')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('city')">
+              <span>⚠</span>
+              {{ getFieldError('city') }}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="country" class="block text-sm font-medium text-gray-700">País *</label>
+            <input 
+              type="text" 
+              id="country" 
+              formControlName="country" 
+              placeholder="Colombia"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+              [class.border-red-500]="registerForm.get('country')?.invalid && registerForm.get('country')?.touched"
+              [class.bg-red-50]="registerForm.get('country')?.invalid && registerForm.get('country')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('country')">
+              <span>⚠</span>
+              {{ getFieldError('country') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información de la organización -->
+      <div class="mb-8">
+        <h3 class="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Información de la Organización</h3>
+        
+        <div class="space-y-6">
+          <div class="space-y-2">
+            <label for="organizationType" class="block text-sm font-medium text-gray-700">Tipo de Organización *</label>
+            <select 
+              id="organizationType" 
+              formControlName="organizationType"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200 cursor-pointer"
+              [class.border-red-500]="registerForm.get('organizationType')?.invalid && registerForm.get('organizationType')?.touched"
+              [class.bg-red-50]="registerForm.get('organizationType')?.invalid && registerForm.get('organizationType')?.touched">
+              <option value="">Selecciona un tipo</option>
+              <option value="fundacion">Fundación</option>
+              <option value="ong">ONG</option>
+              <option value="asociacion">Asociación</option>
+              <option value="corporacion">Corporación</option>
+              <option value="cooperativa">Cooperativa</option>
+              <option value="iglesia">Iglesia</option>
+              <option value="otro">Otro</option>
+            </select>
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('organizationType')">
+              <span>⚠</span>
+              {{ getFieldError('organizationType') }}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="taxId" class="block text-sm font-medium text-gray-700">NIT/RUT *</label>
+            <input 
+              type="text" 
+              id="taxId" 
+              formControlName="taxId" 
+              placeholder="900123456-1"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200"
+              [class.border-red-500]="registerForm.get('taxId')?.invalid && registerForm.get('taxId')?.touched"
+              [class.bg-red-50]="registerForm.get('taxId')?.invalid && registerForm.get('taxId')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('taxId')">
+              <span>⚠</span>
+              {{ getFieldError('taxId') }}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="description" class="block text-sm font-medium text-gray-700">Descripción de la Organización *</label>
+            <textarea 
+              id="description" 
+              formControlName="description" 
+              rows="4"
+              placeholder="Describe brevemente la misión, visión y actividades de tu organización..."
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 bg-gray-50 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all duration-200 resize-vertical"
+              [class.border-red-500]="registerForm.get('description')?.invalid && registerForm.get('description')?.touched"
+              [class.bg-red-50]="registerForm.get('description')?.invalid && registerForm.get('description')?.touched"></textarea>
+            <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('description')">
+              <span>⚠</span>
+              {{ getFieldError('description') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Términos y condiciones -->
+      <div class="mb-8">
+        <div class="space-y-2">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input 
+              type="checkbox" 
+              formControlName="acceptTerms"
+              class="mt-1 w-5 h-5 text-indigo-600 border-2 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2"
+              [class.border-red-500]="registerForm.get('acceptTerms')?.invalid && registerForm.get('acceptTerms')?.touched">
+            <span class="text-sm text-gray-700 leading-relaxed">
+              Acepto los <a href="#" target="_blank" class="text-indigo-600 hover:text-indigo-800 underline">términos y condiciones</a> y la <a href="#" target="_blank" class="text-indigo-600 hover:text-indigo-800 underline">política de privacidad</a> *
+            </span>
+          </label>
+          <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('acceptTerms')">
+            <span>⚠</span>
+            {{ getFieldError('acceptTerms') }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Mensajes de error y éxito -->
+      <div class="mb-6" *ngIf="errorMessage || successMessage">
+        <div class="p-4 rounded-lg" 
+             [class.bg-red-50]="errorMessage" 
+             [class.border-red-200]="errorMessage"
+             [class.bg-green-50]="successMessage" 
+             [class.border-green-200]="successMessage"
+             [class.border]="errorMessage || successMessage">
+          <div class="text-red-600 text-sm flex items-center gap-2" *ngIf="errorMessage">
+            <span>⚠</span>
+            {{ errorMessage }}
+          </div>
+          <div class="text-green-600 text-sm flex items-center gap-2" *ngIf="successMessage">
+            <span>✓</span>
+            {{ successMessage }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Botones -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-end pt-6 border-t border-gray-200">
+        <button 
+          type="button" 
+          class="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all duration-300 hover:scale-105"
+          (click)="goToLogin()">
+          Cancelar
+        </button>
+        <button 
+          type="submit" 
+          class="flex items-center justify-center gap-3 px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          [disabled]="isLoading">
+          <app-spinner *ngIf="isLoading" [size]="20"></app-spinner>
+          {{ isLoading ? 'Registrando...' : 'Registrar Organización' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
