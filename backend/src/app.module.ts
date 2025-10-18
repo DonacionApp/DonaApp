@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER } from './config/constants';
 import { SederServiceModule } from './config/seder-service/seder-service.module';
 import { TypedniModule } from './modules/typedni/typedni.module';
+import { RolModule } from './modules/rol/rol.module';
 import { PeopleModule } from './modules/people/people.module';
 
 @Module({
@@ -30,7 +31,8 @@ import { PeopleModule } from './modules/people/people.module';
   }),
   SederServiceModule,
   TypedniModule,
-  PeopleModule
+  PeopleModule,
+  RolModule
 ],
   controllers: [AppController],
   providers: [AppService],
