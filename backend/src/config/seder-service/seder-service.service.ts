@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { template } from 'handlebars';
+import { MailService } from 'src/core/mail/mail.service';
 import { RolEntity } from 'src/modules/rol/entity/rol.entity';
 import { StatusDonationEntity } from 'src/modules/statusdonation/entity/status.donation.entity';
 import { TagsEntity } from 'src/modules/tags/entity/tags.entity';
@@ -28,7 +30,8 @@ export class SederServiceService {
         @InjectRepository(TypePostEntity)
         private readonly typePostRepository: Repository<TypePostEntity>,
         @InjectRepository(TypeReportEntity)
-        private readonly typeReportRepository: Repository<TypeReportEntity>
+        private readonly typeReportRepository: Repository<TypeReportEntity>,
+        private readonly mailService: MailService,
     ){}
 
     async onModuleInit(){
@@ -113,6 +116,21 @@ export class SederServiceService {
                 {type: 'entrega'}
             ])
         }
+
+        const testSendEmailResetPassword = {
+    to: 'bailess22@itp.edu.co',
+    subject: 'Restablece tu contraseña',
+    type: 'reset-password',
+    context: {
+        user: 'Andrés Iles',
+        idUser: 101, //no requerido
+        code: '654321',
+        url: 'https://miapp.com/reset-password/101',
+    },
+}
+await this.mailService.sendMail(testSendEmailResetPassword);
+
+console.log('Correo de restablecimiento de contraseña enviado con éxito');
 
 
     }
