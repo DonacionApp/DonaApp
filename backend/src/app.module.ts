@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER } from './config/constants';
 import { SederServiceModule } from './config/seder-service/seder-service.module';
 import { TypedniModule } from './modules/typedni/typedni.module';
+import { PeopleModule } from './modules/people/people.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -28,7 +29,8 @@ import { TypedniModule } from './modules/typedni/typedni.module';
     inject:[ConfigService]
   }),
   SederServiceModule,
-  TypedniModule
+  TypedniModule,
+  PeopleModule
 ],
   controllers: [AppController],
   providers: [AppService],

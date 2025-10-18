@@ -9,6 +9,7 @@ import { TypeDniEntity } from './entity/type.dni.entity';
         TypeOrmModule.forFeature([TypeDniEntity]),
     ],
   controllers: [TypedniController],
-  providers: [TypedniService]
+  providers: [TypedniService],
+  exports: [TypedniService]
 })
 export class TypedniModule {}

@@ -31,11 +31,13 @@ export class UserEntity{
     @Column({type:'timestamp', nullable:true})
     lastLogin:Date | null;
     @Column({type:'boolean', default:false})
+    emailVerified:boolean;
+    @Column({type:'boolean', default:false})
     verified:boolean;
     @Column({type:'varchar', nullable:true})
     code:string | null;
     @Column({type:'boolean', default:true})
-    active:boolean;
+    block:boolean;
     @OneToOne(()=>PeopleEntity,(people)=>people.user, {onDelete:'CASCADE', nullable:false})
     @JoinColumn()
     people:PeopleEntity;
