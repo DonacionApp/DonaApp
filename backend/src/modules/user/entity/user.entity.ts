@@ -4,11 +4,11 @@ import { PeopleEntity } from "src/modules/people/entity/people.entity";
 import { PostEntity } from "src/modules/post/entity/post.entity";
 import { PostLikedEntity } from "src/modules/postLiked/entity/post.liked.entity";
 import { ReportEntity } from "src/modules/report/entity/report.entity";
+import { RolEntity } from "src/modules/rol/entity/rol.entity";
 import { UserChatEntity } from "src/modules/userchat/entity/user.chat.entity";
 import { UserNotifyEntity } from "src/modules/userNotify/entity/user.notify.entity";
-import { UserRolEntity } from "src/modules/userrol/entity/user.rol.entity";
 import { UserSystemEntity } from "src/modules/usersystem/entity/user.system.entity";
-import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('user')
 export class UserEntity{
@@ -39,8 +39,8 @@ export class UserEntity{
     @OneToOne(()=>PeopleEntity,(people)=>people.user, {onDelete:'CASCADE', nullable:false})
     @JoinColumn()
     people:PeopleEntity;
-    @OneToMany(()=>UserRolEntity,(userRol)=>userRol.user)
-    userRol:UserRolEntity[];
+    @ManyToOne(()=>RolEntity,(rol)=>rol.user, {nullable:false, onDelete:'SET NULL'})
+    rol:RolEntity;
     @OneToMany(()=>UserNotifyEntity,(userNotify)=>userNotify.user)
     notifyUser:UserNotifyEntity[];
     @OneToMany(()=>PostEntity,(post)=>post.user)

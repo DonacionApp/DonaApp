@@ -1,4 +1,4 @@
-import { UserRolEntity } from "src/modules/userrol/entity/user.rol.entity";
+import { UserEntity } from "src/modules/user/entity/user.entity";
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('rol')
@@ -7,8 +7,8 @@ export class RolEntity{
     id:number;
     @Column({type:'varchar', unique:true, nullable:false})
     rol:string;
-    @OneToMany(()=>UserRolEntity,(userRol)=>userRol.rol)
-    userrol:UserRolEntity[];
+    @OneToMany(()=>UserEntity,(user)=>user.rol)
+    user:UserEntity[];
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;
