@@ -32,17 +32,17 @@ export class NavComponent {
 
   onHomeClick(): void {
     this.closeMobileMenu();
-    this.appState.goToHome();
+    this.router.navigate(['/']);
   }
 
   onRegisterClick(): void {
     this.closeMobileMenu();
-    this.router.navigate(['/register/donor']);
+    this.router.navigate(['/donor/register']);
   }
 
   onLoginClick(): void {
     this.closeMobileMenu();
-    this.appState.goToLogin();
+    this.router.navigate(['/login']);
   }
 
   onLogoutClick(): void {
@@ -53,8 +53,7 @@ export class NavComponent {
 
   onAboutClick(): void {
     this.closeMobileMenu();
-    // Navegar a página de acerca de
-    console.log('Navigate to about');
+    this.router.navigate(['/']);
   }
 
   // Cerrar menú móvil al hacer clic fuera

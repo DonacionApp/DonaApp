@@ -1,23 +1,25 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule],
   templateUrl: './home.component.html'
 })
 export class HomeComponent {
-
-  constructor(private router: Router) {}
+  private router = inject(Router);
 
   onRegisterClick(): void {
-    this.router.navigate(['/register/donor']);
+    this.router.navigate(['/donor/register']);
+  }
+
+  onOrganizationRegisterClick(): void {
+    this.router.navigate(['/organization/register']);
   }
 
   onLoginClick(): void {
-    // Implementar navegación a login
-    console.log('Navigate to login');
+    this.router.navigate(['/login']);
   }
 }

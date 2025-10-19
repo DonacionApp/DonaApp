@@ -4,7 +4,21 @@ import { provideHttpClient } from '@angular/common/http';
 import { BrowserModule } from '@angular/platform-browser';
 
 const routes: Routes = [
-  // La página de inicio se muestra en app.component cuando no hay ruta específica
+  // Ruta principal - Landing Page
+  {
+    path: '',
+    loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent)
+  },
+  
+  // Rutas directas para login y register
+  {
+    path: 'login',
+    loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent)
+  },
+  {
+    path: 'register',
+    redirectTo: '/donor/register'
+  },
   
   // Lazy loading para cada módulo de feature
   {

@@ -1,8 +1,14 @@
-<!-- Navigation Component -->
-<app-nav></app-nav>
+<!-- Navigation Component - Solo mostrar en rutas que no sean de registro -->
+<app-nav 
+  *ngIf="shouldShowNav()"
+  (onHomeClick)="onHomeClick()"
+  (onLoginClick)="onLoginClick()"
+  (onRegisterClick)="onRegisterClick()"
+  (onLogoutClick)="onLogoutClick()">
+</app-nav>
 
 <!-- Main Content -->
-<div class="flex-1 bg-gray-100">
+<div class="flex-1">
   <!-- Router Outlet for all routes -->
   <router-outlet></router-outlet>
 </div>

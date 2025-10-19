@@ -74,6 +74,31 @@ export class AppComponent implements OnInit, OnDestroy {
     private http: HttpClient
   ) {}
 
+  // Métodos para manejar eventos del navbar
+  onHomeClick(): void {
+    this.router.navigate(['/']);
+  }
+
+  onLoginClick(): void {
+    this.router.navigate(['/login']);
+  }
+
+  onRegisterClick(): void {
+    this.router.navigate(['/donor/register']);
+  }
+
+  onLogoutClick(): void {
+    this.appState.logout();
+    this.router.navigate(['/']);
+  }
+
+  // Método para controlar cuándo mostrar el nav
+  shouldShowNav(): boolean {
+    const currentUrl = this.router.url;
+    // Mostrar nav en todas las rutas
+    return true;
+  }
+
       ngOnInit(): void {
         // Inicialización básica
       }

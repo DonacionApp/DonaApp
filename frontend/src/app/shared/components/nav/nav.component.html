@@ -14,12 +14,6 @@
       
       <!-- Desktop Navigation -->
       <nav class="hidden md:flex items-center space-x-8">
-        <button 
-          (click)="onHomeClick()" 
-          class="text-gray-700 hover:text-green-600 transition-colors px-3 py-2 text-sm font-medium">
-          Inicio
-        </button>
-        
         <!-- Navigation for non-authenticated users -->
         <ng-container *ngIf="!isAuthenticated()">
           <button 
@@ -69,12 +63,6 @@
     <!-- Mobile Navigation -->
     <div class="mobile-menu md:hidden" [class.hidden]="!isMobileMenuOpen">
       <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-200">
-        <button 
-          (click)="onHomeClick()" 
-          class="text-gray-700 hover:text-green-600 block px-3 py-2 text-base font-medium w-full text-left">
-          Inicio
-        </button>
-        
         <!-- Mobile Navigation for non-authenticated users -->
         <ng-container *ngIf="!isAuthenticated()">
           <button 
