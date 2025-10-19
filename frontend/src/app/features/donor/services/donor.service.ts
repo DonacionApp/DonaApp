@@ -9,7 +9,6 @@ export interface Donor {
   firstName: string;
   lastName: string;
   email: string;
-  identificationNumber: string;
   phone: string;
   dateOfBirth: Date;
   address: string;
@@ -29,7 +28,6 @@ export interface DonorRegisterRequest {
   lastName: string;
   email: string;
   password: string;
-  identificationNumber: string;
   phone: string;
   dateOfBirth: string;
   address: string;

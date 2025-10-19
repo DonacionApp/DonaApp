@@ -1,15 +1,14 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 import { DonorService } from '../../../donor/services/donor.service';
 import { SharedModule } from '../../../../shared/shared.module';
-import { RegistrationStateService } from '../../../../core/services/registration-state.service';
 
 @Component({
   selector: 'app-donor-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, SharedModule],
+  imports: [CommonModule, ReactiveFormsModule, SharedModule],
   providers: [DonorService],
   templateUrl: './donor-register.component.html'
 })
@@ -20,9 +19,6 @@ export class DonorRegisterComponent implements OnInit {
   successMessage = '';
   currentStep = 1;
   totalSteps = 3;
-
-  // Inyección del servicio de estado de registro
-  private registrationState = inject(RegistrationStateService);
 
   constructor(
     private fb: FormBuilder,
@@ -35,7 +31,6 @@ export class DonorRegisterComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]],
-      identificationNumber: ['', [Validators.required, Validators.minLength(6)]],
       phone: ['', [Validators.required, Validators.pattern(/^[0-9+\-\s()]+$/)]],
       dateOfBirth: ['', [Validators.required]],
       address: ['', [Validators.required, Validators.minLength(10)]],
@@ -82,7 +77,6 @@ export class DonorRegisterComponent implements OnInit {
 
       const formData = this.registerForm.value;
       delete formData.confirmPassword; // No enviar confirmación de contraseña
-      delete formData.acceptTerms; // No enviar términos y condiciones al backend
 
       this.donorService.registerDonor(formData).subscribe({
         next: (response: any) => {
@@ -141,7 +135,6 @@ export class DonorRegisterComponent implements OnInit {
       email: 'Email',
       password: 'Contraseña',
       confirmPassword: 'Confirmar contraseña',
-      identificationNumber: 'Número de identificación',
       phone: 'Teléfono',
       dateOfBirth: 'Fecha de nacimiento',
       address: 'Dirección',
@@ -172,20 +165,6 @@ export class DonorRegisterComponent implements OnInit {
   previousStep(): void {
     if (this.currentStep > 1) {
       this.currentStep--;
-    }
-  }
-
-  goBackToUserTypeSelection(): void {
-    // Navegar de vuelta al selector principal
-    this.router.navigate(['/']);
-  }
-
-  onUserTypeChange(type: 'donor' | 'organization'): void {
-    // Navegar a la ruta específica del tipo de usuario
-    if (type === 'organization') {
-      this.router.navigate(['/register/organization']);
-    } else {
-      this.router.navigate(['/register/donor']);
     }
   }
 }

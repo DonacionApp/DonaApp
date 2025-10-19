@@ -12,16 +12,27 @@ import { BrowserModule } from '@angular/platform-browser';
 // import { AuthEffects } from './store/auth/auth.effects';
 
 const routes: Routes = [
-  // Ruta para home
-  { path: '', loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent) },
-  { path: 'home', redirectTo: '/', pathMatch: 'full' },
+  // Ruta principal - Landing Page
+  {
+    path: '',
+    loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent)
+  },
+  
+  // Rutas directas para login y register
+  {
+    path: 'login',
+    loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent)
+  },
+  {
+    path: 'register',
+    redirectTo: '/donor/register'
+  },
   
   // Rutas específicas para cada tipo de registro
   { path: 'register/donor', loadComponent: () => import('./features/donor/components/donor-register/donor-register.component').then(m => m.DonorRegisterComponent) },
   { path: 'register/organization', loadComponent: () => import('./features/organization/components/organization-register/organization-register.component').then(m => m.OrganizationRegisterComponent) },
   
-  // Ruta de registro general - redirigir a donante por defecto
-  { path: 'register', redirectTo: '/register/donor', pathMatch: 'full' },
+  // Rutas de registro alternativas
   { path: 'organization/register', redirectTo: '/register/organization', pathMatch: 'full' },
   { path: 'donor/register', redirectTo: '/register/donor', pathMatch: 'full' },
   
@@ -35,11 +46,8 @@ const routes: Routes = [
     loadChildren: () => import('./features/donor/donor.module').then(m => m.DonorModule)
   },
   
-  // Ruta por defecto - redirigir a home
-  { path: '', redirectTo: '/', pathMatch: 'full' },
-  
   // Ruta wildcard para 404 - redirigir a home
-  { path: '**', redirectTo: '/' }
+  { path: '**', redirectTo: '' }
 ];
 
 export const appConfig: ApplicationConfig = {
