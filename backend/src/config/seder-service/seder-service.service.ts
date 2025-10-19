@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { MailDto } from 'src/core/mail/dto/mail.dto';
 import { MailService } from 'src/core/mail/mail.service';
 import { RolEntity } from 'src/modules/rol/entity/rol.entity';
 import { StatusDonationEntity } from 'src/modules/statusdonation/entity/status.donation.entity';
@@ -116,18 +117,6 @@ export class SederServiceService {
             ])
         }
 
-        const testSendEmailResetPassword = {
-            to: 'bailess22@itp.edu.co',
-            subject: 'Restablece tu contraseña',
-            type: 'reset-password',
-            context: {
-                user: 'Andrés Iles',
-                idUser: 101,
-                code: '654321',
-                url: 'https://miapp.com/reset-password/101',
-            },
-        }
-        await this.mailService.sendMail(testSendEmailResetPassword);
 
     }
 }
