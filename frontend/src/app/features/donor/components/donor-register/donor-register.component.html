@@ -1,0 +1,504 @@
+<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+  <!-- Header -->
+  <div class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo -->
+        <div class="flex items-center">
+          <div class="flex-shrink-0 flex items-center">
+            <span class="text-2xl text-green-600">❤️</span>
+            <span class="ml-2 text-xl font-bold text-gray-900">DonacionApp</span>
+          </div>
+        </div>
+        
+        <!-- Login Link -->
+        <div class="flex items-center space-x-4">
+          <span class="text-sm text-gray-600">¿Ya tienes una cuenta?</span>
+          <button (click)="goToLogin()" class="text-green-600 hover:text-green-700 font-medium">
+            Iniciar Sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header Section -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Registro de Donante</h1>
+      <p class="text-lg text-gray-600">Únete a nuestra comunidad y ayuda a hacer la diferencia</p>
+    </div>
+
+    <!-- Form Container -->
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+      <!-- Progress Indicator -->
+      <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                 [class.bg-green-600]="currentStep >= 1"
+                 [class.bg-gray-300]="currentStep < 1">
+              <span class="text-sm font-medium"
+                    [class.text-white]="currentStep >= 1"
+                    [class.text-gray-600]="currentStep < 1">1</span>
+            </div>
+            <span class="text-sm font-medium"
+                  [class.text-gray-900]="currentStep >= 1"
+                  [class.text-gray-500]="currentStep < 1">Información Personal</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                 [class.bg-green-600]="currentStep >= 2"
+                 [class.bg-gray-300]="currentStep < 2">
+              <span class="text-sm font-medium"
+                    [class.text-white]="currentStep >= 2"
+                    [class.text-gray-600]="currentStep < 2">2</span>
+            </div>
+            <span class="text-sm font-medium"
+                  [class.text-gray-900]="currentStep >= 2"
+                  [class.text-gray-500]="currentStep < 2">Contacto</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                 [class.bg-green-600]="currentStep >= 3"
+                 [class.bg-gray-300]="currentStep < 3">
+              <span class="text-sm font-medium"
+                    [class.text-white]="currentStep >= 3"
+                    [class.text-gray-600]="currentStep < 3">3</span>
+            </div>
+            <span class="text-sm font-medium"
+                  [class.text-gray-900]="currentStep >= 3"
+                  [class.text-gray-500]="currentStep < 3">Preferencias</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="p-6 space-y-8">
+        
+        <!-- Step 1: Información Personal -->
+        <div *ngIf="currentStep === 1" class="space-y-6">
+          <div class="flex items-center mb-4">
+            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+              <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900">Información Personal</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label for="firstName" class="block text-sm font-medium text-gray-700">
+                Nombre <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="firstName" 
+                formControlName="firstName" 
+                placeholder="Tu nombre"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                [class.border-red-500]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched"
+                [class.ring-red-500]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched">
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('firstName')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('firstName') }}
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="lastName" class="block text-sm font-medium text-gray-700">
+                Apellido <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="lastName" 
+                formControlName="lastName" 
+                placeholder="Tu apellido"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                [class.border-red-500]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched"
+                [class.ring-red-500]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched">
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('lastName')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('lastName') }}
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="email" class="block text-sm font-medium text-gray-700">
+              Email <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="email" 
+              id="email" 
+              formControlName="email" 
+              placeholder="tu@email.com"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              [class.border-red-500]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+              [class.ring-red-500]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('email')">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              {{ getFieldError('email') }}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label for="password" class="block text-sm font-medium text-gray-700">
+                Contraseña <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <input 
+                  type="password" 
+                  id="password" 
+                  formControlName="password" 
+                  placeholder="Mínimo 6 caracteres"
+                  class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  [class.border-red-500]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+                  [class.ring-red-500]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                </button>
+              </div>
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('password')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('password') }}
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="confirmPassword" class="block text-sm font-medium text-gray-700">
+                Confirmar Contraseña <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <input 
+                  type="password" 
+                  id="confirmPassword" 
+                  formControlName="confirmPassword" 
+                  placeholder="Repite tu contraseña"
+                  class="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  [class.border-red-500]="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched"
+                  [class.ring-red-500]="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched">
+                <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                </button>
+              </div>
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('confirmPassword')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('confirmPassword') }}
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label for="phone" class="block text-sm font-medium text-gray-700">
+                Teléfono <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="tel" 
+                id="phone" 
+                formControlName="phone" 
+                placeholder="+57 300 123 4567"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                [class.border-red-500]="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched"
+                [class.ring-red-500]="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched">
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('phone')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('phone') }}
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="dateOfBirth" class="block text-sm font-medium text-gray-700">
+                Fecha de Nacimiento <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="date" 
+                id="dateOfBirth" 
+                formControlName="dateOfBirth" 
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                [class.border-red-500]="registerForm.get('dateOfBirth')?.invalid && registerForm.get('dateOfBirth')?.touched"
+                [class.ring-red-500]="registerForm.get('dateOfBirth')?.invalid && registerForm.get('dateOfBirth')?.touched">
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('dateOfBirth')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('dateOfBirth') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Información de Contacto -->
+        <div *ngIf="currentStep === 2" class="space-y-6">
+          <div class="flex items-center mb-4">
+            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900">Información de Contacto</h3>
+          </div>
+          
+          <div class="space-y-2">
+            <label for="address" class="block text-sm font-medium text-gray-700">
+              Dirección <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="address" 
+              formControlName="address" 
+              placeholder="Calle 123 #45-67, Barrio Centro"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              [class.border-red-500]="registerForm.get('address')?.invalid && registerForm.get('address')?.touched"
+              [class.ring-red-500]="registerForm.get('address')?.invalid && registerForm.get('address')?.touched">
+            <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('address')">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              {{ getFieldError('address') }}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="space-y-2">
+              <label for="city" class="block text-sm font-medium text-gray-700">
+                Ciudad <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="city" 
+                formControlName="city" 
+                placeholder="Bogotá"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                [class.border-red-500]="registerForm.get('city')?.invalid && registerForm.get('city')?.touched"
+                [class.ring-red-500]="registerForm.get('city')?.invalid && registerForm.get('city')?.touched">
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('city')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('city') }}
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="country" class="block text-sm font-medium text-gray-700">
+                País <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="country" 
+                formControlName="country" 
+                placeholder="Colombia"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                [class.border-red-500]="registerForm.get('country')?.invalid && registerForm.get('country')?.touched"
+                [class.ring-red-500]="registerForm.get('country')?.invalid && registerForm.get('country')?.touched">
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('country')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('country') }}
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="postalCode" class="block text-sm font-medium text-gray-700">
+                Código Postal <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="postalCode" 
+                formControlName="postalCode" 
+                placeholder="110111"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                [class.border-red-500]="registerForm.get('postalCode')?.invalid && registerForm.get('postalCode')?.touched"
+                [class.ring-red-500]="registerForm.get('postalCode')?.invalid && registerForm.get('postalCode')?.touched">
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('postalCode')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('postalCode') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Preferencias de Donación -->
+        <div *ngIf="currentStep === 3" class="space-y-6">
+          <div class="flex items-center mb-4">
+            <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900">Preferencias de Donación</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label for="donationFrequency" class="block text-sm font-medium text-gray-700">
+                Frecuencia de Donación <span class="text-red-500">*</span>
+              </label>
+              <select 
+                id="donationFrequency" 
+                formControlName="donationFrequency"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 cursor-pointer"
+                [class.border-red-500]="registerForm.get('donationFrequency')?.invalid && registerForm.get('donationFrequency')?.touched"
+                [class.ring-red-500]="registerForm.get('donationFrequency')?.invalid && registerForm.get('donationFrequency')?.touched">
+                <option value="">Selecciona una frecuencia</option>
+                <option value="monthly">Mensual</option>
+                <option value="quarterly">Trimestral</option>
+                <option value="yearly">Anual</option>
+                <option value="one-time">Una sola vez</option>
+              </select>
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('donationFrequency')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('donationFrequency') }}
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="maxDonationAmount" class="block text-sm font-medium text-gray-700">
+                Monto Máximo de Donación (COP) <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="number" 
+                id="maxDonationAmount" 
+                formControlName="maxDonationAmount" 
+                placeholder="100000"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                [class.border-red-500]="registerForm.get('maxDonationAmount')?.invalid && registerForm.get('maxDonationAmount')?.touched"
+                [class.ring-red-500]="registerForm.get('maxDonationAmount')?.invalid && registerForm.get('maxDonationAmount')?.touched">
+              <div class="text-red-500 text-sm flex items-center gap-1 mt-1" *ngIf="getFieldError('maxDonationAmount')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('maxDonationAmount') }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Términos y condiciones -->
+          <div class="space-y-4 pt-6 border-t border-gray-200">
+            <div class="space-y-2">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  formControlName="acceptTerms"
+                  class="mt-1 w-5 h-5 text-green-600 border-2 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                  [class.border-red-500]="registerForm.get('acceptTerms')?.invalid && registerForm.get('acceptTerms')?.touched">
+                <span class="text-sm text-gray-700 leading-relaxed">
+                  Acepto los <a href="#" target="_blank" class="text-green-600 hover:text-green-700 underline font-medium">términos y condiciones</a> y la <a href="#" target="_blank" class="text-green-600 hover:text-green-700 underline font-medium">política de privacidad</a> <span class="text-red-500">*</span>
+                </span>
+              </label>
+              <div class="text-red-500 text-sm flex items-center gap-1" *ngIf="getFieldError('acceptTerms')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ getFieldError('acceptTerms') }}
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  formControlName="acceptNewsletter"
+                  class="mt-1 w-5 h-5 text-green-600 border-2 border-gray-300 rounded focus:ring-green-500 focus:ring-2">
+                <span class="text-sm text-gray-700 leading-relaxed">
+                  Deseo recibir información sobre campañas y oportunidades de donación
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensajes de error y éxito -->
+        <div *ngIf="errorMessage || successMessage" class="p-4 rounded-lg border"
+             [class.bg-red-50]="errorMessage" 
+             [class.border-red-200]="errorMessage"
+             [class.bg-green-50]="successMessage" 
+             [class.border-green-200]="successMessage">
+          <div class="text-red-600 text-sm flex items-center gap-2" *ngIf="errorMessage">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            {{ errorMessage }}
+          </div>
+          <div class="text-green-600 text-sm flex items-center gap-2" *ngIf="successMessage">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            {{ successMessage }}
+          </div>
+        </div>
+
+        <!-- Botones de navegación -->
+        <div class="flex justify-between pt-6 border-t border-gray-200">
+          <button 
+            type="button" 
+            class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all duration-200"
+            (click)="currentStep === 1 ? goToLogin() : previousStep()"
+            [disabled]="isLoading">
+            {{ currentStep === 1 ? 'Cancelar' : 'Anterior' }}
+          </button>
+          
+          <div class="flex gap-4">
+            <button 
+              *ngIf="currentStep < totalSteps"
+              type="button" 
+              class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+              (click)="nextStep()"
+              [disabled]="isLoading">
+              Siguiente
+            </button>
+            
+            <button 
+              *ngIf="currentStep === totalSteps"
+              type="submit" 
+              class="flex items-center justify-center gap-3 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              [disabled]="isLoading">
+              <span *ngIf="isLoading" class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+              {{ isLoading ? 'Registrando...' : 'Registrar Donante' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 mt-12">
+    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center">
+        <span class="text-lg text-green-600">❤️</span>
+        <span class="ml-2 text-sm text-gray-600">DonacionApp</span>
+        <span class="ml-4 text-sm text-gray-500">Conectando donantes con organizaciones</span>
+      </div>
+    </div>
+  </footer>
+</div>
