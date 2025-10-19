@@ -5,6 +5,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER } from './config/constants';
 import { SederServiceModule } from './config/seder-service/seder-service.module';
+import { TypedniModule } from './modules/typedni/typedni.module';
+import { RolModule } from './modules/rol/rol.module';
+import { PeopleModule } from './modules/people/people.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -21,12 +25,16 @@ import { SederServiceModule } from './config/seder-service/seder-service.module'
       password: configService.get(DB_PASS),
       database: configService.get(DB_NAME),
       entities: [__dirname+'/**/*.entity{.ts,.js}'],
-      synchronize:false,
+      synchronize:true,
       logging:true,
     }),
     inject:[ConfigService]
   }),
-  SederServiceModule
+  SederServiceModule,
+  TypedniModule,
+  PeopleModule,
+  RolModule,
+  UserModule
 ],
   controllers: [AppController],
   providers: [AppService],
