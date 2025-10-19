@@ -29,7 +29,6 @@ export interface OrganizationRegisterRequest {
   address: string;
   city: string;
   country: string;
-  organizationType: string;
   description: string;
   taxId: string;
   supportDocument: File | null;
@@ -74,7 +73,6 @@ export class OrganizationService {
     formData.append('address', organizationData.address);
     formData.append('city', organizationData.city);
     formData.append('country', organizationData.country);
-    formData.append('organizationType', organizationData.organizationType);
     formData.append('description', organizationData.description);
     formData.append('taxId', organizationData.taxId);
     

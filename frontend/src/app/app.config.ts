@@ -1,7 +1,11 @@
 import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter, Routes } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { BrowserModule } from '@angular/platform-browser';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { ErrorInterceptor } from './core/interceptors/error.interceptor';
+import { LoadingInterceptor } from './core/interceptors/loading.interceptor';
 // import { provideStore } from '@ngrx/store';
 // import { provideEffects } from '@ngrx/effects';
 // import { provideStoreDevtools } from '@ngrx/store-devtools';
@@ -29,12 +33,12 @@ const routes: Routes = [
   },
   
   // Rutas específicas para cada tipo de registro
-  { path: 'register/donor', loadComponent: () => import('./features/donor/components/donor-register/donor-register.component').then(m => m.DonorRegisterComponent) },
-  { path: 'register/organization', loadComponent: () => import('./features/organization/components/organization-register/organization-register.component').then(m => m.OrganizationRegisterComponent) },
+  { path: 'donor/register', loadComponent: () => import('./features/donor/components/donor-register/donor-register.component').then(m => m.DonorRegisterComponent) },
+  { path: 'organization/register', loadComponent: () => import('./features/organization/components/organization-register/organization-register.component').then(m => m.OrganizationRegisterComponent) },
   
   // Rutas de registro alternativas
-  { path: 'organization/register', redirectTo: '/register/organization', pathMatch: 'full' },
-  { path: 'donor/register', redirectTo: '/register/donor', pathMatch: 'full' },
+  { path: 'register/donor', redirectTo: '/donor/register', pathMatch: 'full' },
+  { path: 'register/organization', redirectTo: '/organization/register', pathMatch: 'full' },
   
   // Lazy loading para otros módulos de feature
   {
@@ -54,6 +58,22 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideHttpClient(),
+    // Interceptors
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: ErrorInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: LoadingInterceptor,
+      multi: true
+    },
     // provideStore(reducers, { metaReducers }),
     // provideEffects([AuthEffects]),
     // provideStoreDevtools({

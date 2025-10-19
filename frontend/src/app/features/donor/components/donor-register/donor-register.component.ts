@@ -1,14 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { DonorService } from '../../../donor/services/donor.service';
 import { SharedModule } from '../../../../shared/shared.module';
 
 @Component({
   selector: 'app-donor-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SharedModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, SharedModule],
   providers: [DonorService],
   templateUrl: './donor-register.component.html'
 })
@@ -19,6 +19,8 @@ export class DonorRegisterComponent implements OnInit {
   successMessage = '';
   currentStep = 1;
   totalSteps = 3;
+  selectedUserType: 'donor' | 'organization' | null = 'donor';
+  selectedFile: File | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -37,8 +39,8 @@ export class DonorRegisterComponent implements OnInit {
       city: ['', [Validators.required]],
       country: ['', [Validators.required]],
       postalCode: ['', [Validators.required]],
-      donationFrequency: ['', [Validators.required]],
-      maxDonationAmount: ['', [Validators.required, Validators.min(1)]],
+      dni: ['', [Validators.required, Validators.pattern(/^[0-9]+$/)]],
+      profilePhoto: [null],
       acceptTerms: [false, [Validators.requiredTrue]],
       acceptNewsletter: [false]
     }, { validators: this.passwordMatchValidator });
@@ -47,9 +49,7 @@ export class DonorRegisterComponent implements OnInit {
   ngOnInit(): void {
     // Establecer valores por defecto
     this.registerForm.patchValue({
-      country: 'Colombia',
-      donationFrequency: 'monthly',
-      maxDonationAmount: 100000
+      country: 'Colombia'
     });
   }
 
@@ -77,6 +77,9 @@ export class DonorRegisterComponent implements OnInit {
 
       const formData = this.registerForm.value;
       delete formData.confirmPassword; // No enviar confirmación de contraseña
+      
+      // Agregar tipoDNI automáticamente como Cédula de Ciudadanía (id: 2)
+      formData.tipoDNI = { id: 2 };
 
       this.donorService.registerDonor(formData).subscribe({
         next: (response: any) => {
@@ -141,8 +144,8 @@ export class DonorRegisterComponent implements OnInit {
       city: 'Ciudad',
       country: 'País',
       postalCode: 'Código postal',
-      donationFrequency: 'Frecuencia de donación',
-      maxDonationAmount: 'Monto máximo de donación',
+      dni: 'Documento de identidad',
+      profilePhoto: 'Foto de perfil',
       acceptTerms: 'Términos y condiciones'
     };
     return labels[fieldName] || fieldName;
@@ -166,5 +169,50 @@ export class DonorRegisterComponent implements OnInit {
     if (this.currentStep > 1) {
       this.currentStep--;
     }
+  }
+
+  onUserTypeChange(userType: 'donor' | 'organization'): void {
+    this.selectedUserType = userType;
+    
+    // Si selecciona organización, redirigir al registro de organización
+    if (userType === 'organization') {
+      this.router.navigate(['/organization/register']);
+    }
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      // Validar tipo de archivo
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        this.errorMessage = 'Solo se permiten archivos JPG, JPEG y PNG';
+        return;
+      }
+      
+      // Validar tamaño (máximo 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        this.errorMessage = 'El archivo no puede ser mayor a 5MB';
+        return;
+      }
+      
+      this.selectedFile = file;
+      this.registerForm.patchValue({ profilePhoto: file });
+      this.errorMessage = '';
+    }
+  }
+
+  removeFile(): void {
+    this.selectedFile = null;
+    this.registerForm.patchValue({ profilePhoto: null });
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }

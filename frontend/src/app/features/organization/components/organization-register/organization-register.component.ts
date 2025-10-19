@@ -15,7 +15,6 @@ interface OrganizationFormData {
   address: string;
   city: string;
   country: string;
-  organizationType: string;
   description: string;
   taxId: string;
   supportDocument: File | null;
@@ -50,16 +49,6 @@ export class OrganizationRegisterComponent implements OnInit {
     MIN_DESCRIPTION_LENGTH: 20
   };
 
-  // Opciones para el tipo de organización
-  readonly ORGANIZATION_TYPES = [
-    { value: 'fundacion', label: 'Fundación' },
-    { value: 'ong', label: 'ONG' },
-    { value: 'asociacion', label: 'Asociación' },
-    { value: 'corporacion', label: 'Corporación' },
-    { value: 'cooperativa', label: 'Cooperativa' },
-    { value: 'iglesia', label: 'Iglesia' },
-    { value: 'otro', label: 'Otro' }
-  ];
 
   constructor(
     private fb: FormBuilder,
@@ -94,7 +83,6 @@ export class OrganizationRegisterComponent implements OnInit {
       ]],
       city: ['', [Validators.required]],
       country: ['', [Validators.required]],
-      organizationType: ['', [Validators.required]],
       description: ['', [
         Validators.required, 
         Validators.minLength(this.VALIDATION_RULES.MIN_DESCRIPTION_LENGTH)
@@ -188,7 +176,6 @@ export class OrganizationRegisterComponent implements OnInit {
       address: formData.address || '',
       city: formData.city || '',
       country: formData.country || '',
-      organizationType: formData.organizationType || '',
       description: formData.description || '',
       taxId: formData.taxId || '',
       supportDocument: this.selectedFile
@@ -326,7 +313,6 @@ export class OrganizationRegisterComponent implements OnInit {
       address: 'Dirección',
       city: 'Ciudad',
       country: 'País',
-      organizationType: 'Tipo de organización',
       description: 'Descripción',
       taxId: 'NIT',
       supportDocument: 'Documento de soporte'

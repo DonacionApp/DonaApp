@@ -34,8 +34,9 @@ export interface DonorRegisterRequest {
   city: string;
   country: string;
   postalCode: string;
-  donationFrequency: string;
-  maxDonationAmount: number;
+  dni: string;
+  tipoDNI: { id: number };
+  profilePhoto: File | null;
   acceptNewsletter: boolean;
 }
 
@@ -68,11 +69,29 @@ export class DonorService {
    * Registra un nuevo donante
    */
   registerDonor(donorData: DonorRegisterRequest): Observable<DonorResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
+    const formData = new FormData();
+    
+    // Agregar campos básicos
+    formData.append('firstName', donorData.firstName);
+    formData.append('lastName', donorData.lastName);
+    formData.append('email', donorData.email);
+    formData.append('password', donorData.password);
+    formData.append('phone', donorData.phone);
+    formData.append('dateOfBirth', donorData.dateOfBirth);
+    formData.append('address', donorData.address);
+    formData.append('city', donorData.city);
+    formData.append('country', donorData.country);
+    formData.append('postalCode', donorData.postalCode);
+    formData.append('dni', donorData.dni);
+    formData.append('tipoDNI', JSON.stringify(donorData.tipoDNI));
+    formData.append('acceptNewsletter', donorData.acceptNewsletter.toString());
+    
+    // Agregar foto de perfil si existe
+    if (donorData.profilePhoto) {
+      formData.append('profilePhoto', donorData.profilePhoto);
+    }
 
-    return this.http.post<DonorResponse>(`${this.apiUrl}/register`, donorData, { headers })
+    return this.http.post<DonorResponse>(`${this.apiUrl}/register`, formData)
       .pipe(
         tap(response => {
           if (response.success && response.data && response.token) {
