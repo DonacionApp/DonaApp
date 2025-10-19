@@ -1,17 +1,26 @@
-import { Component } from '@angular/core';
+import { Component, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { AppStateService } from '../../../core/services/app-state.service';
 
 @Component({
   selector: 'app-nav',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './nav.component.html'
+  templateUrl: './nav.component.html',
+  styleUrls: []
 })
 export class NavComponent {
   isMobileMenuOpen = false;
-
-  constructor(private router: Router) {}
+  
+  // Inyección de servicios
+  private router = inject(Router);
+  private appState = inject(AppStateService);
+  
+  // Acceso reactivo al estado
+  isAuthenticated = this.appState.isAuthenticated;
+  user = this.appState.user;
+  currentView = this.appState.currentView;
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
@@ -21,6 +30,11 @@ export class NavComponent {
     this.isMobileMenuOpen = false;
   }
 
+  onHomeClick(): void {
+    this.closeMobileMenu();
+    this.appState.goToHome();
+  }
+
   onRegisterClick(): void {
     this.closeMobileMenu();
     this.router.navigate(['/register/donor']);
@@ -28,13 +42,32 @@ export class NavComponent {
 
   onLoginClick(): void {
     this.closeMobileMenu();
-    // Tu compañero implementará la lógica de login aquí
-    console.log('Navigate to login');
+    this.appState.goToLogin();
+  }
+
+  onLogoutClick(): void {
+    this.closeMobileMenu();
+    this.appState.logout();
+    this.router.navigate(['/']);
   }
 
   onAboutClick(): void {
     this.closeMobileMenu();
     // Navegar a página de acerca de
     console.log('Navigate to about');
+  }
+
+  // Cerrar menú móvil al hacer clic fuera
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    const mobileMenu = document.querySelector('.mobile-menu');
+    const mobileMenuButton = document.querySelector('.mobile-menu-button');
+    
+    if (this.isMobileMenuOpen && 
+        !mobileMenu?.contains(target) && 
+        !mobileMenuButton?.contains(target)) {
+      this.closeMobileMenu();
+    }
   }
 }
