@@ -29,7 +29,7 @@ export class RolService {
   }
 
   async findByName(rol: string): Promise<RolEntity> {
-    const rolFound = await this.rolRepository.findOne({ where: { rol: rol.toUpperCase().trim() } });
+    const rolFound = await this.rolRepository.findOne({ where: { rol: rol.toLowerCase().trim() } });
     if (!rolFound) {
       throw new NotFoundException('Rol no encontrado');
     }
@@ -40,7 +40,7 @@ export class RolService {
     if (!dto.rol) {
       throw new BadRequestException('El nombre del rol es obligatorio');
     }
-    dto.rol = dto.rol.toUpperCase().trim();
+    dto.rol = dto.rol.toLowerCase().trim();
     const exists = await this.rolRepository.findOne({ where: { rol: dto.rol } });
     if (exists) {
       throw new BadRequestException('El rol ya existe');

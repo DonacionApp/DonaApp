@@ -9,6 +9,7 @@ import { TypedniModule } from '../typedni/typedni.module';
   imports:[TypeOrmModule.forFeature([PeopleEntity]),TypedniModule
    ],
   controllers: [PeopleController],
-  providers: [PeopleService]
+  providers: [PeopleService],
+  exports: [PeopleService]
 })
 export class PeopleModule {}

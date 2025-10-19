@@ -25,7 +25,7 @@ export class UserEntity{
     @Column({type:'varchar', nullable:true})
     loginAttempts:string | null;
     @Column({type:'varchar', nullable:true})
-    profilePhoto:string;
+    profilePhoto:string | null;
     @Column({type:'timestamp', nullable:true})
     dateSendCodigo:Date | null;
     @Column({type:'timestamp', nullable:true})
@@ -60,7 +60,6 @@ export class UserEntity{
     @OneToMany(()=>PostLikedEntity,(postLiked)=>postLiked.user)
     postLiked:PostLikedEntity[];
 
-    
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP'})

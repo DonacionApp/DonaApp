@@ -18,7 +18,12 @@ export class PeopleController {
 
 	@Post()
 	async create(@Body() dto: CreatePeopleDto) {
+		try {
+			
 		return await this.peopleService.create(dto);
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	@Post('update/:idPerson')

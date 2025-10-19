@@ -1,0 +1,200 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { UserEntity } from './entity/user.entity';
+import { CreateUserDto } from './dto/create.user.dto';
+import { UpdateUserDto } from './dto/update.user.dto';
+import { RolEntity } from '../rol/entity/rol.entity';
+import { PeopleEntity } from '../people/entity/people.entity';
+import { PeopleService } from '../people/people.service';
+import { RolService } from '../rol/rol.service';
+
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(RolEntity)
+    private readonly rolRepository: Repository<RolEntity>,
+    @InjectRepository(PeopleEntity)
+    private readonly peopleRepository: Repository<PeopleEntity>,
+    private readonly peopleService: PeopleService,
+    private readonly rolService: RolService
+  ) {}
+
+  async findAll(): Promise<UserEntity[]> {
+    try {
+      const users = await this.userRepository.find({ relations: {
+        rol:true,
+        people:{
+          typeDni:true
+        }
+      }});
+      if (!users || users.length === 0) {
+        throw new BadRequestException('No hay usuarios registrados');
+      }
+      return users;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findById(id: number): Promise<UserEntity> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: id },
+        relations:{
+          people:{
+            typeDni:true
+          },
+          rol:true
+        }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findByUsername(username: string): Promise<UserEntity> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { username }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async create(dto: CreateUserDto): Promise<UserEntity> {
+    try {
+      if (!dto.username || !dto.email || !dto.password || !dto.rolId || !dto.people) {
+        throw new BadRequestException('Los datos del usuario son obligatorios');
+      }
+
+      dto.username = dto.username.trim();
+      dto.email = dto.email.trim().toLowerCase();
+
+      const usernameExists = await this.userRepository.findOne({
+        where: { username: dto.username }
+      });
+      if (usernameExists) {
+        throw new BadRequestException('El username ya existe');
+      }
+
+      const emailExists = await this.userRepository.findOne({
+        where: { email: dto.email }
+      });
+      if (emailExists) {
+        throw new BadRequestException('El email ya existe');
+      }
+      const rol = await this.rolService.findById(dto.rolId);
+      if (!rol) {
+        throw new BadRequestException('El rol no existe');
+      }
+      const people = await this.peopleService.create(dto.people)
+
+      const user = new UserEntity();
+      user.username = dto.username;
+      user.email = dto.email;
+      user.password = dto.password;
+      user.rol = rol;
+      user.people = people;
+      if (dto.profilePhoto !== undefined) {
+        user.profilePhoto = dto.profilePhoto;
+      }
+      if (dto.block !== undefined) user.block = dto.block;
+
+      const newUser = this.userRepository.create(user);
+      return await this.userRepository.save(newUser);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async update(id: number, dto: UpdateUserDto): Promise<UserEntity> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: id }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+
+      const targetUsername = dto.username.trim();
+      const targetEmail = dto.email.trim().toLowerCase();
+
+      if (targetUsername !== user.username) {
+        const usernameExists = await this.userRepository.findOne({
+          where: { username: targetUsername }
+        });
+        if (usernameExists) {
+          throw new BadRequestException('El username ya existe');
+        }
+        user.username = targetUsername;
+      }
+
+      if (targetEmail !== user.email) {
+        const emailExists = await this.userRepository.findOne({
+          where: { email: targetEmail }
+        });
+        if (emailExists) {
+          throw new BadRequestException('El email ya existe');
+        }
+        user.email = targetEmail;
+      }
+
+      if (dto.password) {
+        user.password = dto.password;
+      }
+
+      if (dto.rolId && dto.rolId !== user.rol?.id) {
+        const rol = await this.rolService.findById(dto.rolId)
+        if (!rol) {
+          throw new BadRequestException('El rol no existe');
+        }
+        user.rol = rol;
+      }
+
+      if (dto.people.id && dto.people.id !== user.people?.id) {
+        const people = await this.peopleService.findById(dto.people.id)
+        if (!people) {
+          throw new BadRequestException('La persona no existe');
+        }
+        user.people = people;
+      }
+
+      if (dto.profilePhoto !== undefined) user.profilePhoto = dto.profilePhoto;
+      if (dto.block !== undefined) user.block = dto.block;
+
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async delete(id: number) {
+    try {
+      if (!id) {
+        throw new BadRequestException('El id del usuario es obligatorio');
+      }
+      const user = await this.userRepository.findOne({
+        where: { id: id }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      await this.userRepository.delete(id);
+      return { message: 'Usuario eliminado correctamente' };
+    } catch (error) {
+      throw error;
+    }
+  }
+}

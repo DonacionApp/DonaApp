@@ -15,7 +15,9 @@ export class PeopleService {
 
     async findAll():Promise<PeopleEntity[]>{
         try {
-            const people= await this.peopleRepository.find();
+            const people= await this.peopleRepository.find( {relations: {
+                typeDni:true
+            }});
             if (!people || people.length===0){
                 throw new BadRequestException('No hay personas registradas');
             }
@@ -53,7 +55,13 @@ export class PeopleService {
         if(!typeDniExists){
             throw new BadRequestException('El tipo de DNI no existe');
         };
-
+        const telefonoExists= await this.peopleRepository.findOne({
+            where: { telefono: dto.telefono }
+        })
+        if(telefonoExists){
+            throw new BadRequestException('La persona con este teléfono ya existe');
+        }
+        
         const people= new PeopleEntity();
         people.name= dto.name;
         people.lastName= dto.lastName;
@@ -80,7 +88,40 @@ export class PeopleService {
             if (!person) {
                 throw new BadRequestException('Persona no encontrada');
             }
-            this.peopleRepository.merge(person, dto);
+            if(dto.name){
+                person.name=dto.name;
+            }
+            if(dto.lastName){
+                person.lastName=dto.lastName;
+            }
+            if(dto.birdthDate){
+                person.birdthDate=dto.birdthDate;
+            }
+            if(dto.residencia){
+                person.residencia=dto.residencia;
+            }
+            if(dto.supportId){
+                person.supportId=dto.supportId;
+            }
+            if(dto.telefono){
+                person.telefono=dto.telefono;
+            }
+            if(dto.tipodDni){
+                const typeDniExist= await this.typedniService.fyndById(dto.tipodDni);
+                if(!typeDniExist){
+                    throw new BadRequestException('El tipo de DNI no existe');
+                }
+                person.typeDni=typeDniExist;
+            }
+            if(dto.dni){
+                const dniExists= await this.peopleRepository.findOne({
+                    where:{ dni: dto.dni}
+                })
+                if(dniExists){
+                    throw new BadRequestException('La persona con este DNI ya existe');
+                }
+                person.dni= dto.dni;
+            }
             return await this.peopleRepository.save(person);
 
         } catch (error) {
