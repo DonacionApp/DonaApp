@@ -14,8 +14,8 @@ export interface Organization {
   country: string;
   organizationType: string;
   description: string;
-  website?: string;
   taxId: string;
+  supportDocumentUrl?: string;
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -31,8 +31,8 @@ export interface OrganizationRegisterRequest {
   country: string;
   organizationType: string;
   description: string;
-  website?: string;
   taxId: string;
+  supportDocument: File | null;
 }
 
 export interface OrganizationLoginRequest {
@@ -64,11 +64,26 @@ export class OrganizationService {
    * Registra una nueva organización
    */
   registerOrganization(organizationData: OrganizationRegisterRequest): Observable<OrganizationResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
+    const formData = new FormData();
+    
+    // Agregar todos los campos del formulario
+    formData.append('name', organizationData.name);
+    formData.append('email', organizationData.email);
+    formData.append('password', organizationData.password);
+    formData.append('phone', organizationData.phone);
+    formData.append('address', organizationData.address);
+    formData.append('city', organizationData.city);
+    formData.append('country', organizationData.country);
+    formData.append('organizationType', organizationData.organizationType);
+    formData.append('description', organizationData.description);
+    formData.append('taxId', organizationData.taxId);
+    
+    // Agregar archivo de soporte si existe
+    if (organizationData.supportDocument) {
+      formData.append('supportDocument', organizationData.supportDocument);
+    }
 
-    return this.http.post<OrganizationResponse>(`${this.apiUrl}/register`, organizationData, { headers })
+    return this.http.post<OrganizationResponse>(`${this.apiUrl}/register`, formData)
       .pipe(
         tap(response => {
           if (response.success && response.data && response.token) {
