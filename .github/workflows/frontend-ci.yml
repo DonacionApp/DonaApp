@@ -2,7 +2,7 @@ name: CI Frontend (Angular)
 
 on:
   push:
-    branches: [ "main", "configuracion-inicial-ci" ]
+    branches: [ "main", "configuracion-inicial-ci"]
   pull_request:
     branches: [ "main" ]
     paths:
@@ -11,7 +11,7 @@ on:
 jobs:
   check_backend_ci:
     name: Verificar CI del Backend
-    uses: ./.github/workflows/ci-backend.yml
+    uses: ./.github/workflows/backend-ci.yml
 
   ci_frontend:
     runs-on: ubuntu-latest

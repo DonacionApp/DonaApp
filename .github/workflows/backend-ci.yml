@@ -2,12 +2,6 @@ name: CI Backend (NestJS + PostgreSQL)
 
 on:
   workflow_call:
-  push:
-    branches: [ "main", "develop" ]
-  pull_request:
-    branches: [ "main" ]
-    paths:
-      - 'backend/**'
 
 jobs:
   check_backend_ci:
