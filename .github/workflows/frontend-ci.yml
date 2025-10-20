@@ -2,7 +2,7 @@ name: CI Frontend (Angular)
 
 on:
   push:
-    branches: [ "main", "configuracion-inicial-ci"]
+    branches: [ "main", "configuracion-inicial-ci" ]
   pull_request:
     branches: [ "main" ]
     paths:
@@ -29,10 +29,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
 
       - name: 📦 Instalar dependencias
-        run: npm ci
+        run: npm install
 
       - name: 🧹 Verificar linting
         run: npm run lint --if-present
