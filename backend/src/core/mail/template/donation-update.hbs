@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualización de Donación</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f7;
+            padding: 40px 20px;
+        }
+
+        .email-container {
+            max-width: 540px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .content {
+            padding: 48px 40px;
+        }
+
+        .icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+            font-size: 32px;
+        }
+
+        .title {
+            font-size: 24px;
+            color: #1d1d1f;
+            margin-bottom: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .greeting {
+            font-size: 17px;
+            color: #1d1d1f;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+
+        .status-banner {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: #ffffff;
+            padding: 20px 24px;
+            border-radius: 10px;
+            margin: 24px 0;
+            text-align: center;
+        }
+
+        .status-banner .label {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .status-banner .status {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .message-box {
+            color: #1d1d1f;
+            font-size: 15px;
+            line-height: 1.7;
+            padding: 24px;
+            background: #f5f5f7;
+            border-radius: 10px;
+            margin: 24px 0;
+            white-space: pre-line;
+        }
+
+        .timeline {
+            margin: 32px 0;
+            padding: 24px;
+            background: #f5f5f7;
+            border-radius: 10px;
+        }
+
+        .timeline-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-left: 2px solid #e5e5e7;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #e5e5e7;
+            border-radius: 50%;
+            position: absolute;
+            left: -6px;
+        }
+
+        .timeline-item.active::before {
+            background: #FF6B6B;
+            box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.2);
+        }
+
+        .timeline-item.completed::before {
+            background: #34C759;
+        }
+
+        .timeline-item span {
+            color: #86868b;
+            font-size: 14px;
+        }
+
+        .timeline-item.active span,
+        .timeline-item.completed span {
+            color: #1d1d1f;
+            font-weight: 500;
+        }
+
+        .info-card {
+            background: #fff9f0;
+            border-left: 3px solid #FF8E53;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+
+        .info-card p {
+            color: #1d1d1f;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .footer {
+            padding: 32px 40px;
+            text-align: center;
+            border-top: 1px solid #f5f5f7;
+        }
+
+        .footer p {
+            color: #86868b;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .content {
+                padding: 40px 24px;
+            }
+
+            .footer {
+                padding: 32px 24px;
+            }
+
+            .message-box,
+            .timeline {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <div class="content">
+            <div class="icon">❤️</div>
+            
+            <h1 class="title">Actualización de Donación</h1>
+            
+            <p class="greeting">Hola {{user}},</p>
+
+            {{#if status}}
+            <div class="status-banner">
+                <div class="label">Estado Actual</div>
+                <div class="status">{{status}}</div>
+            </div>
+            {{/if}}
+            
+            <div class="message-box">{{message}}</div>
+
+            {{#if showTimeline}}
+            <div class="timeline">
+                <div class="timeline-title">Seguimiento</div>
+                <div class="timeline-item completed">
+                    <span>✓ Donación registrada</span>
+                </div>
+                <div class="timeline-item completed">
+                    <span>✓ Procesando</span>
+                </div>
+                <div class="timeline-item active">
+                    <span>En camino</span>
+                </div>
+                <div class="timeline-item">
+                    <span>Entregada</span>
+                </div>
+            </div>
+            {{/if}}
+
+            <div class="info-card">
+                <p>
+                    <strong>💙 Gracias por tu generosidad</strong><br>
+                    Tu donación hace la diferencia en la vida de quienes más lo necesitan.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Te mantendremos informado sobre cada actualización.</p>
+            <p>Si tienes alguna pregunta, estamos aquí para ayudarte.</p>
+        </div>
+    </div>
+</body>
+
+</html>
