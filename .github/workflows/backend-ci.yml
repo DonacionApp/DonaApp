@@ -30,7 +30,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
 
       - name: 🐘 Levantar PostgreSQL con Docker Compose
         run: |
@@ -45,7 +44,7 @@ jobs:
           done
 
       - name: 📦 Instalar dependencias
-        run: npm ci
+        run: npm install
 
       - name: 🏗️ Compilar proyecto NestJS
         run: npm run build
@@ -54,7 +53,6 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y postgresql-client
           pg_isready -h localhost -p 5432 -U testuser
-
 
       - name: 🧹 Detener contenedores
         if: always()
