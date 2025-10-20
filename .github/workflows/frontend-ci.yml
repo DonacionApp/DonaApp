@@ -22,29 +22,29 @@ jobs:
         working-directory: ./frontend
 
     steps:
-      - name: 🧾 Checkout del código
+      - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: ⚙️ Configurar Node.js
+      - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: 📦 Instalar dependencias
+      - name: Instalar dependencias
         run: npm install
 
-      - name: 🧹 Verificar linting
+      - name: Verificar linting
         run: npm run lint --if-present
 
-      - name: 🏗️ Compilar aplicación Angular
+      - name: Compilar aplicación Angular
         run: npm run build --if-present
 
-      - name: 📦 Subir artefacto de build (opcional)
+      - name: Subir artefacto de build (opcional)
         uses: actions/upload-artifact@v4
         with:
           name: angular-build
           path: dist/
           retention-days: 1
 
-      - name: ✅ Verificación final
-        run: echo "CI Frontend completado correctamente ✅"
+      - name: Verificación final
+        run: echo "CI Frontend completado correctamente "
