@@ -12,3 +12,6 @@ export const MAIL_USER ='MAIL_USER'
 export const MAIL_PASSWORD ='MAIL_PASSWORD'
 export const MAIL_FROM ='MAIL_FROM'
 export const MAIL_PORT= 'MAIL_PORT'
+
+export const JWT_SECRET = 'JWT_SECRET'
+export const JWT_EXPIRES_IN = 'JWT_EXPIRES_IN'
