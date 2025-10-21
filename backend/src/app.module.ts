@@ -10,6 +10,7 @@ import { RolModule } from './modules/rol/rol.module';
 import { PeopleModule } from './modules/people/people.module';
 import { UserModule } from './modules/user/user.module';
 import { MailModule } from './core/mail/mail.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -36,7 +37,8 @@ import { MailModule } from './core/mail/mail.module';
   PeopleModule,
   RolModule,
   UserModule,
-  MailModule
+  MailModule,
+  AuthModule,
 ],
   controllers: [AppController],
   providers: [AppService],
