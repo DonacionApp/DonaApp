@@ -64,13 +64,13 @@ export class PeopleService {
         
         const people= new PeopleEntity();
         people.name= dto.name;
-        people.lastName= dto.lastName;
+        people.lastName= dto.lastName || null;
         people.birdthDate= dto.birdthDate;
         people.typeDni= typeDniExists;
         people.dni= dto.dni;
         people.residencia= dto.residencia;
         people.telefono= dto.telefono;
-        people.supportId= dto.supportId;
+        people.supportId= dto.supportId || null;
 
         const newPerson= this.peopleRepository.create(people);
         return await this.peopleRepository.save(newPerson);

@@ -22,8 +22,10 @@ export class UserEntity{
     password:string;
     @Column({type:'varchar', nullable:true})
     token:string | null;
-    @Column({type:'varchar', nullable:true})
-    loginAttempts:string | null;
+    @Column({type:'int', default:0})
+    loginAttempts:number;
+    @Column({type:'timestamp', nullable:true})
+    lockUntil: Date | null;
     @Column({type:'varchar', nullable:true})
     profilePhoto:string | null;
     @Column({type:'timestamp', nullable:true})

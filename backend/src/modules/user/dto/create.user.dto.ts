@@ -1,4 +1,5 @@
-import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { CreatePeopleDto } from 'src/modules/people/dto/create.people.dto';
 
 export class CreateUserDto {
@@ -16,10 +17,12 @@ export class CreateUserDto {
 
   @IsNotEmpty()
   @IsNumber()
+  @Min(1)
   rolId: number;
 
   @IsNotEmpty()
-  @IsNumber()
+  @ValidateNested()
+  @Type(() => CreatePeopleDto)
   people: CreatePeopleDto;
 
   @IsOptional()

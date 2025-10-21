@@ -15,3 +15,6 @@ export const MAIL_PORT= 'MAIL_PORT'
 
 export const JWT_SECRET = 'JWT_SECRET'
 export const JWT_EXPIRES_IN = 'JWT_EXPIRES_IN'
+
+export const AUTH_MAX_LOGIN_ATTEMPTS = 3;
+export const AUTH_LOCK_MINUTES = 5;
