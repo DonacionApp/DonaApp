@@ -89,6 +89,10 @@ export class AuthService {
 
          if (!user) throw new UnauthorizedException('Credenciales inválidas.');
 
+         if (!user.emailVerified) throw new UnauthorizedException('Correo electrónico no verificado.');
+
+         if(user.block) throw new UnauthorizedException('Cuenta de usuario bloqueada.');
+
          if (this.isLocked(user)) {
             const minutes = Math.ceil((user.lockUntil!.getTime() - Date.now()) / 60000);
             throw new UnauthorizedException(`Cuenta bloqueada temporalmente. Intenta en ${minutes} min.`);
