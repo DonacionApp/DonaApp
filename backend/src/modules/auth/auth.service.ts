@@ -142,6 +142,17 @@ export class AuthService {
       }
    }
 
+   async expire(time:number, dateSendCode:Date):Promise<boolean>{
+      try {
+         const now = new Date();
+         const diffMs=now.getTime()-dateSendCode.getTime();
+         const diffMins=Math.floor(diffMs/(1000*60));
+         if(diffMins>time) return true;
+         return false;
+      } catch (error) {
+         throw error;
+      }
+   }
    async verifyEmailToken(token:string):Promise<{message:string}>{
       try {
          if(!token) throw new UnauthorizedException('Token de verificación no proporcionado.');
@@ -153,11 +164,31 @@ export class AuthService {
          if(user.emailVerified) return {message:'El correo electrónico ya ha sido verificado.'};
          if(user.token!==token) throw new UnauthorizedException('Token de verificación inválido.');
          const dateSendCode=user.dateSendCodigo;
-         const now=new Date();
          if(!dateSendCode) throw new UnauthorizedException('No se encontró la fecha de envío del código de verificación.');
-         const diffMs=now.getTime()-dateSendCode.getTime();
-         const diffMins=Math.floor(diffMs/(1000*60));
-         if(diffMins>15) throw new UnauthorizedException('El código de verificación ha expirado. Por favor, solicita uno nuevo.');
+         const isExpired=await this.expire(15, dateSendCode);
+         if(isExpired) throw new UnauthorizedException('El token de verificación ha expirado. Por favor, solicita uno nuevo.');
+         
+         const updateUser=new UpdateUserDto();
+         updateUser.isVerifiedEmail=true;
+         await this.userService.update(user.id, updateUser);
+         return {message:'Correo electrónico verificado exitosamente.'};
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async verifyEmailCode(email:string, code:string):Promise<{message:string}>{
+      try {
+         if(!email) throw new UnauthorizedException('Correo electrónico no proporcionado.');
+         if(!code) throw new UnauthorizedException('Código de verificación no proporcionado.');
+         const user= await this.userService.fyndByEmail(email);
+         if(!user) throw new UnauthorizedException('Usuario no encontrado para el correo electrónico proporcionado.');
+         if(user.emailVerified) return {message:'El correo electrónico ya ha sido verificado.'};
+         if(user.code!==code) throw new UnauthorizedException('Código de verificación inválido.');
+         const dateSendCode= user.dateSendCodigo;
+         if(!dateSendCode) throw new UnauthorizedException('No se encontró la fecha de envío del código de verificación.');
+         const isExpired= await this.expire(15, dateSendCode);
+         if(isExpired) throw new UnauthorizedException('El código de verificación ha expirado. Por favor, solicita uno nuevo.');
          const updateUser=new UpdateUserDto();
          updateUser.isVerifiedEmail=true;
          await this.userService.update(user.id, updateUser);

@@ -39,6 +39,26 @@ export class UserService {
     }
   }
 
+  async fyndByEmail(email: string): Promise<UserEntity> {
+    try {
+      if(!email)throw new BadRequestException('El email es obligatorio');
+      const user = await this.userRepository.findOne({
+        where:{email:email},
+        relations:{
+          people:{
+            typeDni:true
+          },
+          rol:true
+        }
+      });
+      if(!user)throw new NotFoundException('Usuario no encontrado');
+      return user;
+    }catch(error){
+      throw error;
+    }
+  }
+
+
   async findById(id: number): Promise<UserEntity> {
     try {
       const user = await this.userRepository.findOne({
@@ -169,7 +189,7 @@ export class UserService {
           user.code=null;
           user.token=null;
           user.dateSendCodigo=null;
-          
+
         }
       }
       if(dto.code){

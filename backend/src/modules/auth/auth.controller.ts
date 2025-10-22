@@ -2,6 +2,7 @@ import { Body, Controller, HttpCode, HttpStatus, Post, UsePipes, ValidationPipe 
 import { AuthService } from "./auth.service";
 import { CreateUserDto } from "../user/dto/create.user.dto";
 import { LoginDto } from "./dto/login.dto";
+import { VerifyEmailDto } from "./dto/verify.email.dto";
 
 @UsePipes(new ValidationPipe({ transform: true }))
 @Controller('auth')
@@ -30,6 +31,15 @@ export class AuthController {
          throw error;
       }
       
+   }
+
+   @Post('verify-email-code')
+   async verifyEmailCode(@Body() dto:VerifyEmailDto): Promise<{ message: string }> {
+      try {
+         return await this.authService.verifyEmailCode(dto.email, dto.code);
+      } catch (error) {
+         throw error;
+      }
    }
 
 }
