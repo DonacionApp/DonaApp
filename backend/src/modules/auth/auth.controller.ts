@@ -42,4 +42,13 @@ export class AuthController {
       }
    }
 
+   @Post('resend-verification-email')
+   async resendVerificationEmail(@Body('email') email: string): Promise<{ message: string }> {
+      try {
+         return await this.authService.resendEmailVerification(email);
+      } catch (error) {
+         throw error;
+      }
+   }
+
 }

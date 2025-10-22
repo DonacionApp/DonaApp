@@ -23,6 +23,7 @@ export const TypeSendEmail={
     verifyAccount: 'confirm-account',
     resetPassword: 'reset-password',
 }
+export const EXPIRES_VERIFICATION=1 //minutos
 
 export const URL_FRONTEND ="URL_FRONTEND"
 export const URL_FRONTEND_VERIFY_TOKEN ="URL_FRONTEND_VERIFY_TOKEN"

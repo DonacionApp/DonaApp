@@ -7,7 +7,7 @@ import { LoginDto } from "./dto/login.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UserEntity } from "../user/entity/user.entity";
 import { Repository } from "typeorm";
-import { AUTH_LOCK_MINUTES, AUTH_MAX_LOGIN_ATTEMPTS, TypeSendEmail, URL_FRONTEND, URL_FRONTEND_VERIFY, URL_FRONTEND_VERIFY_TOKEN, } from "src/config/constants";
+import { AUTH_LOCK_MINUTES, AUTH_MAX_LOGIN_ATTEMPTS, EXPIRES_VERIFICATION, TypeSendEmail, URL_FRONTEND, URL_FRONTEND_VERIFY, URL_FRONTEND_VERIFY_TOKEN, } from "src/config/constants";
 import { MailService } from "src/core/mail/mail.service";
 import { MailDto } from "src/core/mail/dto/mail.dto";
 import { domainToASCII } from "url";
@@ -153,6 +153,7 @@ export class AuthService {
          throw error;
       }
    }
+
    async verifyEmailToken(token:string):Promise<{message:string}>{
       try {
          if(!token) throw new UnauthorizedException('Token de verificación no proporcionado.');
@@ -165,7 +166,7 @@ export class AuthService {
          if(user.token!==token) throw new UnauthorizedException('Token de verificación inválido.');
          const dateSendCode=user.dateSendCodigo;
          if(!dateSendCode) throw new UnauthorizedException('No se encontró la fecha de envío del código de verificación.');
-         const isExpired=await this.expire(15, dateSendCode);
+         const isExpired=await this.expire(EXPIRES_VERIFICATION, dateSendCode);
          if(isExpired) throw new UnauthorizedException('El token de verificación ha expirado. Por favor, solicita uno nuevo.');
          
          const updateUser=new UpdateUserDto();
@@ -187,12 +188,28 @@ export class AuthService {
          if(user.code!==code) throw new UnauthorizedException('Código de verificación inválido.');
          const dateSendCode= user.dateSendCodigo;
          if(!dateSendCode) throw new UnauthorizedException('No se encontró la fecha de envío del código de verificación.');
-         const isExpired= await this.expire(15, dateSendCode);
+         const isExpired= await this.expire(EXPIRES_VERIFICATION, dateSendCode);
          if(isExpired) throw new UnauthorizedException('El código de verificación ha expirado. Por favor, solicita uno nuevo.');
          const updateUser=new UpdateUserDto();
          updateUser.isVerifiedEmail=true;
          await this.userService.update(user.id, updateUser);
          return {message:'Correo electrónico verificado exitosamente.'};
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async resendEmailVerification(email:string):Promise<{message:string}>{
+      try {
+         const user= await this.userService.fyndByEmail(email);
+         if(!user) throw new UnauthorizedException('Usuario no encontrado para el correo electrónico proporcionado.');
+         if(user.emailVerified) return {message:'El correo electrónico ya ha sido verificado.'};
+         const dateSendCode= user.dateSendCodigo;
+         if(!dateSendCode) throw new UnauthorizedException('No se encontró la fecha de envío del código de verificación.');
+         const isExpired= await this.expire(EXPIRES_VERIFICATION,dateSendCode);
+         if(!isExpired) throw new UnauthorizedException(`El código de verificación aún es válido. Por favor, espera ${EXPIRES_VERIFICATION} minutos antes de solicitar uno nuevo.`);
+         await this.sendEmailVerification(user.email, user.username, user.id);
+         return {message:'Email de verificación reenviado exitosamente.'};
       } catch (error) {
          throw error;
       }
