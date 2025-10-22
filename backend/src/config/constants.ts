@@ -27,7 +27,7 @@ export const TypeSendEmail={
     notification: 'notification',
     report: 'report',
 }
-export const EXPIRES_VERIFICATION=1 //minutos
+export const EXPIRES_VERIFICATION=15 //minutos
 
 export const URL_FRONTEND ="URL_FRONTEND"
 export const URL_FRONTEND_VERIFY_TOKEN ="URL_FRONTEND_VERIFY_TOKEN"
