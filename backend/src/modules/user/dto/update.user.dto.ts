@@ -29,4 +29,27 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   block?: boolean;
+
+  @IsOptional()
+  @IsString()
+  verificationCode?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isVerifiedEmail?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  verified?: boolean;
+
+  @IsOptional()
+  @IsString()
+  token:string;
+
+  @IsOptional()
+  @IsString()
+  code:string;
+  @IsOptional()
+  dateSendCodigo:Date
+
 }

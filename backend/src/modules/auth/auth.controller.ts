@@ -6,9 +6,9 @@ import { LoginDto } from "./dto/login.dto";
 @UsePipes(new ValidationPipe({ transform: true }))
 @Controller('auth')
 export class AuthController {
-   constructor (
+   constructor(
       private readonly authService: AuthService,
-   ) {}
+   ) { }
 
    @Post('register')
    @HttpCode(HttpStatus.CREATED)
@@ -21,4 +21,15 @@ export class AuthController {
    async login(@Body() dto: LoginDto): Promise<any> {
       return await this.authService.login(dto);
    }
+
+   @Post('verify-email-token')
+   async verifyEmailToken(@Body('token') token: string): Promise<{ message: string }> {
+      try {
+         return await this.authService.verifyEmailToken(token);
+      } catch (error) {
+         throw error;
+      }
+      
+   }
+
 }

@@ -2,6 +2,8 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
 import { MailDto } from './dto/mail.dto';
 import { Code } from 'typeorm';
+import { TypeSendEmail } from 'src/config/constants';
+import { url } from 'inspector';
 
 @Injectable()
 export class MailService {
@@ -12,15 +14,18 @@ export class MailService {
     async sendMail(dto: MailDto) {
         try {
             switch (dto.type) {
-                case 'confirm-account':
+                case TypeSendEmail.verifyAccount:
                     await this.mailerService.sendMail({
                         to: dto.to,
                         subject: dto.subject,
-                        template: './confirm-account',
+                        template: './verify-account',
                         context: {
                             user: dto.context.user,
                             message: dto.context.message,
                             title: dto.context.title,
+                            url: dto.context.url,
+                            code: dto.context.code,
+                            secondaryUrl:dto.context.secondaryUrl ///url para verificar por code
                         }
                     })
                     break;
@@ -38,7 +43,19 @@ export class MailService {
                         },
                     });
                     break;
-
+                case 'confirm-account':
+                    await this.mailerService.sendMail({
+                        to: dto.to,
+                        subject: dto.subject,
+                        template: './confirm-account',
+                        context: {
+                            user: dto.context.user,
+                            messgae: dto.context.message,
+                            title: dto.context.title,
+                            url: dto.context.url,
+                        }
+                    })
+                    break;
                 case 'donation-update':
                     await this.mailerService.sendMail({
                         to: dto.to,

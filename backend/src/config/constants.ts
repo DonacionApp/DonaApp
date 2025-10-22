@@ -18,3 +18,12 @@ export const JWT_EXPIRES_IN = 'JWT_EXPIRES_IN'
 
 export const AUTH_MAX_LOGIN_ATTEMPTS = 3;
 export const AUTH_LOCK_MINUTES = 5;
+
+export const TypeSendEmail={
+    verifyAccount: 'confirm-account',
+    resetPassword: 'reset-password',
+}
+
+export const URL_FRONTEND ="URL_FRONTEND"
+export const URL_FRONTEND_VERIFY_TOKEN ="URL_FRONTEND_VERIFY_TOKEN"
+export const URL_FRONTEND_VERIFY ="URL_FRONTEND_VERIFY"

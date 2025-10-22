@@ -128,10 +128,10 @@ export class UserService {
         throw new BadRequestException('Usuario no encontrado');
       }
 
-      const targetUsername = dto.username.trim();
-      const targetEmail = dto.email.trim().toLowerCase();
+      const targetUsername = dto.username?.trim();
+      const targetEmail = dto.email?.trim().toLowerCase();
 
-      if (targetUsername !== user.username) {
+      if (targetUsername !== user.username && targetUsername) {
         const usernameExists = await this.userRepository.findOne({
           where: { username: targetUsername }
         });
@@ -141,7 +141,7 @@ export class UserService {
         user.username = targetUsername;
       }
 
-      if (targetEmail !== user.email) {
+      if (targetEmail !== user.email && targetEmail) {
         const emailExists = await this.userRepository.findOne({
           where: { email: targetEmail }
         });
@@ -154,6 +154,30 @@ export class UserService {
       if (dto.password) {
         user.password = dto.password;
       }
+      if(dto.token){
+        user.token=dto.token;
+      }
+      if(dto.verificationCode){
+        user.code=dto.verificationCode;
+      }
+      if(dto.verified!==undefined){
+        user.verified=dto.verified;
+      }
+      if(dto.isVerifiedEmail){
+        user.emailVerified=dto.isVerifiedEmail;
+        if(dto.isVerifiedEmail===true){
+          user.code=null;
+          user.token=null;
+          user.dateSendCodigo=null;
+          
+        }
+      }
+      if(dto.code){
+        user.code=dto.code;
+      }
+      if(dto.dateSendCodigo){
+        user.dateSendCodigo=dto.dateSendCodigo;
+      }
 
       if (dto.rolId && dto.rolId !== user.rol?.id) {
         const rol = await this.rolService.findById(dto.rolId)
@@ -163,7 +187,7 @@ export class UserService {
         user.rol = rol;
       }
 
-      if (dto.people.id && dto.people.id !== user.people?.id) {
+      if (dto.people &&dto.people?.id!==null && dto.people?.id && dto.people?.id !== user.people?.id && typeof(dto.people?.id)!=='undefined') {
         const people = await this.peopleService.findById(dto.people.id)
         if (!people) {
           throw new BadRequestException('La persona no existe');
@@ -186,12 +210,19 @@ export class UserService {
         throw new BadRequestException('El id del usuario es obligatorio');
       }
       const user = await this.userRepository.findOne({
-        where: { id: id }
+        where: { id: id },
+        relations:{
+          people:{
+            typeDni:true
+          },
+          rol:true
+        }
       });
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
       await this.userRepository.delete(id);
+      await this.peopleService.delete(user.people.id)
       return { message: 'Usuario eliminado correctamente' };
     } catch (error) {
       throw error;
