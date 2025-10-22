@@ -3,6 +3,7 @@ import { AuthService } from "./auth.service";
 import { CreateUserDto } from "../user/dto/create.user.dto";
 import { LoginDto } from "./dto/login.dto";
 import { VerifyEmailDto } from "./dto/verify.email.dto";
+import { ResetPasswordDto } from "./dto/reset.password.dt";
 
 @UsePipes(new ValidationPipe({ transform: true }))
 @Controller('auth')
@@ -46,6 +47,24 @@ export class AuthController {
    async resendVerificationEmail(@Body('email') email: string): Promise<{ message: string }> {
       try {
          return await this.authService.resendEmailVerification(email);
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   @Post('forgot-password')
+   async forgotPassword(@Body('email') email:string):Promise<{message:string}>{
+      try {
+         return await this.authService.forgotPassword(email);
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   @Post('verify-reset-passord-token')
+   async verrifyResetPasswordToken(@Body() dto:ResetPasswordDto):Promise<{message:string}>{
+      try {
+         return await this.authService.resetPassword(dto.token, dto.newPassword);
       } catch (error) {
          throw error;
       }

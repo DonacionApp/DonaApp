@@ -139,7 +139,7 @@ export class UserService {
     }
   }
 
-  async update(id: number, dto: UpdateUserDto): Promise<UserEntity> {
+  async update(id: number, dto: UpdateUserDto, resetPass?:boolean): Promise<UserEntity> {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id }
@@ -191,6 +191,11 @@ export class UserService {
           user.dateSendCodigo=null;
 
         }
+      }
+      if(resetPass){
+        user.code=null;
+        user.token=null;
+        user.dateSendCodigo=null;
       }
       if(dto.code){
         user.code=dto.code;

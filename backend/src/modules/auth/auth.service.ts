@@ -7,7 +7,7 @@ import { LoginDto } from "./dto/login.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UserEntity } from "../user/entity/user.entity";
 import { Repository } from "typeorm";
-import { AUTH_LOCK_MINUTES, AUTH_MAX_LOGIN_ATTEMPTS, EXPIRES_VERIFICATION, TypeSendEmail, URL_FRONTEND, URL_FRONTEND_VERIFY, URL_FRONTEND_VERIFY_TOKEN, } from "src/config/constants";
+import { AUTH_LOCK_MINUTES, AUTH_MAX_LOGIN_ATTEMPTS, EXPIRES_VERIFICATION, TypeSendEmail, URL_FRONTEND,  URL_FRONTEND_RESET_PASS_TOKEN, URL_FRONTEND_VERIFY, URL_FRONTEND_VERIFY_TOKEN, } from "src/config/constants";
 import { MailService } from "src/core/mail/mail.service";
 import { MailDto } from "src/core/mail/dto/mail.dto";
 import { domainToASCII } from "url";
@@ -73,7 +73,7 @@ export class AuthService {
       await this.userRepository.update(userId, { loginAttempts: 0, lockUntil: null });
    }
 
-   async registerUser(dto: CreateUserDto): Promise<{ message: string }> {
+   async registerUser(dto: CreateUserDto): Promise<{ message: string, statussCode: number }> {
       try {
          const salt = await bcrypt.genSalt(10);
          const hashedPassword = await bcrypt.hash(dto.password, salt);
@@ -82,6 +82,7 @@ export class AuthService {
          await this.sendEmailVerification(user.email, user.username, user.id)
          return {
             message: 'Usuario registrado exitosamente.',
+            statussCode: 200
          };
       } catch (error) {
          throw error;
@@ -278,6 +279,71 @@ export class AuthService {
             message: 'Inicio de sesión exitoso.',
             access_token: token.access_token,
          };
+      } catch (error) {
+         throw error;
+      }
+   }
+
+    //revisar si el codigo se lo usará mas adelante o no
+   async forgotPassword(email:string):Promise<{message:string, statussCode:number}>{
+      try {
+         const user= await this.userService.fyndByEmail(email);
+         if(!user) throw new UnauthorizedException('Usuario no encontrado para el correo electrónico proporcionado.');
+         if(user.block)throw new UnauthorizedException('La cuenta de usuario está bloqueada.');
+         if(!user.emailVerified) throw new UnauthorizedException('El correo electrónico aun no está verificado.');
+         if(user.code && user.dateSendCodigo && user.token){
+            const isExpired= await this.expire(EXPIRES_VERIFICATION, user.dateSendCodigo);
+            if(!isExpired) throw new UnauthorizedException(`Ya se ha enviado un código para restaurar la contraseña. Por favor, espera ${EXPIRES_VERIFICATION} minutos antes de solicitar uno nuevo.`);
+         }
+         const token = await this.generateToken(user);
+         const code= await this.generateCode(6);
+         const updateUser= new UpdateUserDto();
+         updateUser.code=code;
+         updateUser.token=token.access_token;
+         updateUser.dateSendCodigo= new Date();
+         const urlFrontend = this.configService.get<string>(URL_FRONTEND);
+         const urlFrontendResetPassToken = this.configService.get<string>(URL_FRONTEND_RESET_PASS_TOKEN);
+         const info= new MailDto();
+         info.to=user.email;
+         info.subject='Restablecimiento de contraseña';
+         info.type= TypeSendEmail.resetPassword;
+         info.context={
+            user:user.username,
+            url:`${urlFrontend}${urlFrontendResetPassToken}?token=${token.access_token}`,
+            code:code,
+            message: `Recibimos una solicitud para restablecer tu contraseña, la cuenta entrara en un estado de bloqueo, mientras se completa el 
+                    proceso, si no fuiste tu ponte en contacto con soporte o solicita tu mismo un cambio de contraseña en ${EXPIRES_VERIFICATION} minutos, `
+         }
+         await this.userService.update(user.id, updateUser);
+         await this.mailService.sendMail(info);
+         return {message:'Instrucciones para restablecer la contraseña enviadas al correo electrónico.', statussCode:200};
+
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async resetPassword(token:string, newPassword:string):Promise<{message:string, statussCode:number}>{
+      try {
+         if(!token || !newPassword) throw new UnauthorizedException('Token o nueva contraseña no proporcionados.');
+         const decoded = this.jwtService.decode(token);
+         const user=await this.userService.findById(decoded.userId);
+         if(!user) throw new UnauthorizedException('usuario no encontrado para el token proporcionado');
+         if(!user.token || !user.code || !user.dateSendCodigo) throw new UnauthorizedException('No hay una solicitud de restablecimiento de contraseña para este usuario.');
+         const dateSendCode=user.dateSendCodigo;
+         if(!dateSendCode) throw new UnauthorizedException('No se encontró la fecha de envío del código de verificación.');
+         const isExpired= await this.expire(EXPIRES_VERIFICATION, dateSendCode);
+         if(isExpired) throw new UnauthorizedException('el token para restablece la contraseña ha expirado, por favor solicita uno nuevo')
+         if(user.token!==token) throw new UnauthorizedException('Token invalido para restablecer la contraseña');
+         const salt = await bcrypt.genSalt(10);
+         const hashedPassword= await bcrypt.hash(newPassword,salt);
+         const updateUser= new UpdateUserDto();
+         updateUser.password=hashedPassword;
+         updateUser.code='';
+         updateUser.token='';
+         updateUser.dateSendCodigo=null;
+         await this.userService.update(user.id, updateUser,true);
+         return {message:'Contraseña restablecida exitosamente.', statussCode:200};
       } catch (error) {
          throw error;
       }
