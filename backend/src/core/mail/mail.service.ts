@@ -30,7 +30,7 @@ export class MailService {
                     })
                     break;
 
-                case 'reset-password':
+                case TypeSendEmail.resetPassword:
                     await this.mailerService.sendMail({
                         to: dto.to,
                         subject: dto.subject,
@@ -43,7 +43,7 @@ export class MailService {
                         },
                     });
                     break;
-                case 'confirm-account':
+                case TypeSendEmail.confirmAccount:
                     await this.mailerService.sendMail({
                         to: dto.to,
                         subject: dto.subject,
@@ -56,7 +56,7 @@ export class MailService {
                         }
                     })
                     break;
-                case 'donation-update':
+                case TypeSendEmail.donationUpdate:
                     await this.mailerService.sendMail({
                         to: dto.to,
                         subject:  dto.subject,
@@ -70,8 +70,8 @@ export class MailService {
                     })
                     break;
 
-                case 'notification':
-                case 'report':
+                case TypeSendEmail.notification:
+                case TypeSendEmail.report:
                 default:
                     await this.mailerService.sendMail({
                         to: dto.to,

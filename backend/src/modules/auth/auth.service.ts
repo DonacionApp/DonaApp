@@ -154,6 +154,29 @@ export class AuthService {
       }
    }
 
+   async sendEmailEmailConfirmation(user:UserEntity):Promise<any>{
+      try {
+         if(!user) throw new InternalServerErrorException('Usuario no encontrado para enviar la confirmación.');
+         if(!user.email) throw new InternalServerErrorException('El correo electrónico es obligatorio para enviar la confirmación.');
+         if(!user.username) throw new InternalServerErrorException('El nombre de usuario es obligatorio para enviar la confirmación.');
+         const info = new MailDto();
+         info.to= user.email;
+         info.subject= 'Confirmación de correo';
+         info.type= TypeSendEmail.confirmAccount;
+         const urlFrontend = this.configService.get<string>(URL_FRONTEND);
+         info.context={
+            user: user.username,
+            message: 'Tu correo ha sido verificado exitosamente.',
+            title: '¡corrreo verificado!',
+            url: urlFrontend,
+         }
+         await this.mailService.sendMail(info);
+         return {message:'Email de confirmación enviado.'};
+      } catch (error) {
+         throw error;
+      }
+   }
+
    async verifyEmailToken(token:string):Promise<{message:string}>{
       try {
          if(!token) throw new UnauthorizedException('Token de verificación no proporcionado.');
@@ -172,6 +195,7 @@ export class AuthService {
          const updateUser=new UpdateUserDto();
          updateUser.isVerifiedEmail=true;
          await this.userService.update(user.id, updateUser);
+         await this.sendEmailEmailConfirmation(user);
          return {message:'Correo electrónico verificado exitosamente.'};
       } catch (error) {
          throw error;
@@ -193,6 +217,7 @@ export class AuthService {
          const updateUser=new UpdateUserDto();
          updateUser.isVerifiedEmail=true;
          await this.userService.update(user.id, updateUser);
+         await this.sendEmailEmailConfirmation(user);
          return {message:'Correo electrónico verificado exitosamente.'};
       } catch (error) {
          throw error;

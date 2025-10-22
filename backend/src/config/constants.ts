@@ -22,6 +22,10 @@ export const AUTH_LOCK_MINUTES = 5;
 export const TypeSendEmail={
     verifyAccount: 'confirm-account',
     resetPassword: 'reset-password',
+    confirmAccount: 'verify-acount',
+    donationUpdate: 'donation-update',
+    notification: 'notification',
+    report: 'report',
 }
 export const EXPIRES_VERIFICATION=1 //minutos
 
