@@ -51,4 +51,13 @@ export class AuthController {
       }
    }
 
+   @Post('forgot-password')
+   async forgotPassword(@Body('email') email:string):Promise<{message:string}>{
+      try {
+         return await this.authService.forgotPassword(email);
+      } catch (error) {
+         throw error;
+      }
+   }
+
 }

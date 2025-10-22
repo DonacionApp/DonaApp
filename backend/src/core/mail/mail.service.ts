@@ -38,7 +38,8 @@ export class MailService {
                         context: {
                             user: dto.context.user,
                             url: dto.context.url,
-                            code: dto.context.code
+                            code: dto.context.code,
+                            message: dto.context.message,
                         },
                     });
                     break;

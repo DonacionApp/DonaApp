@@ -285,7 +285,7 @@ export class AuthService {
    }
 
 
-   async forgotPassword(email:string):Promise<{message:string}>{
+   async forgotPassword(email:string):Promise<{message:string, statussCode:number}>{
       try {
          const user= await this.userService.fyndByEmail(email);
          if(!user) throw new UnauthorizedException('Usuario no encontrado para el correo electrónico proporcionado.');
@@ -309,13 +309,14 @@ export class AuthService {
          info.type= TypeSendEmail.resetPassword;
          info.context={
             user:user.username,
-            idUser:user.id,
             url:`${urlFrontend}${urlFrontendResetPassToken}?token=${token.access_token}`,
-            code:code
+            code:code,
+            message: `Recibimos una solicitud para restablecer tu contraseña, la cuenta entrara en un estado de bloqueo, mientras se completa el 
+                    proceso, si no fuiste tu ponte en contacto con soporte o solicita tu mismo un cambio de contraseña en ${EXPIRES_VERIFICATION} minutos, `
          }
          await this.userService.update(user.id, updateUser);
          await this.mailService.sendMail(info);
-         return {message:'Instrucciones para restablecer la contraseña enviadas al correo electrónico.'};
+         return {message:'Instrucciones para restablecer la contraseña enviadas al correo electrónico.', statussCode:200};
 
       } catch (error) {
          throw error;
