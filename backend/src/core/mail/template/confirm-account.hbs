@@ -89,7 +89,7 @@
 
         .info-box {
             background: #f0f9ff;
-            border-left: 3px solid #0071e3;
+            border-left: 3px solid #34C759;
             border-radius: 8px;
             padding: 20px;
             margin: 24px 0;
@@ -104,25 +104,6 @@
 
         .info-box p:last-child {
             margin-bottom: 0;
-        }
-
-        .button {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            background: #000000;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 500;
-            font-size: 15px;
-            text-align: center;
-            margin: 32px 0;
-            transition: background 0.2s;
-        }
-
-        .button:hover {
-            background: #333333;
         }
 
         .footer {
@@ -162,11 +143,15 @@
         <div class="content">
             <div class="icon">✓</div>
             
+            {{#if title}}
             <h1 class="title">{{title}}</h1>
+            {{else}}
+            <h1 class="title">¡Cuenta Verificada!</h1>
+            {{/if}}
             
             <p class="greeting">Hola {{user}},</p>
             
-            <p class="success-message">Tu cuenta ha sido procesada exitosamente</p>
+            <p class="success-message">Tu cuenta ha sido verificada exitosamente</p>
             
             {{#if message}}
             <div class="message-box">{{message}}</div>
@@ -177,10 +162,6 @@
                 <p><strong>✓</strong> Tu cuenta está completamente activa</p>
                 <p><strong>✓</strong> Ya puedes acceder a todas las funcionalidades</p>
             </div>
-
-            {{#if url}}
-            <a href="{{url}}" class="button">Comenzar</a>
-            {{/if}}
         </div>
 
         <div class="footer">
