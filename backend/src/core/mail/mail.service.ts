@@ -37,7 +37,6 @@ export class MailService {
                         template: './reset-password',
                         context: {
                             user: dto.context.user,
-                            idUser: dto.context.idUser,
                             url: dto.context.url,
                             code: dto.context.code
                         },
