@@ -284,7 +284,7 @@ export class AuthService {
       }
    }
 
-
+    //revisar si el codigo se lo usará mas adelante o no
    async forgotPassword(email:string):Promise<{message:string, statussCode:number}>{
       try {
          const user= await this.userService.fyndByEmail(email);
@@ -318,6 +318,32 @@ export class AuthService {
          await this.mailService.sendMail(info);
          return {message:'Instrucciones para restablecer la contraseña enviadas al correo electrónico.', statussCode:200};
 
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async resetPassword(token:string, newPassword:string):Promise<{message:string, statussCode:number}>{
+      try {
+         if(!token || !newPassword) throw new UnauthorizedException('Token o nueva contraseña no proporcionados.');
+         const decoded = this.jwtService.decode(token);
+         const user=await this.userService.findById(decoded.userId);
+         if(!user) throw new UnauthorizedException('usuario no encontrado para el token proporcionado');
+         if(!user.token || !user.code || !user.dateSendCodigo) throw new UnauthorizedException('No hay una solicitud de restablecimiento de contraseña para este usuario.');
+         const dateSendCode=user.dateSendCodigo;
+         if(!dateSendCode) throw new UnauthorizedException('No se encontró la fecha de envío del código de verificación.');
+         const isExpired= await this.expire(EXPIRES_VERIFICATION, dateSendCode);
+         if(isExpired) throw new UnauthorizedException('el token para restablece la contraseña ha expirado, por favor solicita uno nuevo')
+         if(user.token!==token) throw new UnauthorizedException('Token invalido para restablecer la contraseña');
+         const salt = await bcrypt.genSalt(10);
+         const hashedPassword= await bcrypt.hash(newPassword,salt);
+         const updateUser= new UpdateUserDto();
+         updateUser.password=hashedPassword;
+         updateUser.code='';
+         updateUser.token='';
+         updateUser.dateSendCodigo=null;
+         await this.userService.update(user.id, updateUser,true);
+         return {message:'Contraseña restablecida exitosamente.', statussCode:200};
       } catch (error) {
          throw error;
       }

@@ -32,7 +32,7 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
-  verificationCode?: string;
+  verificationCode?: string | null;
 
   @IsOptional()
   @IsBoolean()
@@ -44,12 +44,12 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
-  token:string;
+  token:string | null;
 
   @IsOptional()
   @IsString()
-  code:string;
+  code:string | null;
   @IsOptional()
-  dateSendCodigo:Date
+  dateSendCodigo:Date | null;
 
 }
