@@ -253,4 +253,50 @@ export class UserService {
       throw error;
     }
   }
+
+  async changeRole(userId:number, rolId:number):Promise<UserEntity>{
+    try {
+      if(!userId){
+        throw new BadRequestException('El id del usuario es obligatorio');
+      }
+      if(!rolId){
+        throw new BadRequestException('El id del rol es obligatorio');
+      }
+      const user = await this.userRepository.findOne({
+        where: { id: userId }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      const rol = await this.rolService.findById(rolId);
+      if (!rol) {
+        throw new BadRequestException('Rol no encontrado');
+      }
+      user.rol = rol;
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async changeBlockStatus(userId:number, blockStatus:boolean):Promise<UserEntity>{
+    try {
+      if(!userId){
+        throw new BadRequestException('El id del usuario es obligatorio');
+      }
+      if(blockStatus===undefined || blockStatus===null){
+        throw new BadRequestException('El estado de bloqueo es obligatorio');
+      }
+      const user = await this.userRepository.findOne({
+        where: { id: userId }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      user.block = blockStatus;
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throw error;
+    }
+  }
 }

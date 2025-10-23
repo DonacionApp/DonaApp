@@ -47,4 +47,19 @@ export class UserController {
   async delete(@Param('id') id: number) {
     return await this.userService.delete(Number(id));
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Post('change-role/:id')
+  async changeRole(@Param('id') id: number, @Body('roleId') roleId: number) {
+    return await this.userService.changeRole(Number(id), roleId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Post('change-block-status/:id')
+  async changeBlockStatus(@Param('id') id: number, @Body('block') block: boolean) {
+    return await this.userService.changeBlockStatus(Number(id), block);
+  }
+
 }
