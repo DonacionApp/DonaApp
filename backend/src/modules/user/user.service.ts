@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './entity/user.entity';
@@ -324,12 +324,19 @@ export class UserService {
       throw error;
     }
   }
-  
+
   async updateProfile(userId:number, dto:any): Promise<UserEntity>{
     try{
       const user = await this.userRepository.findOne({where:{id:userId}, relations:{people:true, rol:true}});
       if(!user) throw new BadRequestException('Usuario no encontrado');
       const people = user.people;
+      if(dto.updatedAt){
+        const clientDate = new Date(dto.updatedAt);
+        const serverDate = people.updatedAt;
+        if(!serverDate || Math.abs(serverDate.getTime() - clientDate.getTime()) > 1000){
+          throw new ConflictException('El recurso fue modificado por otro proceso. Por favor, recarga y vuelve a intentar.');
+        }
+      }
       if(dto.name!==undefined) people.name = dto.name;
       if(dto.lastName!==undefined) people.lastName = dto.lastName;
       if(dto.residencia!==undefined) people.residencia = dto.residencia;
