@@ -15,8 +15,9 @@ export class MailDto{
         message?:string,
         title?:string,
         user:string,
-        idUser:number,
+        idUser?:number,
         url?:string,
+        secondaryUrl?:string,
         code?:string,
         status?:string,
     }

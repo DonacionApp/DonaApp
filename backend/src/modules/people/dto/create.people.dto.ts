@@ -1,19 +1,20 @@
-import { IsNotEmpty, IsNumber, isNumber, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
 
 export class CreatePeopleDto {
     @IsNotEmpty()
     @IsString()
     name: string;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
-    lastName: string;
+    lastName?: string;
 
     @IsNotEmpty()
     birdthDate: Date;
 
     @IsNotEmpty()
     @IsNumber()
+    @Min(1)
     tipodDni: number;
 
     @IsNotEmpty()
@@ -28,7 +29,7 @@ export class CreatePeopleDto {
     @IsString()
     telefono: string;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
-    supportId: string;
+    supportId?: string;
 }

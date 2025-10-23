@@ -22,7 +22,7 @@ export class UserService {
     private readonly rolService: RolService
   ) {}
 
-  async findAll(): Promise<UserEntity[]> {
+  async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
     try {
       const users = await this.userRepository.find({ relations: {
         rol:true,
@@ -33,11 +33,33 @@ export class UserService {
       if (!users || users.length === 0) {
         throw new BadRequestException('No hay usuarios registrados');
       }
-      return users;
+      //funcionalidad para eliminar las passwords de la respuesta
+      const usersWithoutPassword = users.map(({ password, ...user }) => user);
+      return usersWithoutPassword;
     } catch (error) {
       throw error;
     }
   }
+
+  async fyndByEmail(email: string): Promise<UserEntity> {
+    try {
+      if(!email)throw new BadRequestException('El email es obligatorio');
+      const user = await this.userRepository.findOne({
+        where:{email:email},
+        relations:{
+          people:{
+            typeDni:true
+          },
+          rol:true
+        }
+      });
+      if(!user)throw new NotFoundException('Usuario no encontrado');
+      return user;
+    }catch(error){
+      throw error;
+    }
+  }
+
 
   async findById(id: number): Promise<UserEntity> {
     try {
@@ -119,7 +141,7 @@ export class UserService {
     }
   }
 
-  async update(id: number, dto: UpdateUserDto): Promise<UserEntity> {
+  async update(id: number, dto: UpdateUserDto, resetPass?:boolean): Promise<UserEntity> {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id }
@@ -128,10 +150,10 @@ export class UserService {
         throw new BadRequestException('Usuario no encontrado');
       }
 
-      const targetUsername = dto.username.trim();
-      const targetEmail = dto.email.trim().toLowerCase();
+      const targetUsername = dto.username?.trim();
+      const targetEmail = dto.email?.trim().toLowerCase();
 
-      if (targetUsername !== user.username) {
+      if (targetUsername !== user.username && targetUsername) {
         const usernameExists = await this.userRepository.findOne({
           where: { username: targetUsername }
         });
@@ -141,7 +163,7 @@ export class UserService {
         user.username = targetUsername;
       }
 
-      if (targetEmail !== user.email) {
+      if (targetEmail !== user.email && targetEmail) {
         const emailExists = await this.userRepository.findOne({
           where: { email: targetEmail }
         });
@@ -154,16 +176,51 @@ export class UserService {
       if (dto.password) {
         user.password = dto.password;
       }
+      if(dto.token){
+        user.token=dto.token;
+      }
+      if(dto.verificationCode){
+        user.code=dto.verificationCode;
+      }
+      if(dto.verified!==undefined){
+        user.verified=dto.verified;
+      }
+      if(dto.isVerifiedEmail){
+        user.emailVerified=dto.isVerifiedEmail;
+        if(dto.isVerifiedEmail===true){
+          user.code=null;
+          user.token=null;
+          user.dateSendCodigo=null;
+
+        }
+      }
+      if(resetPass){
+        user.code=null;
+        user.token=null;
+        user.dateSendCodigo=null;
+      }
+      if(dto.code){
+        user.code=dto.code;
+      }
+      if(dto.dateSendCodigo){
+        user.dateSendCodigo=dto.dateSendCodigo;
+      }
 
       if (dto.rolId && dto.rolId !== user.rol?.id) {
         const rol = await this.rolService.findById(dto.rolId)
         if (!rol) {
           throw new BadRequestException('El rol no existe');
         }
+        if(user.rol.rol=='admin' && rol.rol!='admin'){
+          const adminCount = await this.countUsersAdmins();
+          if(adminCount<=1){
+            throw new BadRequestException('No se puede cambiar el rol. Debe haber al menos un usuario con rol de admin');
+          }
+        }
         user.rol = rol;
       }
 
-      if (dto.people.id && dto.people.id !== user.people?.id) {
+      if (dto.people &&dto.people?.id!==null && dto.people?.id && dto.people?.id !== user.people?.id && typeof(dto.people?.id)!=='undefined') {
         const people = await this.peopleService.findById(dto.people.id)
         if (!people) {
           throw new BadRequestException('La persona no existe');
@@ -186,13 +243,83 @@ export class UserService {
         throw new BadRequestException('El id del usuario es obligatorio');
       }
       const user = await this.userRepository.findOne({
-        where: { id: id }
+        where: { id: id },
+        relations:{
+          people:{
+            typeDni:true
+          },
+          rol:true
+        }
       });
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
       await this.userRepository.delete(id);
+      await this.peopleService.delete(user.people.id)
       return { message: 'Usuario eliminado correctamente' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+    async countUsersAdmins():Promise<number>{
+    try {
+      const count = await this.userRepository.count({
+        where: { rol: { rol: 'admin' } }
+      });
+      return count;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async changeRole(userId:number, rolId:number):Promise<UserEntity>{
+    try {
+      if(!userId){
+        throw new BadRequestException('El id del usuario es obligatorio');
+      }
+      if(!rolId){
+        throw new BadRequestException('El id del rol es obligatorio');
+      }
+      const user = await this.userRepository.findOne({
+        where: { id: userId }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      const rol = await this.rolService.findById(rolId);
+      if (!rol) {
+        throw new BadRequestException('Rol no encontrado');
+      }
+      if(user.rol.rol=='admin' && rol.rol!='admin'){
+        const adminCount = await this.countUsersAdmins();
+        if(adminCount<=1){
+          throw new BadRequestException('No se puede cambiar el rol. Debe haber al menos un usuario con rol de admin');
+        }
+      }
+      user.rol = rol;
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async changeBlockStatus(userId:number, blockStatus:boolean):Promise<UserEntity>{
+    try {
+      if(!userId){
+        throw new BadRequestException('El id del usuario es obligatorio');
+      }
+      if(blockStatus===undefined || blockStatus===null){
+        throw new BadRequestException('El estado de bloqueo es obligatorio');
+      }
+      const user = await this.userRepository.findOne({
+        where: { id: userId }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      user.block = blockStatus;
+      return await this.userRepository.save(user);
     } catch (error) {
       throw error;
     }
