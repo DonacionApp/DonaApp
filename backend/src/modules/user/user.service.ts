@@ -22,7 +22,7 @@ export class UserService {
     private readonly rolService: RolService
   ) {}
 
-  async findAll(): Promise<UserEntity[]> {
+  async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
     try {
       const users = await this.userRepository.find({ relations: {
         rol:true,
@@ -33,7 +33,9 @@ export class UserService {
       if (!users || users.length === 0) {
         throw new BadRequestException('No hay usuarios registrados');
       }
-      return users;
+      //funcionalidad para eliminar las passwords de la respuesta
+      const usersWithoutPassword = users.map(({ password, ...user }) => user);
+      return usersWithoutPassword;
     } catch (error) {
       throw error;
     }
@@ -209,6 +211,12 @@ export class UserService {
         if (!rol) {
           throw new BadRequestException('El rol no existe');
         }
+        if(user.rol.rol=='admin' && rol.rol!='admin'){
+          const adminCount = await this.countUsersAdmins();
+          if(adminCount<=1){
+            throw new BadRequestException('No se puede cambiar el rol. Debe haber al menos un usuario con rol de admin');
+          }
+        }
         user.rol = rol;
       }
 
@@ -249,6 +257,69 @@ export class UserService {
       await this.userRepository.delete(id);
       await this.peopleService.delete(user.people.id)
       return { message: 'Usuario eliminado correctamente' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+    async countUsersAdmins():Promise<number>{
+    try {
+      const count = await this.userRepository.count({
+        where: { rol: { rol: 'admin' } }
+      });
+      return count;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async changeRole(userId:number, rolId:number):Promise<UserEntity>{
+    try {
+      if(!userId){
+        throw new BadRequestException('El id del usuario es obligatorio');
+      }
+      if(!rolId){
+        throw new BadRequestException('El id del rol es obligatorio');
+      }
+      const user = await this.userRepository.findOne({
+        where: { id: userId }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      const rol = await this.rolService.findById(rolId);
+      if (!rol) {
+        throw new BadRequestException('Rol no encontrado');
+      }
+      if(user.rol.rol=='admin' && rol.rol!='admin'){
+        const adminCount = await this.countUsersAdmins();
+        if(adminCount<=1){
+          throw new BadRequestException('No se puede cambiar el rol. Debe haber al menos un usuario con rol de admin');
+        }
+      }
+      user.rol = rol;
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async changeBlockStatus(userId:number, blockStatus:boolean):Promise<UserEntity>{
+    try {
+      if(!userId){
+        throw new BadRequestException('El id del usuario es obligatorio');
+      }
+      if(blockStatus===undefined || blockStatus===null){
+        throw new BadRequestException('El estado de bloqueo es obligatorio');
+      }
+      const user = await this.userRepository.findOne({
+        where: { id: userId }
+      });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      user.block = blockStatus;
+      return await this.userRepository.save(user);
     } catch (error) {
       throw error;
     }

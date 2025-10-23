@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { RolEntity } from './entity/rol.entity';
 import { CreateRolDto } from './dto/create.rol.dto';
 import { UpdateRolDto } from './dto/update.rol.dto';
@@ -73,5 +73,17 @@ export class RolService {
     const rolEntity = await this.findById(id);
     await this.rolRepository.delete(id);
     return { message: 'Rol eliminado correctamente' };
+  }
+
+  async loadAllRolesOutAdmin(): Promise<RolEntity[]> {
+    try {
+      const roles = await this.rolRepository.find({
+        where: { rol: Not('admin') }
+      });
+      return roles;
+    } catch (error) {
+      throw error;
+    }
+
   }
 }
