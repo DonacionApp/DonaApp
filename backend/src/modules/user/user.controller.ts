@@ -27,16 +27,22 @@ export class UserController {
     return await this.userService.findByUsername(username);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Post()
   async create(@Body() dto: CreateUserDto) {
     return await this.userService.create(dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Post('update/:id')
   async update(@Param('id') id: number, @Body() dto: UpdateUserDto) {
     return await this.userService.update(Number(id), dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Delete('delete/:id')
   async delete(@Param('id') id: number) {
     return await this.userService.delete(Number(id));
