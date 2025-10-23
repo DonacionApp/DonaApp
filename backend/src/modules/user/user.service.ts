@@ -22,7 +22,7 @@ export class UserService {
     private readonly rolService: RolService
   ) {}
 
-  async findAll(): Promise<UserEntity[]> {
+  async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
     try {
       const users = await this.userRepository.find({ relations: {
         rol:true,
@@ -33,7 +33,9 @@ export class UserService {
       if (!users || users.length === 0) {
         throw new BadRequestException('No hay usuarios registrados');
       }
-      return users;
+      //funcionalidad para eliminar las passwords de la respuesta
+      const usersWithoutPassword = users.map(({ password, ...user }) => user);
+      return usersWithoutPassword;
     } catch (error) {
       throw error;
     }
