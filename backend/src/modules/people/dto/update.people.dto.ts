@@ -1,35 +1,38 @@
-import { IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class UpdatePeopleDto {
-    @IsNotEmpty()
+    @IsOptional()
+    @IsNumber()
+    id:number;
+
+    @IsOptional()
     @IsString()
     name: string;
     
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
     lastName: string;
     
-    @IsNotEmpty()
-    @IsString()
+    @IsOptional()
     birdthDate: Date;
     
-    @IsNotEmpty() 
+    @IsOptional() 
     @IsNumber()      
     tipodDni: number;
     
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
     dni: string;
-    
-    @IsNotEmpty()               
+
+    @IsOptional()
     @IsString()
     residencia: string;
-    
-    @IsNotEmpty()
+
+    @IsOptional()
     @IsString()
     telefono: string;
-    
-    @IsNotEmpty()
+
+    @IsOptional()
     @IsString()
     supportId: string;
 }

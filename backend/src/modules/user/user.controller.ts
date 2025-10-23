@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards, Req, UnauthorizedException, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards, Req, UnauthorizedException, Put, Head, Header, Headers } from '@nestjs/common';
 import { UpdateUserProfileDto } from './dto/update.user.profile.dto';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
@@ -9,7 +9,10 @@ import { Roles } from '../auth/decorators/roles.decorators';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(
+    private readonly userService: UserService,
+
+  ) { }
 
   /**
    * GET /user/me
@@ -24,20 +27,10 @@ export class UserController {
     if (!userId) throw new UnauthorizedException('Usuario no autenticado.');
     const user = await this.userService.findById(Number(userId));
     // eliminar password antes de devolver
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...publicUser } = user as any;
     return publicUser;
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Put('me')
-  async updateMe(@Req() req:any, @Body() dto: UpdateUserProfileDto){
-    const userId = req.user?.id;
-    if(!userId) throw new UnauthorizedException('Usuario no autenticado.');
-    const updated = await this.userService.updateProfile(Number(userId), dto);
-    const { password, ...publicUser } = updated as any;
-    return publicUser;
-  }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
