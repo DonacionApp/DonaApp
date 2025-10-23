@@ -10,6 +10,8 @@ import { Roles } from '../auth/decorators/roles.decorators';
 export class RolController {
   constructor(private readonly rolService: RolService) { }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Get()
   async findAll() {
     return await this.rolService.findAll();
@@ -44,5 +46,10 @@ export class RolController {
   @Delete('delete/:id')
   async delete(@Param('id') id: number) {
     return await this.rolService.delete(Number(id));
+  }
+
+  @Get('all/roles')
+  async getAllRoles() {
+    return await this.rolService.loadAllRolesOutAdmin();
   }
 }
