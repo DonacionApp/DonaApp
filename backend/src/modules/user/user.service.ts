@@ -324,4 +324,22 @@ export class UserService {
       throw error;
     }
   }
+  
+  async updateProfile(userId:number, dto:any): Promise<UserEntity>{
+    try{
+      const user = await this.userRepository.findOne({where:{id:userId}, relations:{people:true, rol:true}});
+      if(!user) throw new BadRequestException('Usuario no encontrado');
+      const people = user.people;
+      if(dto.name!==undefined) people.name = dto.name;
+      if(dto.lastName!==undefined) people.lastName = dto.lastName;
+      if(dto.residencia!==undefined) people.residencia = dto.residencia;
+      if(dto.telefono!==undefined) people.telefono = dto.telefono;
+      if(dto.profilePhoto!==undefined) user.profilePhoto = dto.profilePhoto;
+
+      await this.peopleRepository.save(people);
+      return await this.userRepository.save(user);
+    }catch(error){
+      throw error;
+    }
+  }
 }
