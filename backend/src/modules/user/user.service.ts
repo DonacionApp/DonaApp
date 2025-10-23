@@ -209,6 +209,12 @@ export class UserService {
         if (!rol) {
           throw new BadRequestException('El rol no existe');
         }
+        if(user.rol.rol=='admin' && rol.rol!='admin'){
+          const adminCount = await this.countUsersAdmins();
+          if(adminCount<=1){
+            throw new BadRequestException('No se puede cambiar el rol. Debe haber al menos un usuario con rol de admin');
+          }
+        }
         user.rol = rol;
       }
 
@@ -254,6 +260,17 @@ export class UserService {
     }
   }
 
+    async countUsersAdmins():Promise<number>{
+    try {
+      const count = await this.userRepository.count({
+        where: { rol: { rol: 'admin' } }
+      });
+      return count;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async changeRole(userId:number, rolId:number):Promise<UserEntity>{
     try {
       if(!userId){
@@ -271,6 +288,12 @@ export class UserService {
       const rol = await this.rolService.findById(rolId);
       if (!rol) {
         throw new BadRequestException('Rol no encontrado');
+      }
+      if(user.rol.rol=='admin' && rol.rol!='admin'){
+        const adminCount = await this.countUsersAdmins();
+        if(adminCount<=1){
+          throw new BadRequestException('No se puede cambiar el rol. Debe haber al menos un usuario con rol de admin');
+        }
       }
       user.rol = rol;
       return await this.userRepository.save(user);
