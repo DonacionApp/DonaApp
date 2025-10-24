@@ -1,5 +1,5 @@
 # Backend - Excluir completamente
-../backend/
+backend/
 
 # Node modules
 node_modules/
