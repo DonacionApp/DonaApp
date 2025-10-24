@@ -1,0 +1,62 @@
+name: CI Backend (NestJS + PostgreSQL)
+
+on:
+  workflow_call:
+
+jobs:
+  check_backend_ci:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    env:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: db_user_nest
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: testuser
+      DB_PASS: 1234
+      DB_NAME: db_user_nest
+      DATABASE_URL: postgresql://testuser:1234@postgres:5432/db_user_nest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Levantar PostgreSQL con Docker Compose
+        run: |
+          docker compose -f docker-compose-postgress.yml up -d
+          docker ps
+
+      - name: Esperar a que PostgreSQL esté listo
+        run: |
+          until docker exec postgres_db pg_isready -U testuser; do
+            echo "Esperando a PostgreSQL..."
+            sleep 3
+          done
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Compilar proyecto NestJS
+        run: npm run build
+
+      - name: Verificar conexión a la base de datos
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          pg_isready -h localhost -p 5432 -U testuser
+
+      - name: Detener contenedores
+        if: always()
+        run: docker compose -f docker-compose-postgress.yml down -v
+
+      - name: Verificación final
+        run: echo "CI Backend completado correctamente "
