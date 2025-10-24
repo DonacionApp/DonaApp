@@ -16,11 +16,26 @@
       <nav class="hidden md:flex items-center space-x-8">
         <!-- Navigation for non-authenticated users -->
         <ng-container *ngIf="!isAuthenticated()">
-          <button 
-            (click)="onAboutClick()" 
-            class="text-gray-700 hover:text-green-600 transition-colors px-3 py-2 text-sm font-medium">
+          <app-button 
+            variant="ghost" 
+            size="sm"
+            (btnClick)="onAboutClick()">
             Acerca de
-          </button>
+          </app-button>
+          
+          <app-button 
+            variant="ghost" 
+            size="sm"
+            [disabled]="true">
+            Iniciar Sesión
+          </app-button>
+          
+          <app-button 
+            variant="primary" 
+            size="md"
+            [disabled]="true">
+            Registrarse
+          </app-button>
         </ng-container>
 
         <!-- Navigation for authenticated users -->
@@ -55,11 +70,29 @@
       <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t border-gray-200">
         <!-- Mobile Navigation for non-authenticated users -->
         <ng-container *ngIf="!isAuthenticated()">
-          <button 
-            (click)="onAboutClick()" 
-            class="text-gray-700 hover:text-green-600 block px-3 py-2 text-base font-medium w-full text-left">
+          <app-button 
+            variant="ghost" 
+            size="md"
+            [fullWidth]="true"
+            (btnClick)="onAboutClick()">
             Acerca de
-          </button>
+          </app-button>
+          
+          <app-button 
+            variant="ghost" 
+            size="md"
+            [fullWidth]="true"
+            [disabled]="true">
+            Iniciar Sesión
+          </app-button>
+          
+          <app-button 
+            variant="primary" 
+            size="md"
+            [fullWidth]="true"
+            [disabled]="true">
+            Registrarse
+          </app-button>
         </ng-container>
 
         <!-- Mobile Navigation for authenticated users -->

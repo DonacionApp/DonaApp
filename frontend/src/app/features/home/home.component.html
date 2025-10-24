@@ -18,16 +18,19 @@
       
       <!-- Botones de acción -->
       <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-        <button 
-          (click)="scrollToSection('como-funciona')"
-          class="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-lg text-base font-semibold transition-colors">
+        <app-button 
+          variant="primary" 
+          size="lg"
+          (btnClick)="scrollToSection('como-funciona')">
           Comenzar a Donar
-        </button>
-        <button 
-          (click)="scrollToSection('impacto')"
-          class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-8 py-3 rounded-lg text-base font-semibold transition-colors">
+        </app-button>
+        
+        <app-button 
+          variant="secondary" 
+          size="lg"
+          (btnClick)="scrollToSection('impacto')">
           Conoce Más
-        </button>
+        </app-button>
       </div>
       
       <!-- Imágenes de Donaciones -->

@@ -2,11 +2,12 @@ import { Component, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AppStateService } from '../../../core/services/app-state.service';
+import { ButtonComponent } from '../button/button.component';
 
 @Component({
   selector: 'app-nav',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ButtonComponent],
   templateUrl: './nav.component.html',
   styleUrls: []
 })
