@@ -1,0 +1,19 @@
+<ng-container *ngIf="viewModel$ | async as vm; else loading">
+  <section class="dashboard">
+    <header class="dashboard__heading">
+      <h1>Bienvenido, {{ vm.name }} 👋</h1>
+      <p>Este es tu panel como donante.</p>
+    </header>
+
+    <article class="dashboard__card">
+      <h2>Resumen de sesión</h2>
+      <p>Último acceso registrado: <strong>{{ vm.lastAccessLabel }}</strong></p>
+    </article>
+  </section>
+</ng-container>
+
+<ng-template #loading>
+  <section class="dashboard dashboard--loading">
+    <p>Cargando tu información...</p>
+  </section>
+</ng-template>

@@ -1,0 +1,19 @@
+<ng-container *ngIf="viewModel$ | async as vm; else loading">
+  <section class="org-dashboard">
+    <header class="org-dashboard__heading">
+      <h1>{{ vm.organizationName }}, gracias por impactar vidas</h1>
+      <p>Administra las campañas y dona con seguridad.</p>
+    </header>
+
+    <article class="org-dashboard__card">
+      <h2>Resumen de sesión</h2>
+      <p>Último acceso registrado: <strong>{{ vm.lastAccessLabel }}</strong></p>
+    </article>
+  </section>
+</ng-container>
+
+<ng-template #loading>
+  <section class="org-dashboard org-dashboard--loading">
+    <p>Cargando información de la organización...</p>
+  </section>
+</ng-template>

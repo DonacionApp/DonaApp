@@ -1,0 +1,19 @@
+<ng-container *ngIf="viewModel$ | async as vm; else loading">
+  <section class="admin-dashboard">
+    <header class="admin-dashboard__heading">
+      <h1>Panel administrativo</h1>
+      <p>Hola {{ vm.adminName }}, aquí controlas toda la plataforma.</p>
+    </header>
+
+    <article class="admin-dashboard__card">
+      <h2>Resumen de sesión</h2>
+      <p>Último acceso registrado: <strong>{{ vm.lastAccessLabel }}</strong></p>
+    </article>
+  </section>
+</ng-container>
+
+<ng-template #loading>
+  <section class="admin-dashboard admin-dashboard--loading">
+    <p>Preparando estadísticas...</p>
+  </section>
+</ng-template>

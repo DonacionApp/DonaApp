@@ -1,0 +1,117 @@
+<div class="login-page" [class.login-page--locked]="isLocked">
+  <header class="login-header">
+    <div class="login-header__brand">
+      <span class="login-header__logo" aria-hidden="true">💚</span>
+      <span class="login-header__title">DonacionApp</span>
+    </div>
+    <nav class="login-header__nav" aria-label="Principal">
+      <a routerLink="/about" class="login-header__link">Acerca de</a>
+      <a routerLink="/auth/login" class="login-header__link login-header__link--active">Iniciar Sesión</a>
+      <a routerLink="/auth/register" class="login-header__cta">Registrarse</a>
+    </nav>
+  </header>
+
+  <main class="login-content">
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="login-card__header">
+        <h1 id="login-title">Iniciar Sesión</h1>
+        <p class="login-card__subtitle">Accede a tu cuenta para continuar</p>
+      </div>
+
+      <div class="login-switch" role="radiogroup" aria-label="Selecciona tu tipo de cuenta">
+        <button
+          type="button"
+          class="login-switch__button"
+          [class.login-switch__button--active]="loginForm.value.role === 'donor'"
+          (click)="selectAccountType('donor')"
+          role="radio"
+          [attr.aria-checked]="loginForm.value.role === 'donor'"
+        >
+          <span class="login-switch__icon" aria-hidden="true">👤</span>
+          Donante
+        </button>
+        <button
+          type="button"
+          class="login-switch__button"
+          [class.login-switch__button--active]="loginForm.value.role === 'organization'"
+          (click)="selectAccountType('organization')"
+          role="radio"
+          [attr.aria-checked]="loginForm.value.role === 'organization'"
+        >
+          <span class="login-switch__icon" aria-hidden="true">🏢</span>
+          Organización
+        </button>
+      </div>
+
+      <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
+        <div class="login-form__field">
+          <label class="login-form__label" for="email-input">Correo Electrónico</label>
+          <div class="login-form__control" [class.login-form__control--invalid]="getEmailError()">
+            <span class="login-form__control-icon" aria-hidden="true">✉️</span>
+            <input
+              id="email-input"
+              type="email"
+              formControlName="email"
+              placeholder="contacto@organizacion.org"
+              autocomplete="username"
+              [attr.aria-invalid]="getEmailError() ? 'true' : 'false'"
+            />
+          </div>
+          <p *ngIf="getEmailError()" class="login-form__error">{{ getEmailError() }}</p>
+        </div>
+
+        <div class="login-form__field">
+          <label class="login-form__label" for="password-input">Contraseña</label>
+          <div class="login-form__control" [class.login-form__control--invalid]="getPasswordError()">
+            <span class="login-form__control-icon" aria-hidden="true">🔒</span>
+            <input
+              id="password-input"
+              type="password"
+              formControlName="password"
+              placeholder="Tu contraseña"
+              autocomplete="current-password"
+              [attr.aria-invalid]="getPasswordError() ? 'true' : 'false'"
+            />
+          </div>
+          <p *ngIf="getPasswordError()" class="login-form__error">{{ getPasswordError() }}</p>
+        </div>
+
+        <button
+          type="submit"
+          class="login-form__submit"
+          [disabled]="isSubmitting || isLocked"
+        >
+          <app-spinner *ngIf="isSubmitting" [size]="20"></app-spinner>
+          <span *ngIf="!isSubmitting">Iniciar Sesión</span>
+        </button>
+
+        <div *ngIf="feedbackMessage" class="login-feedback" [class.login-feedback--success]="isSuccess">
+          <span>{{ feedbackMessage }}</span>
+          <span *ngIf="lastAccess && isSuccess" class="login-feedback__access">
+            Último acceso registrado: {{ lastAccess | date:'longDate' }}
+          </span>
+          <span *ngIf="isLocked" class="login-feedback__lock">Intenta nuevamente en {{ lockSecondsRemaining }}s</span>
+        </div>
+      </form>
+
+      <div class="login-demo">
+        <h2 class="login-demo__title">Cuentas de demostración</h2>
+        <p class="login-demo__hint">Usa cualquiera de estos correos con la contraseña <strong>demo123</strong></p>
+        <ul class="login-demo__list">
+          <li *ngFor="let email of demoAccounts">{{ email }}</li>
+        </ul>
+      </div>
+
+      <p class="login-card__footer">
+        ¿No tienes cuenta?
+        <a routerLink="/auth/register">Regístrate aquí</a>
+      </p>
+    </section>
+  </main>
+
+  <footer class="login-footer">
+    <span class="login-footer__brand">💚 DonacionApp</span>
+    <span class="login-footer__text">Conectando donantes con organizaciones benéficas para un mundo mejor</span>
+    <span class="login-footer__meta">© {{ now | date:'yyyy' }} DonacionApp. Todos los derechos reservados.</span>
+  </footer>
+</div>
