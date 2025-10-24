@@ -2,60 +2,55 @@
 <div class="min-h-screen bg-white">
   
   <!-- Header/Hero Section -->
-  <section class="py-20 px-4">
+  <section class="py-16 px-4">
     <div class="max-w-6xl mx-auto text-center">
       <!-- Título principal -->
-      <h1 class="text-4xl md:text-6xl font-bold text-green-600 mb-6">
-        Conectando Corazones a Través de la Donación
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-green-600 mb-6 leading-tight">
+        Conectando Corazones a Través<br>de la Donación
       </h1>
       
       <!-- Descripción -->
-      <p class="text-lg md:text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
-        Facilita el proceso de donar bienes materiales a organizaciones benéficas y personas que los necesitan. Juntos construimos un mundo mejor.
+      <p class="text-base md:text-lg text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+        Facilita el proceso de donar bienes materiales a organizaciones<br>
+        benéficas y personas que los necesitan. Juntos construimos un<br>
+        mundo mejor.
       </p>
       
       <!-- Botones de acción -->
       <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
         <button 
-          (click)="onRegisterClick()"
-          class="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg">
+          (click)="scrollToSection('como-funciona')"
+          class="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-lg text-base font-semibold transition-colors">
           Comenzar a Donar
         </button>
-        <button class="text-gray-700 hover:text-green-600 flex items-center gap-2 text-lg font-medium transition-colors">
+        <button 
+          (click)="scrollToSection('impacto')"
+          class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-8 py-3 rounded-lg text-base font-semibold transition-colors">
           Conoce Más
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-          </svg>
         </button>
       </div>
       
-      <!-- Tarjetas Para Donantes y Organizaciones -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        <!-- Tarjeta Para Donantes -->
-        <div class="relative bg-gradient-to-br from-green-100 to-green-200 rounded-xl p-8 h-64 flex items-center justify-center overflow-hidden">
-          <div class="absolute inset-0 bg-black bg-opacity-20"></div>
-          <div class="relative z-10 text-center text-white">
-            <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-            <h3 class="text-2xl font-bold mb-2">Para Donantes</h3>
-            <p class="text-sm opacity-90">Donar nunca fue tan fácil</p>
+      <!-- Imágenes de Donaciones -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <!-- Imagen 1: Personas Donando -->
+        <div class="relative rounded-xl overflow-hidden shadow-lg h-64 md:h-80">
+          <img 
+            src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=600&h=400&fit=crop" 
+            alt="Personas donando ropa y alimentos"
+            class="w-full h-full object-cover">
+          <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+            <p class="text-white font-semibold text-lg">Para Donantes</p>
           </div>
         </div>
         
-        <!-- Tarjeta Para Organizaciones -->
-        <div class="relative bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl p-8 h-64 flex items-center justify-center overflow-hidden">
-          <div class="absolute inset-0 bg-black bg-opacity-20"></div>
-          <div class="relative z-10 text-center text-white">
-            <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-              </svg>
-            </div>
-            <h3 class="text-2xl font-bold mb-2">Para Organizaciones</h3>
-            <p class="text-sm opacity-90">Recibe donaciones de manera segura</p>
+        <!-- Imagen 2: Caja de Donaciones -->
+        <div class="relative rounded-xl overflow-hidden shadow-lg h-64 md:h-80">
+          <img 
+            src="https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=600&h=400&fit=crop" 
+            alt="Caja de donaciones"
+            class="w-full h-full object-cover">
+          <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+            <p class="text-white font-semibold text-lg">Para Organizaciones</p>
           </div>
         </div>
       </div>
@@ -63,12 +58,12 @@
   </section>
 
   <!-- Sección Cómo Funciona -->
-  <section class="py-20 px-4 bg-gray-50">
+  <section id="como-funciona" class="py-16 px-4 bg-white">
     <div class="max-w-6xl mx-auto">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">¿Cómo Funciona?</h2>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-          Un proceso simple y seguro para conectar donantes con organizaciones.
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">¿Cómo Funciona?</h2>
+        <p class="text-base text-gray-600 max-w-2xl mx-auto">
+          Un proceso simple y seguro para conectar donantes con organizaciones
         </p>
       </div>
       
@@ -122,76 +117,54 @@
   </section>
 
   <!-- Sección Nuestro Impacto -->
-  <section class="py-20 px-4 bg-green-600">
-    <div class="max-w-6xl mx-auto text-center">
-      <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Nuestro Impacto</h2>
-      <p class="text-lg text-green-100 mb-12 max-w-2xl mx-auto">
-        Juntos hemos logrado crear un impacto positivo en miles de vidas.
-      </p>
-      
-      <!-- Métricas -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-        <div class="text-center">
-          <div class="text-4xl md:text-5xl font-bold text-white mb-2">1,200+</div>
-          <div class="text-green-100">Donaciones realizadas</div>
-        </div>
-        <div class="text-center">
-          <div class="text-4xl md:text-5xl font-bold text-white mb-2">150+</div>
-          <div class="text-green-100">Organizaciones registradas</div>
-        </div>
-        <div class="text-center">
-          <div class="text-4xl md:text-5xl font-bold text-white mb-2">50+</div>
-          <div class="text-green-100">Ciudades cubiertas</div>
-        </div>
-        <div class="text-center">
-          <div class="text-4xl md:text-5xl font-bold text-white mb-2">98%</div>
-          <div class="text-green-100">Satisfacción de usuarios</div>
+  <section id="impacto" class="py-16 px-4 bg-green-600">
+    <div class="max-w-5xl mx-auto">
+      <div class="bg-green-600 rounded-2xl p-8 md:p-12">
+        <h2 class="text-3xl md:text-4xl font-bold text-white text-center mb-3">Nuestro Impacto</h2>
+        <p class="text-base text-green-100 text-center mb-10 max-w-2xl mx-auto">
+          Juntos hemos logrado crear un impacto positivo en miles de vidas
+        </p>
+        
+        <!-- Métricas -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+          <div class="text-center">
+            <div class="text-3xl md:text-5xl font-bold text-white mb-2">1,200+</div>
+            <div class="text-sm md:text-base text-green-100">Donaciones<br>realizadas</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl md:text-5xl font-bold text-white mb-2">150+</div>
+            <div class="text-sm md:text-base text-green-100">Organizaciones<br>registradas</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl md:text-5xl font-bold text-white mb-2">50+</div>
+            <div class="text-sm md:text-base text-green-100">Ciudades<br>cubiertas</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl md:text-5xl font-bold text-white mb-2">98%</div>
+            <div class="text-sm md:text-base text-green-100">Satisfacción de<br>usuarios</div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Sección Final -->
-  <section class="py-20 px-4">
+  <section class="py-16 px-4 bg-white">
     <div class="max-w-4xl mx-auto text-center">
-      <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">¿Listo para Hacer la Diferencia?</h2>
-      <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-        Únete a nuestra comunidad de donantes y organizaciones comprometidas con crear un mundo más solidario y sostenible.
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">¿Listo para Hacer la Diferencia?</h2>
+      <p class="text-base text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+        Únete a nuestra comunidad de donantes y organizaciones<br>
+        comprometidas con crear un mundo más solidario y sostenible
       </p>
-      
-      <!-- Botones de registro -->
-      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-        <button 
-          (click)="onRegisterClick()"
-          class="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg">
-          Registrarse como Donante
-        </button>
-        <button 
-          (click)="onOrganizationRegisterClick()"
-          class="bg-white hover:bg-gray-50 text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg">
-          Registrar Organización
-        </button>
-      </div>
     </div>
   </section>
 
   <!-- Footer -->
-  <footer class="bg-gray-100 py-8 px-4">
-    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between">
-      <div class="flex items-center gap-2 mb-4 md:mb-0">
-        <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-        </svg>
-        <span class="text-green-600 font-semibold text-lg">DonanApp</span>
-      </div>
-      
-      <div class="text-center text-gray-600 mb-4 md:mb-0">
-        Cuidando donantes con organizaciones benéficas para un mundo mejor.
-      </div>
-      
-      <div class="text-gray-500 text-sm">
-        © 2023 DonanApp. Todos los derechos reservados.
-      </div>
+  <footer class="bg-gray-50 py-6 px-4 border-t border-gray-200">
+    <div class="max-w-6xl mx-auto text-center">
+      <p class="text-sm text-gray-600">
+        © 2025 DonacionApp. Todos los derechos reservados.
+      </p>
     </div>
   </footer>
 </div>

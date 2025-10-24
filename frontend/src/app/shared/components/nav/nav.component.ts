@@ -35,24 +35,14 @@ export class NavComponent {
     this.router.navigate(['/']);
   }
 
-  onRegisterClick(): void {
+  onAboutClick(): void {
     this.closeMobileMenu();
-    this.router.navigate(['/donor/register']);
-  }
-
-  onLoginClick(): void {
-    this.closeMobileMenu();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/']);
   }
 
   onLogoutClick(): void {
     this.closeMobileMenu();
     this.appState.logout();
-    this.router.navigate(['/']);
-  }
-
-  onAboutClick(): void {
-    this.closeMobileMenu();
     this.router.navigate(['/']);
   }
 
