@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifica tu correo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f7;
+            padding: 40px 20px;
+        }
+
+        .email-container {
+            max-width: 540px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .content {
+            padding: 48px 40px;
+        }
+
+        .icon {
+            width: 64px;
+            height: 64px;
+            background: #000000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+            font-size: 32px;
+        }
+
+        .title {
+            font-size: 24px;
+            color: #1d1d1f;
+            margin-bottom: 32px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .greeting {
+            font-size: 17px;
+            color: #1d1d1f;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .message {
+            color: #86868b;
+            font-size: 15px;
+            line-height: 1.7;
+            margin-bottom: 32px;
+        }
+
+        .code-box {
+            background: #f5f5f7;
+            border-radius: 10px;
+            padding: 24px;
+            text-align: center;
+            margin: 32px 0;
+        }
+
+        .code-label {
+            color: #86868b;
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .code {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1d1d1f;
+            letter-spacing: 6px;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: #000000;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 15px;
+            text-align: center;
+            margin: 32px 0;
+            transition: background 0.2s;
+        }
+
+        .button:hover {
+            background: #333333;
+        }
+
+        .divider {
+            text-align: center;
+            color: #86868b;
+            font-size: 13px;
+            margin: 24px 0;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: #e5e5e7;
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        .secondary-link {
+            text-align: center;
+            margin: 16px 0;
+        }
+
+        .secondary-link a {
+            color: #0071e3;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .info-box {
+            background: #f5f5f7;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+        }
+
+        .info-box p {
+            color: #86868b;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .footer {
+            padding: 32px 40px;
+            text-align: center;
+            border-top: 1px solid #f5f5f7;
+        }
+
+        .footer p {
+            color: #86868b;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .content {
+                padding: 40px 24px;
+            }
+
+            .footer {
+                padding: 32px 24px;
+            }
+
+            .code {
+                font-size: 28px;
+                letter-spacing: 4px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <div class="content">
+            <div class="icon">📧</div>
+            
+            <h1 class="title">Verifica tu correo electrónico</h1>
+            
+            <p class="greeting">Hola {{user}},</p>
+            
+            <p class="message">
+                Gracias por registrarte. Para completar tu registro y activar tu cuenta, 
+                necesitamos verificar tu correo electrónico.
+            </p>
+
+            {{#if url}}
+            <a href="{{url}}" class="button">Verificar correo</a>
+            {{/if}}
+
+            {{#if code}}
+            {{#if url}}
+            <div class="divider">o</div>
+            {{/if}}
+            
+            <p style="text-align: center; color: #86868b; font-size: 14px; margin-bottom: 16px;">
+                También puedes usar este código:
+            </p>
+            
+            <div class="code-box">
+                <div class="code-label">Código de verificación</div>
+                <div class="code">{{code}}</div>
+            </div>
+
+            {{#if secondaryUrl}}
+            <div class="secondary-link">
+                <a href="{{secondaryUrl}}">Ingresar código manualmente</a>
+            </div>
+            {{/if}}
+            {{/if}}
+
+            <div class="info-box">
+                <p>
+                    Este código expira en 15 minutos. Si no solicitaste este registro, 
+                    puedes ignorar este correo.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Este correo se envió automáticamente. Por favor no respondas.</p>
+        </div>
+    </div>
+</body>
+
+</html>
