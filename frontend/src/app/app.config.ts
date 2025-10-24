@@ -10,14 +10,16 @@ const routes: Routes = [
     loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent)
   },
   
-  // Rutas directas para login y register
+  // Rutas de autenticación (temporales - redirigen a landing page)
   {
     path: 'login',
-    loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent)
+    redirectTo: '/',
+    pathMatch: 'full'
   },
   {
     path: 'register',
-    redirectTo: '/donor/register'
+    redirectTo: '/',
+    pathMatch: 'full'
   },
   
   // Lazy loading para cada módulo de feature
@@ -27,18 +29,15 @@ const routes: Routes = [
   },
   {
     path: 'donor',
-    loadChildren: () => import('./features/donor/donor.module').then(m => m.DonorModule),
-    // canActivate: [AuthGuard] // Se agregará cuando se cree el guard
+    loadChildren: () => import('./features/donor/donor.module').then(m => m.DonorModule)
   },
   {
     path: 'organization',
-    loadChildren: () => import('./features/organization/organization.module').then(m => m.OrganizationModule),
-    // canActivate: [AuthGuard] // Se agregará cuando se cree el guard
+    loadChildren: () => import('./features/organization/organization.module').then(m => m.OrganizationModule)
   },
   {
     path: 'admin',
-    loadChildren: () => import('./features/admin/admin.module').then(m => m.AdminModule),
-    // canActivate: [AuthGuard, AdminGuard] // Se agregará cuando se creen los guards
+    loadChildren: () => import('./features/admin/admin.module').then(m => m.AdminModule)
   },
   
   // Ruta wildcard para 404

@@ -26,15 +26,22 @@
           <app-button 
             variant="ghost" 
             size="sm"
-            [disabled]="true">
+            (btnClick)="onLoginClick()">
             Iniciar Sesión
           </app-button>
           
           <app-button 
             variant="primary" 
             size="md"
-            [disabled]="true">
+            (btnClick)="onRegisterClick()">
             Registrarse
+          </app-button>
+          
+          <app-button 
+            variant="secondary" 
+            size="md"
+            (btnClick)="onOrganizationRegisterClick()">
+            Organización
           </app-button>
         </ng-container>
 
@@ -82,7 +89,7 @@
             variant="ghost" 
             size="md"
             [fullWidth]="true"
-            [disabled]="true">
+            (btnClick)="onLoginClick()">
             Iniciar Sesión
           </app-button>
           
@@ -90,8 +97,16 @@
             variant="primary" 
             size="md"
             [fullWidth]="true"
-            [disabled]="true">
+            (btnClick)="onRegisterClick()">
             Registrarse
+          </app-button>
+          
+          <app-button 
+            variant="secondary" 
+            size="md"
+            [fullWidth]="true"
+            (btnClick)="onOrganizationRegisterClick()">
+            Organización
           </app-button>
         </ng-container>
 

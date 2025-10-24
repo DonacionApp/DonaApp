@@ -21,15 +21,15 @@
         <app-button 
           variant="primary" 
           size="lg"
-          (btnClick)="scrollToSection('como-funciona')">
-          Comenzar a Donar
+          (btnClick)="onDonorRegisterClick()">
+          Registrarse como Donante
         </app-button>
         
         <app-button 
           variant="secondary" 
           size="lg"
-          (btnClick)="scrollToSection('impacto')">
-          Conoce Más
+          (btnClick)="onOrganizationRegisterClick()">
+          Registrar Organización
         </app-button>
       </div>
       
@@ -159,6 +159,22 @@
         Únete a nuestra comunidad de donantes y organizaciones<br>
         comprometidas con crear un mundo más solidario y sostenible
       </p>
+      
+      <!-- Botones de registro -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <app-button 
+          variant="primary" 
+          size="lg"
+          (btnClick)="onDonorRegisterClick()">
+          Registrarse como Donante
+        </app-button>
+        <app-button 
+          variant="secondary" 
+          size="lg"
+          (btnClick)="onOrganizationRegisterClick()">
+          Registrar Organización
+        </app-button>
+      </div>
     </div>
   </section>
 

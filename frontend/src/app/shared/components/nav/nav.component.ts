@@ -41,6 +41,24 @@ export class NavComponent {
     this.router.navigate(['/']);
   }
 
+  onLoginClick(): void {
+    this.closeMobileMenu();
+    // Por ahora redirigir a la landing page, luego se implementará el login
+    this.router.navigate(['/']);
+  }
+
+  onRegisterClick(): void {
+    this.closeMobileMenu();
+    // Redirigir directamente al registro de donantes
+    this.router.navigate(['/donor/register']);
+  }
+
+  onOrganizationRegisterClick(): void {
+    this.closeMobileMenu();
+    // Redirigir directamente al registro de organizaciones
+    this.router.navigate(['/organization/register']);
+  }
+
   onLogoutClick(): void {
     this.closeMobileMenu();
     this.appState.logout();
