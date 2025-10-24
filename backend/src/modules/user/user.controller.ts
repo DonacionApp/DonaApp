@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards, Req, UnauthorizedException, Put, Head, Header, Headers } from '@nestjs/common';
+import { UpdateUserProfileDto } from './dto/update.user.profile.dto';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
@@ -8,7 +9,28 @@ import { Roles } from '../auth/decorators/roles.decorators';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(
+    private readonly userService: UserService,
+
+  ) { }
+
+  /**
+   * GET /user/me
+   * Devuelve el perfil básico del usuario autenticado (sin password).
+   * - Protegido por JWT
+   * - Retorna 401 si no hay token válido
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getMe(@Req() req: any) {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedException('Usuario no autenticado.');
+    const user = await this.userService.findById(Number(userId));
+    // eliminar password antes de devolver
+    const { password, ...publicUser } = user as any;
+    return publicUser;
+  }
+
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

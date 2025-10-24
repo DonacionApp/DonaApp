@@ -1,12 +1,13 @@
 import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { UpdatePeopleDto } from 'src/modules/people/dto/update.people.dto';
 import { PeopleEntity } from 'src/modules/people/entity/people.entity';
 
 export class UpdateUserDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   username: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEmail()
   email: string;
 
@@ -14,13 +15,12 @@ export class UpdateUserDto {
   @IsString()
   password?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   rolId: number;
 
-  @IsNotEmpty()
-  @IsNumber()
-  people: PeopleEntity;
+  @IsOptional()
+  people: UpdatePeopleDto ;
 
   @IsOptional()
   @IsString()

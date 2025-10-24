@@ -327,7 +327,7 @@ export class AuthService {
       try {
          if(!token || !newPassword) throw new UnauthorizedException('Token o nueva contraseña no proporcionados.');
          const decoded = this.jwtService.decode(token);
-         const user=await this.userService.findById(decoded.userId);
+         const user=await this.userService.findById(decoded.sub);
          if(!user) throw new UnauthorizedException('usuario no encontrado para el token proporcionado');
          if(!user.token || !user.code || !user.dateSendCodigo) throw new UnauthorizedException('No hay una solicitud de restablecimiento de contraseña para este usuario.');
          const dateSendCode=user.dateSendCodigo;
@@ -344,6 +344,14 @@ export class AuthService {
          updateUser.dateSendCodigo=null;
          await this.userService.update(user.id, updateUser,true);
          return {message:'Contraseña restablecida exitosamente.', statussCode:200};
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async updateMe(dto: UpdateUserDto, userId:number):Promise<any>{
+      try {
+         return await this.userService.update(userId, dto);
       } catch (error) {
          throw error;
       }

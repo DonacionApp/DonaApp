@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { UserEntity } from './entity/user.entity';
 import { CreateUserDto } from './dto/create.user.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
@@ -144,7 +144,13 @@ export class UserService {
   async update(id: number, dto: UpdateUserDto, resetPass?:boolean): Promise<UserEntity> {
     try {
       const user = await this.userRepository.findOne({
-        where: { id: id }
+        where: { id: id },
+        relations:{
+          people:{
+            typeDni:true
+          },
+          rol:true
+        }
       });
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
@@ -165,7 +171,10 @@ export class UserService {
 
       if (targetEmail !== user.email && targetEmail) {
         const emailExists = await this.userRepository.findOne({
-          where: { email: targetEmail }
+          where: { 
+            email: targetEmail,
+            id: Not(id)
+           }
         });
         if (emailExists) {
           throw new BadRequestException('El email ya existe');
@@ -220,18 +229,21 @@ export class UserService {
         user.rol = rol;
       }
 
-      if (dto.people &&dto.people?.id!==null && dto.people?.id && dto.people?.id !== user.people?.id && typeof(dto.people?.id)!=='undefined') {
-        const people = await this.peopleService.findById(dto.people.id)
+      if (dto.people ) {
+        const people = await this.peopleService.findById(user.people.id)
         if (!people) {
           throw new BadRequestException('La persona no existe');
         }
-        user.people = people;
+        const peopleSaved=await this.peopleService.update(people.id, dto.people);
+        user.people=peopleSaved;
       }
 
       if (dto.profilePhoto !== undefined) user.profilePhoto = dto.profilePhoto;
       if (dto.block !== undefined) user.block = dto.block;
 
-      return await this.userRepository.save(user);
+      const usuario = await this.userRepository.save(user);
+      const { password, ...userWithoutPassword} = usuario as any;
+      return userWithoutPassword;
     } catch (error) {
       throw error;
     }
@@ -321,6 +333,31 @@ export class UserService {
       user.block = blockStatus;
       return await this.userRepository.save(user);
     } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateProfile(userId:number, dto:any): Promise<UserEntity>{
+    try{
+      const user = await this.userRepository.findOne({where:{id:userId}, relations:{people:true, rol:true}});
+      if(!user) throw new BadRequestException('Usuario no encontrado');
+      const people = user.people;
+      if(dto.updatedAt){
+        const clientDate = new Date(dto.updatedAt);
+        const serverDate = people.updatedAt;
+        if(!serverDate || Math.abs(serverDate.getTime() - clientDate.getTime()) > 1000){
+          throw new ConflictException('El recurso fue modificado por otro proceso. Por favor, recarga y vuelve a intentar.');
+        }
+      }
+      if(dto.name!==undefined) people.name = dto.name;
+      if(dto.lastName!==undefined) people.lastName = dto.lastName;
+      if(dto.residencia!==undefined) people.residencia = dto.residencia;
+      if(dto.telefono!==undefined) people.telefono = dto.telefono;
+      if(dto.profilePhoto!==undefined) user.profilePhoto = dto.profilePhoto;
+
+      await this.peopleRepository.save(people);
+      return await this.userRepository.save(user);
+    }catch(error){
       throw error;
     }
   }

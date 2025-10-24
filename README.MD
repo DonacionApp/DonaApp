@@ -82,6 +82,3 @@ Nota: Si el proyecto usa `pnpm` o `yarn`, adapta los comandos correspondientes.
 ## Notas finales
 
 Este README es una base rápida para que cualquier desarrollador del equipo pueda arrancar y entender la estructura. Si quieres, amplío secciones (por ejemplo: scripts disponibles, migraciones de BD, detalles del frontend, o ejemplos de requests para endpoints principales).
-
----
-Si quieres que haga cambios adicionales (añadir ejemplos curl, Postman collection, o documentación más detallada por módulo), dime qué parte te interesa y la agrego.
