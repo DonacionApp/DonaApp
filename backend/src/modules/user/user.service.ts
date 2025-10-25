@@ -75,7 +75,8 @@ export class UserService {
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
-      return user;
+      const { password, ...userWithoutPassword} = user as any;
+      return userWithoutPassword;
     } catch (error) {
       throw error;
     }

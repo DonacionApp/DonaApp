@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, HttpCode, HttpStatus, Post, Req, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Post, Req, UnauthorizedException, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { CreateUserDto } from "../user/dto/create.user.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -75,7 +75,7 @@ export class AuthController {
    }
 
    @UseGuards(JwtAuthGuard)
-   @Post('me')
+   @Post('update-me')
    async updateMe(@Body() dto: UpdateUserDto, @Headers('authorization') authHeader: string) {
       try {
          const token = authHeader.replace('Bearer ', '');
@@ -89,6 +89,20 @@ export class AuthController {
       }
 
 
+   }
+
+   @UseGuards(JwtAuthGuard)
+   @Get('profile')
+   async getProfile(@Headers('authorization') authHeader: string): Promise<any> {
+      try {
+         const token = authHeader.replace('Bearer ', '');
+         if (!token) throw new UnauthorizedException('Token no proporcionado.');
+         const decoded = await this.jwtService.verifyAsync(token);
+         const { sub, userName, email, rol } = decoded;
+         return await this.authService.getProfile(sub);
+      } catch (error) {
+         throw error;
+      }
    }
 
 }
