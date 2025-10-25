@@ -14,23 +14,6 @@ export class UserController {
 
   ) { }
 
-  /**
-   * GET /user/me
-   * Devuelve el perfil básico del usuario autenticado (sin password).
-   * - Protegido por JWT
-   * - Retorna 401 si no hay token válido
-   */
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async getMe(@Req() req: any) {
-    const userId = req.user?.id;
-    if (!userId) throw new UnauthorizedException('Usuario no autenticado.');
-    const user = await this.userService.findById(Number(userId));
-    // eliminar password antes de devolver
-    const { password, ...publicUser } = user as any;
-    return publicUser;
-  }
-
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

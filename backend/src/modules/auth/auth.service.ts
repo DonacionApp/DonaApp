@@ -356,4 +356,12 @@ export class AuthService {
          throw error;
       }
    }
+
+   async getProfile(userId:number):Promise<any>{
+      try {
+         return await this.userService.findById(userId);
+      } catch (error) {
+         throw error;
+      }
+   }
 }
