@@ -17,11 +17,9 @@ export interface LoginPayload {
   password: string;
 }
 
-interface LoginResponse {
-  accessToken: string;
-  refreshToken?: string;
-  user: User;
-  lastAccess?: string;
+interface BackendLoginResponse {
+  message?: string;
+  access_token: string;
 }
 
 export interface AuthSession {
@@ -53,8 +51,8 @@ export class AuthService {
   }
 
   login(payload: LoginPayload): Observable<AuthSession> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, payload).pipe(
-      map(response => this.persistSession(response))
+    return this.http.post<BackendLoginResponse>(`${this.apiUrl}/auth/login`, payload).pipe(
+      map(response => this.persistSessionFromToken(response.access_token))
     );
   }
 
@@ -104,8 +102,14 @@ export class AuthService {
     this.isRefreshing = true;
     this.refreshTokenSubject.next(null);
 
-    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/refresh`, { refreshToken }).pipe(
-      map(response => this.persistSession(response).accessToken),
+    // Si el backend implementa refresh, adaptar aquí; por ahora mantenemos la forma pero
+    // la respuesta esperada debería incluir un nuevo access_token.
+    return this.http.post<BackendLoginResponse>(`${this.apiUrl}/auth/refresh`, { refreshToken }).pipe(
+      map(response => {
+        const session = this.persistSessionFromToken(response.access_token);
+        const token = session.accessToken;
+        return token;
+      }),
       tap(token => this.refreshTokenSubject.next(token)),
       finalize(() => {
         this.isRefreshing = false;
@@ -128,17 +132,50 @@ export class AuthService {
     this.sessionSubject.next(updated);
   }
 
-  private persistSession(response: LoginResponse): AuthSession {
+  /** Crea y persiste la sesión a partir de un JWT (access token). */
+  private persistSessionFromToken(accessToken: string): AuthSession {
+    const claims = this.decodeJwt(accessToken) ?? {};
+
+    const user: User = {
+      id: claims.sub ? String(claims.sub) : '',
+      email: claims.email ?? '',
+      role: (claims.rol ?? 'donor') as UserRole,
+      name: claims.userName ?? ''
+    };
+
     const session: AuthSession = {
-      user: response.user,
-      accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
-      lastAccess: response.lastAccess ?? new Date().toISOString()
+      user,
+      accessToken,
+      refreshToken: undefined,
+      // No tenemos lastAccess real desde el backend en la respuesta; usamos ahora.
+      lastAccess: new Date().toISOString()
     };
 
     this.writeStoredSession(session);
     this.sessionSubject.next(session);
     return session;
+  }
+
+  /** Decodifica las claims del JWT sin validar la firma (solo lectura del payload). */
+  private decodeJwt(token: string): any | null {
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) return null;
+      const payload = parts[1];
+      // base64url -> base64
+      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+      // Pad base64 string
+      const pad = base64.length % 4;
+      const padded = base64 + (pad === 2 ? '==' : pad === 3 ? '=' : pad === 1 ? '===' : '');
+      const json = atob(padded);
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
   }
 
   private readStoredSession(): AuthSession | null {
