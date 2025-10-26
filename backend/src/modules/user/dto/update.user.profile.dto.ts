@@ -30,10 +30,28 @@ export class UpdateUserProfileDto {
   @IsOptional()
   @IsString()
   @IsUrl()
-  @IsAllowedImageExtension(['jpg','jpeg','png','webp'])
+  @IsAllowedImageExtension(['jpg', 'jpeg', 'png', 'webp'])
   profilePhoto?: string;
 
   @IsOptional()
   @IsISO8601()
   updatedAt?: string;
+
+  @IsOptional()
+  Municipio: {
+    pais: {
+      id: string,
+      iso2: string,
+      name: string,
+    },
+    state: {
+      id: string,
+      iso2: string,
+      name: string,
+    },
+    city: {
+      id: string,
+      name: string
+    }
+  }
 }
