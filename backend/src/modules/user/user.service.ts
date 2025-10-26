@@ -8,6 +8,7 @@ import { RolEntity } from '../rol/entity/rol.entity';
 import { PeopleEntity } from '../people/entity/people.entity';
 import { PeopleService } from '../people/people.service';
 import { RolService } from '../rol/rol.service';
+import { json } from 'stream/consumers';
 
 @Injectable()
 export class UserService {
@@ -61,7 +62,7 @@ export class UserService {
   }
 
 
-  async findById(id: number): Promise<UserEntity> {
+  async findById(id: number): Promise<UserEntity > {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id },
@@ -76,6 +77,13 @@ export class UserService {
         throw new BadRequestException('Usuario no encontrado');
       }
       const { password, ...userWithoutPassword} = user as any;
+      const municipioJson = JSON.parse(userWithoutPassword.people.municipio || 'null');
+      const country = municipioJson ? municipioJson.country : null;
+      const state = municipioJson ? municipioJson.state : null;
+      const city = municipioJson ? municipioJson.city : null;
+      userWithoutPassword.municipio={
+        country,state,city
+      }
       return userWithoutPassword;
     } catch (error) {
       throw error;

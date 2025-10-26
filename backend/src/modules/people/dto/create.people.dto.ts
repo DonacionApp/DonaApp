@@ -34,19 +34,14 @@ export class CreatePeopleDto {
     supportId?: string;
 
     @IsNotEmpty()
-    Municipio: {
+    municipio: {
         pais: {
-            id: string,
             iso2: string,
-            name: string,
         },
         state: {
-            id: string,
             iso2: string,
-            name: string,
         },
         city: {
-            id: string,
             name: string
         }
     }
