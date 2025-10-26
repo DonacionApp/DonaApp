@@ -49,6 +49,14 @@ export class CountriesController {
             throw error;
         }
     }
+    @Get('countries/:iso/state/:stateIso')
+    async getStateByIso( @Param('stateIso') stateIso: string, @Param('iso') countryIso: string) {
+        try {
+            return this.countriesService.getStateBycode(stateIso, countryIso);
+        } catch (error) {
+            throw error;
+        }
+    }
 
     @Get('/countries/:iso/states/:stateIso/cities')
     async getCitiesByCountry( @Param('stateIso') stateIso: string, @Param('iso') countryIso: string) {

@@ -128,6 +128,26 @@ export class CountriesService {
         }
     }
 
+    async getStateBycode(stateIso:string, countryIso:string):Promise<any|null>{
+        try {
+            const states = await fetch(`${(await this.getData()).urlApi}/countries/${countryIso}/states/${stateIso}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSCAPI-KEY': (await this.getData()).apiKey,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (!states.ok) {
+                throw new Error(`Failed to fetch state ${stateIso} for country ${countryIso}: ${states.status}`);
+            }
+            const data = await states.json();
+            return data || null;
+        } catch (error) {
+            console.error('Error fetching state by code:', error);
+            throw error;
+        }
+    }
+
     async getCitiesByState(stateIso:string, countryIso:string):Promise<any[]>{
         try {
             const { urlApi, apiKey } = await this.getData();
@@ -160,7 +180,25 @@ export class CountriesService {
         }
     }
 
+    async getCityByName(cityName:string, stateIso:string, countryIso:string):Promise<any|null>{
+        try {
+            const cities = await this.getCitiesByState(stateIso, countryIso);
+            const city = cities.find(c => c.name?.toLowerCase() === cityName.toLowerCase());
+            return city || null;
+        } catch (error) {
+            throw error;
+        }
+    }
 
-   
+    async getCityById(cityId:number, stateIso:string, countryIso:string):Promise<any|null>{
+        try {
+            const cities = await this.getCitiesByState(stateIso, countryIso);
+            const city = cities.find(c => c.id === cityId);
+            return city || null;
+        } catch (error) {
+            throw error;
+        }
+    }
+ 
     
 }
