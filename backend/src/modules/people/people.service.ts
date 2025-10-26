@@ -148,6 +148,7 @@ export class PeopleService {
                 person.dni = dto.dni;
             }
             if (dto.municipio) {
+                console.log(dto.municipio)
                 const countryIso: string = dto.municipio.pais.iso2;
                 const stateIso: string = dto.municipio.state.iso2;
                 const cityName: string = dto.municipio.city.name;
@@ -163,6 +164,7 @@ export class PeopleService {
                 if (!cityExist) {
                     throw new BadRequestException('La ciudad del municipio no existe');
                 }
+                person.municipio= JSON.stringify(dto.municipio) as any;
             }
             return await this.peopleRepository.save(person);
 

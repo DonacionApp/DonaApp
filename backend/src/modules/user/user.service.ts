@@ -67,7 +67,6 @@ export class UserService {
     try {
 
       const municipioJson = JSON.parse(municiosJsonstring || 'null');
-      console.log(municipioJson)
       const country = municipioJson ? municipioJson.pais : null;
       const state = municipioJson ? municipioJson.state : null;
       const city = municipioJson ? municipioJson.city : null;
@@ -102,7 +101,6 @@ export class UserService {
       userWithoutPassword.municipio={
         country:countryExist,state: stateExist,city:citiExist
       }
-      userWithoutPassword.municiosJsonstring=municipioJson;
       return userWithoutPassword;
     } catch (error) {
       throw error;
@@ -278,7 +276,12 @@ export class UserService {
       if (dto.block !== undefined) user.block = dto.block;
 
       const usuario = await this.userRepository.save(user);
+      const municipio= usuario.people.municipio;
+      const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(municipio as any);
       const { password, ...userWithoutPassword} = usuario as any;
+      userWithoutPassword.people.municipio={
+        country:countryExist,state: stateExist,city:citiExist
+      }
       return userWithoutPassword;
     } catch (error) {
       throw error;
@@ -373,28 +376,4 @@ export class UserService {
     }
   }
 
-  async updateProfile(userId:number, dto:any): Promise<UserEntity>{
-    try{
-      const user = await this.userRepository.findOne({where:{id:userId}, relations:{people:true, rol:true}});
-      if(!user) throw new BadRequestException('Usuario no encontrado');
-      const people = user.people;
-      if(dto.updatedAt){
-        const clientDate = new Date(dto.updatedAt);
-        const serverDate = people.updatedAt;
-        if(!serverDate || Math.abs(serverDate.getTime() - clientDate.getTime()) > 1000){
-          throw new ConflictException('El recurso fue modificado por otro proceso. Por favor, recarga y vuelve a intentar.');
-        }
-      }
-      if(dto.name!==undefined) people.name = dto.name;
-      if(dto.lastName!==undefined) people.lastName = dto.lastName;
-      if(dto.residencia!==undefined) people.residencia = dto.residencia;
-      if(dto.telefono!==undefined) people.telefono = dto.telefono;
-      if(dto.profilePhoto!==undefined) user.profilePhoto = dto.profilePhoto;
-
-      await this.peopleRepository.save(people);
-      return await this.userRepository.save(user);
-    }catch(error){
-      throw error;
-    }
-  }
 }
