@@ -11,6 +11,7 @@ import { PeopleModule } from './modules/people/people.module';
 import { UserModule } from './modules/user/user.module';
 import { MailModule } from './core/mail/mail.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CountriesModule } from './modules/countries/countries.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -39,6 +40,7 @@ import { AuthModule } from './modules/auth/auth.module';
   UserModule,
   MailModule,
   AuthModule,
+  CountriesModule,
 ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,6 +8,8 @@ import { RolEntity } from '../rol/entity/rol.entity';
 import { PeopleEntity } from '../people/entity/people.entity';
 import { PeopleService } from '../people/people.service';
 import { RolService } from '../rol/rol.service';
+import { json } from 'stream/consumers';
+import { CountriesService } from '../countries/countries.service';
 
 @Injectable()
 export class UserService {
@@ -19,7 +21,8 @@ export class UserService {
     @InjectRepository(PeopleEntity)
     private readonly peopleRepository: Repository<PeopleEntity>,
     private readonly peopleService: PeopleService,
-    private readonly rolService: RolService
+    private readonly rolService: RolService,
+    private readonly countriesService: CountriesService
   ) {}
 
   async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
@@ -60,8 +63,24 @@ export class UserService {
     }
   }
 
+  async normalizeMunicipio(municiosJsonstring:string):Promise<{countryExist:any, stateExist:any, citiExist:any, municipioJson:any}> {
+    try {
 
-  async findById(id: number): Promise<UserEntity> {
+      const municipioJson = JSON.parse(municiosJsonstring || 'null');
+      const country = municipioJson ? municipioJson.pais : null;
+      const state = municipioJson ? municipioJson.state : null;
+      const city = municipioJson ? municipioJson.city : null;
+      const countryExist= await this.countriesService.getCountryByCode(country.iso2);
+      const stateExist= await this.countriesService.getStateBycode(state.iso2, country.iso2);
+      const citiExist= await this.countriesService.getCityByName(city.name, state.iso2, country.iso2);
+      return {countryExist, stateExist, citiExist, municipioJson};
+    } catch (error) {
+      throw error;
+    }
+  }
+
+
+  async findById(id: number): Promise<UserEntity > {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id },
@@ -76,6 +95,12 @@ export class UserService {
         throw new BadRequestException('Usuario no encontrado');
       }
       const { password, ...userWithoutPassword} = user as any;
+
+      const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(user.people.municipio as any);
+
+      userWithoutPassword.people.municipio={
+        country:countryExist,state: stateExist,city:citiExist
+      }
       return userWithoutPassword;
     } catch (error) {
       throw error;
@@ -90,7 +115,15 @@ export class UserService {
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
-      return user;
+      const { password, ...userWithoutPassword} = user as any;
+
+      const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(user.people.municipio as any);
+
+      userWithoutPassword.municipio={
+        country:countryExist,state: stateExist,city:citiExist
+      }
+
+      return userWithoutPassword;
     } catch (error) {
       throw error;
     }
@@ -241,9 +274,14 @@ export class UserService {
 
       if (dto.profilePhoto !== undefined) user.profilePhoto = dto.profilePhoto;
       if (dto.block !== undefined) user.block = dto.block;
-
       const usuario = await this.userRepository.save(user);
+      
       const { password, ...userWithoutPassword} = usuario as any;
+      const municipio= usuario.people.municipio;
+      const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(municipio as any);
+      userWithoutPassword.people.municipio={
+        country:countryExist,state: stateExist,city:citiExist
+      }
       return userWithoutPassword;
     } catch (error) {
       throw error;
@@ -338,28 +376,4 @@ export class UserService {
     }
   }
 
-  async updateProfile(userId:number, dto:any): Promise<UserEntity>{
-    try{
-      const user = await this.userRepository.findOne({where:{id:userId}, relations:{people:true, rol:true}});
-      if(!user) throw new BadRequestException('Usuario no encontrado');
-      const people = user.people;
-      if(dto.updatedAt){
-        const clientDate = new Date(dto.updatedAt);
-        const serverDate = people.updatedAt;
-        if(!serverDate || Math.abs(serverDate.getTime() - clientDate.getTime()) > 1000){
-          throw new ConflictException('El recurso fue modificado por otro proceso. Por favor, recarga y vuelve a intentar.');
-        }
-      }
-      if(dto.name!==undefined) people.name = dto.name;
-      if(dto.lastName!==undefined) people.lastName = dto.lastName;
-      if(dto.residencia!==undefined) people.residencia = dto.residencia;
-      if(dto.telefono!==undefined) people.telefono = dto.telefono;
-      if(dto.profilePhoto!==undefined) user.profilePhoto = dto.profilePhoto;
-
-      await this.peopleRepository.save(people);
-      return await this.userRepository.save(user);
-    }catch(error){
-      throw error;
-    }
-  }
 }

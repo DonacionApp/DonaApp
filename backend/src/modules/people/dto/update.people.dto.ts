@@ -3,23 +3,23 @@ import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 export class UpdatePeopleDto {
     @IsOptional()
     @IsNumber()
-    id:number;
+    id: number;
 
     @IsOptional()
     @IsString()
     name: string;
-    
+
     @IsOptional()
     @IsString()
     lastName: string;
-    
+
     @IsOptional()
     birdthDate: Date;
-    
-    @IsOptional() 
-    @IsNumber()      
+
+    @IsOptional()
+    @IsNumber()
     tipodDni: number;
-    
+
     @IsOptional()
     @IsString()
     dni: string;
@@ -35,4 +35,17 @@ export class UpdatePeopleDto {
     @IsOptional()
     @IsString()
     supportId: string;
+
+    @IsOptional()
+    municipio: {
+        pais: {
+            iso2: string,
+        },
+        state: {
+            iso2: string,
+        },
+        city: {
+            name: string
+        }
+    }
 }

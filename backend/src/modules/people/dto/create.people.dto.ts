@@ -32,4 +32,17 @@ export class CreatePeopleDto {
     @IsOptional()
     @IsString()
     supportId?: string;
+
+    @IsNotEmpty()
+    municipio: {
+        pais: {
+            iso2: string,
+        },
+        state: {
+            iso2: string,
+        },
+        city: {
+            name: string
+        }
+    }
 }
