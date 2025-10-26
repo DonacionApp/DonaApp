@@ -78,7 +78,3 @@ Nota: Si el proyecto usa `pnpm` o `yarn`, adapta los comandos correspondientes.
 	- Revisa que `JwtAuthGuard` esté aplicado antes del `RolesGuard` en los controladores: `@UseGuards(JwtAuthGuard, RolesGuard)`.
 	- Asegúrate de que `JwtStrategy.validate()` devuelva un objeto con la propiedad `rol` (o modifica el guard para aceptar `role` y `rol`).
 	- Verifica `exp` del token (no sea menor o igual a `iat`).
-
-## Notas finales
-
-Este README es una base rápida para que cualquier desarrollador del equipo pueda arrancar y entender la estructura. Si quieres, amplío secciones (por ejemplo: scripts disponibles, migraciones de BD, detalles del frontend, o ejemplos de requests para endpoints principales).
