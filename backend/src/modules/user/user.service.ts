@@ -9,6 +9,7 @@ import { PeopleEntity } from '../people/entity/people.entity';
 import { PeopleService } from '../people/people.service';
 import { RolService } from '../rol/rol.service';
 import { json } from 'stream/consumers';
+import { CountriesService } from '../countries/countries.service';
 
 @Injectable()
 export class UserService {
@@ -20,7 +21,8 @@ export class UserService {
     @InjectRepository(PeopleEntity)
     private readonly peopleRepository: Repository<PeopleEntity>,
     private readonly peopleService: PeopleService,
-    private readonly rolService: RolService
+    private readonly rolService: RolService,
+    private readonly countriesService: CountriesService
   ) {}
 
   async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
@@ -61,6 +63,23 @@ export class UserService {
     }
   }
 
+  async normalizeMunicipio(municiosJsonstring:string):Promise<{countryExist:any, stateExist:any, citiExist:any, municipioJson:any}> {
+    try {
+
+      const municipioJson = JSON.parse(municiosJsonstring || 'null');
+      console.log(municipioJson)
+      const country = municipioJson ? municipioJson.pais : null;
+      const state = municipioJson ? municipioJson.state : null;
+      const city = municipioJson ? municipioJson.city : null;
+      const countryExist= await this.countriesService.getCountryByCode(country.iso2);
+      const stateExist= await this.countriesService.getStateBycode(state.iso2, country.iso2);
+      const citiExist= await this.countriesService.getCityByName(city.name, state.iso2, country.iso2);
+      return {countryExist, stateExist, citiExist, municipioJson};
+    } catch (error) {
+      throw error;
+    }
+  }
+
 
   async findById(id: number): Promise<UserEntity > {
     try {
@@ -77,13 +96,13 @@ export class UserService {
         throw new BadRequestException('Usuario no encontrado');
       }
       const { password, ...userWithoutPassword} = user as any;
-      const municipioJson = JSON.parse(userWithoutPassword.people.municipio || 'null');
-      const country = municipioJson ? municipioJson.country : null;
-      const state = municipioJson ? municipioJson.state : null;
-      const city = municipioJson ? municipioJson.city : null;
+
+      const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(user.people.municipio as any);
+
       userWithoutPassword.municipio={
-        country,state,city
+        country:countryExist,state: stateExist,city:citiExist
       }
+      userWithoutPassword.municiosJsonstring=municipioJson;
       return userWithoutPassword;
     } catch (error) {
       throw error;
@@ -98,7 +117,15 @@ export class UserService {
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
-      return user;
+      const { password, ...userWithoutPassword} = user as any;
+
+      const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(user.people.municipio as any);
+
+      userWithoutPassword.municipio={
+        country:countryExist,state: stateExist,city:citiExist
+      }
+
+      return userWithoutPassword;
     } catch (error) {
       throw error;
     }
