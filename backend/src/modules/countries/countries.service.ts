@@ -192,6 +192,7 @@ export class CountriesService {
 
     async getCityById(cityId:number, stateIso:string, countryIso:string):Promise<any|null>{
         try {
+            console.log('Getting city by ID:', cityId, 'State ISO:', stateIso, 'Country ISO:', countryIso);
             const cities = await this.getCitiesByState(stateIso, countryIso);
             const city = cities.find(c => c.id === cityId);
             return city || null;

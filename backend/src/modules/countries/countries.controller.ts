@@ -67,4 +67,24 @@ export class CountriesController {
         }
     }
 
+    @Get('/countries/:iso/states/:stateIso/cities/:cityId')
+    async getCityById( @Param('cityId') cityId: string, @Param('stateIso') stateIso: string, @Param('iso') countryIso: string) {
+        try {
+            return this.countriesService.getCityById(+(cityId), stateIso, countryIso);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    @Get('/countries/:iso/states/:stateIso/cities/name/:cityName')
+    async getCityByName( @Param('cityName') cityName: string, @Param('stateIso') stateIso: string, @Param('iso') countryIso: string) {
+        try {
+            return this.countriesService.getCityByName(cityName, stateIso, countryIso);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+
+
 }
