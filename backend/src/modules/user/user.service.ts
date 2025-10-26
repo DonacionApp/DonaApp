@@ -98,7 +98,7 @@ export class UserService {
 
       const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(user.people.municipio as any);
 
-      userWithoutPassword.municipio={
+      userWithoutPassword.people.municipio={
         country:countryExist,state: stateExist,city:citiExist
       }
       return userWithoutPassword;
@@ -274,11 +274,11 @@ export class UserService {
 
       if (dto.profilePhoto !== undefined) user.profilePhoto = dto.profilePhoto;
       if (dto.block !== undefined) user.block = dto.block;
-
       const usuario = await this.userRepository.save(user);
+      
+      const { password, ...userWithoutPassword} = usuario as any;
       const municipio= usuario.people.municipio;
       const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(municipio as any);
-      const { password, ...userWithoutPassword} = usuario as any;
       userWithoutPassword.people.municipio={
         country:countryExist,state: stateExist,city:citiExist
       }

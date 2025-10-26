@@ -183,8 +183,8 @@ export class AuthService {
          if(!token) throw new UnauthorizedException('Token de verificación no proporcionado.');
          const decoded = this.jwtService.decode(token);
          console.log(decoded);
-         console.log(decoded.userId)
-         const user= await this.userService.findById(decoded.userId);
+         console.log(decoded.sub)
+         const user= await this.userService.findById(decoded.sub);
          if(!user) throw new UnauthorizedException('Usuario no encontrado para el token proporcionado.');
          if(user.emailVerified) return {message:'El correo electrónico ya ha sido verificado.'};
          if(user.token!==token) throw new UnauthorizedException('Token de verificación inválido.');
