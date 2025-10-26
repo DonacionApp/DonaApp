@@ -6,6 +6,8 @@ export const DB_PORT = 'DB_PORT'
 export const DB_USER = 'DB_USER'
 export const DB_PASS = 'DB_PASS'
 export const DB_NAME = 'DB_NAME'
+export const URL_COUNTRIES_API='URL_COUNTRIES_API'
+export const API_KEY_COUNTRIES_API='API_KEY_COUNTRIES_API'
 
 export const MAIL_HOST ='MAIL_HOST'
 export const MAIL_USER ='MAIL_USER'
