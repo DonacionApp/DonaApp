@@ -23,16 +23,18 @@ export class UserService {
     private readonly peopleService: PeopleService,
     private readonly rolService: RolService,
     private readonly countriesService: CountriesService
-  ) {}
+  ) { }
 
   async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
     try {
-      const users = await this.userRepository.find({ relations: {
-        rol:true,
-        people:{
-          typeDni:true
+      const users = await this.userRepository.find({
+        relations: {
+          rol: true,
+          people: {
+            typeDni: true
+          }
         }
-      }});
+      });
       if (!users || users.length === 0) {
         throw new BadRequestException('No hay usuarios registrados');
       }
@@ -46,61 +48,64 @@ export class UserService {
 
   async fyndByEmail(email: string): Promise<UserEntity> {
     try {
-      if(!email)throw new BadRequestException('El email es obligatorio');
+      if (!email) throw new BadRequestException('El email es obligatorio');
       const user = await this.userRepository.findOne({
-        where:{email:email},
-        relations:{
-          people:{
-            typeDni:true
+        where: { email: email },
+        relations: {
+          people: {
+            typeDni: true
           },
-          rol:true
+          rol: true
         }
       });
-      if(!user)throw new NotFoundException('Usuario no encontrado');
+      if (!user) throw new NotFoundException('Usuario no encontrado');
       return user;
-    }catch(error){
+    } catch (error) {
       throw error;
     }
   }
 
-  async normalizeMunicipio(municiosJsonstring:string):Promise<{countryExist:any, stateExist:any, citiExist:any, municipioJson:any}> {
+  async normalizeMunicipio(municiosJsonstring: string): Promise<{ countryExist: any, stateExist: any, citiExist: any, municipioJson: any }> {
     try {
 
       const municipioJson = JSON.parse(municiosJsonstring || 'null');
       const country = municipioJson ? municipioJson.pais : null;
       const state = municipioJson ? municipioJson.state : null;
       const city = municipioJson ? municipioJson.city : null;
-      const countryExist= await this.countriesService.getCountryByCode(country.iso2);
-      const stateExist= await this.countriesService.getStateBycode(state.iso2, country.iso2);
-      const citiExist= await this.countriesService.getCityByName(city.name, state.iso2, country.iso2);
-      return {countryExist, stateExist, citiExist, municipioJson};
+      const countryExist = await this.countriesService.getCountryByCode(country.iso2);
+      const stateExist = await this.countriesService.getStateBycode(state.iso2, country.iso2);
+      const citiExist = await this.countriesService.getCityByName(city.name, state.iso2, country.iso2);
+      return { countryExist, stateExist, citiExist, municipioJson };
     } catch (error) {
       throw error;
     }
   }
 
 
-  async findById(id: number): Promise<UserEntity > {
+  async findById(id: number): Promise<UserEntity> {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id },
-        relations:{
-          people:{
-            typeDni:true
+        relations: {
+          people: {
+            typeDni: true
           },
-          rol:true
+          rol: true
         }
       });
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
-      const { password, ...userWithoutPassword} = user as any;
+      const { password, ...userWithoutPassword } = user as any;
 
-      const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(user.people.municipio as any);
+      if (user.people.municipio) {
+        const { countryExist, stateExist, citiExist, municipioJson } = await this.normalizeMunicipio(user.people.municipio as any);
 
-      userWithoutPassword.people.municipio={
-        country:countryExist,state: stateExist,city:citiExist
+        userWithoutPassword.people.municipio = {
+          country: countryExist, state: stateExist, city: citiExist
+        }
       }
+
       return userWithoutPassword;
     } catch (error) {
       throw error;
@@ -115,13 +120,16 @@ export class UserService {
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
-      const { password, ...userWithoutPassword} = user as any;
+      const { password, ...userWithoutPassword } = user as any;
+      if (user.people.municipio) {
+        const { countryExist, stateExist, citiExist, municipioJson } = await this.normalizeMunicipio(user.people.municipio as any);
 
-      const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(user.people.municipio as any);
-
-      userWithoutPassword.municipio={
-        country:countryExist,state: stateExist,city:citiExist
+        userWithoutPassword.municipio = {
+          country: countryExist, state: stateExist, city: citiExist
+        }
       }
+
+
 
       return userWithoutPassword;
     } catch (error) {
@@ -175,15 +183,15 @@ export class UserService {
     }
   }
 
-  async update(id: number, dto: UpdateUserDto, resetPass?:boolean): Promise<UserEntity> {
+  async update(id: number, dto: UpdateUserDto, resetPass?: boolean): Promise<UserEntity> {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id },
-        relations:{
-          people:{
-            typeDni:true
+        relations: {
+          people: {
+            typeDni: true
           },
-          rol:true
+          rol: true
         }
       });
       if (!user) {
@@ -205,10 +213,10 @@ export class UserService {
 
       if (targetEmail !== user.email && targetEmail) {
         const emailExists = await this.userRepository.findOne({
-          where: { 
+          where: {
             email: targetEmail,
             id: Not(id)
-           }
+          }
         });
         if (emailExists) {
           throw new BadRequestException('El email ya existe');
@@ -219,34 +227,34 @@ export class UserService {
       if (dto.password) {
         user.password = dto.password;
       }
-      if(dto.token){
-        user.token=dto.token;
+      if (dto.token) {
+        user.token = dto.token;
       }
-      if(dto.verificationCode){
-        user.code=dto.verificationCode;
+      if (dto.verificationCode) {
+        user.code = dto.verificationCode;
       }
-      if(dto.verified!==undefined){
-        user.verified=dto.verified;
+      if (dto.verified !== undefined) {
+        user.verified = dto.verified;
       }
-      if(dto.isVerifiedEmail){
-        user.emailVerified=dto.isVerifiedEmail;
-        if(dto.isVerifiedEmail===true){
-          user.code=null;
-          user.token=null;
-          user.dateSendCodigo=null;
+      if (dto.isVerifiedEmail) {
+        user.emailVerified = dto.isVerifiedEmail;
+        if (dto.isVerifiedEmail === true) {
+          user.code = null;
+          user.token = null;
+          user.dateSendCodigo = null;
 
         }
       }
-      if(resetPass){
-        user.code=null;
-        user.token=null;
-        user.dateSendCodigo=null;
+      if (resetPass) {
+        user.code = null;
+        user.token = null;
+        user.dateSendCodigo = null;
       }
-      if(dto.code){
-        user.code=dto.code;
+      if (dto.code) {
+        user.code = dto.code;
       }
-      if(dto.dateSendCodigo){
-        user.dateSendCodigo=dto.dateSendCodigo;
+      if (dto.dateSendCodigo) {
+        user.dateSendCodigo = dto.dateSendCodigo;
       }
 
       if (dto.rolId && dto.rolId !== user.rol?.id) {
@@ -254,34 +262,37 @@ export class UserService {
         if (!rol) {
           throw new BadRequestException('El rol no existe');
         }
-        if(user.rol.rol=='admin' && rol.rol!='admin'){
+        if (user.rol.rol == 'admin' && rol.rol != 'admin') {
           const adminCount = await this.countUsersAdmins();
-          if(adminCount<=1){
+          if (adminCount <= 1) {
             throw new BadRequestException('No se puede cambiar el rol. Debe haber al menos un usuario con rol de admin');
           }
         }
         user.rol = rol;
       }
 
-      if (dto.people ) {
+      if (dto.people) {
         const people = await this.peopleService.findById(user.people.id)
         if (!people) {
           throw new BadRequestException('La persona no existe');
         }
-        const peopleSaved=await this.peopleService.update(people.id, dto.people);
-        user.people=peopleSaved;
+        const peopleSaved = await this.peopleService.update(people.id, dto.people);
+        user.people = peopleSaved;
       }
 
       if (dto.profilePhoto !== undefined) user.profilePhoto = dto.profilePhoto;
       if (dto.block !== undefined) user.block = dto.block;
       const usuario = await this.userRepository.save(user);
-      
-      const { password, ...userWithoutPassword} = usuario as any;
-      const municipio= usuario.people.municipio;
-      const {countryExist, stateExist, citiExist, municipioJson} = await this.normalizeMunicipio(municipio as any);
-      userWithoutPassword.people.municipio={
-        country:countryExist,state: stateExist,city:citiExist
+
+      const { password, ...userWithoutPassword } = usuario as any;
+      if (usuario.people.municipio) {
+        const municipio = usuario.people.municipio;
+        const { countryExist, stateExist, citiExist, municipioJson } = await this.normalizeMunicipio(municipio as any);
+        userWithoutPassword.people.municipio = {
+          country: countryExist, state: stateExist, city: citiExist
+        }
       }
+
       return userWithoutPassword;
     } catch (error) {
       throw error;
@@ -295,11 +306,11 @@ export class UserService {
       }
       const user = await this.userRepository.findOne({
         where: { id: id },
-        relations:{
-          people:{
-            typeDni:true
+        relations: {
+          people: {
+            typeDni: true
           },
-          rol:true
+          rol: true
         }
       });
       if (!user) {
@@ -313,7 +324,7 @@ export class UserService {
     }
   }
 
-    async countUsersAdmins():Promise<number>{
+  async countUsersAdmins(): Promise<number> {
     try {
       const count = await this.userRepository.count({
         where: { rol: { rol: 'admin' } }
@@ -324,12 +335,12 @@ export class UserService {
     }
   }
 
-  async changeRole(userId:number, rolId:number):Promise<UserEntity>{
+  async changeRole(userId: number, rolId: number): Promise<UserEntity> {
     try {
-      if(!userId){
+      if (!userId) {
         throw new BadRequestException('El id del usuario es obligatorio');
       }
-      if(!rolId){
+      if (!rolId) {
         throw new BadRequestException('El id del rol es obligatorio');
       }
       const user = await this.userRepository.findOne({
@@ -342,9 +353,9 @@ export class UserService {
       if (!rol) {
         throw new BadRequestException('Rol no encontrado');
       }
-      if(user.rol.rol=='admin' && rol.rol!='admin'){
+      if (user.rol.rol == 'admin' && rol.rol != 'admin') {
         const adminCount = await this.countUsersAdmins();
-        if(adminCount<=1){
+        if (adminCount <= 1) {
           throw new BadRequestException('No se puede cambiar el rol. Debe haber al menos un usuario con rol de admin');
         }
       }
@@ -355,12 +366,12 @@ export class UserService {
     }
   }
 
-  async changeBlockStatus(userId:number, blockStatus:boolean):Promise<UserEntity>{
+  async changeBlockStatus(userId: number, blockStatus: boolean): Promise<UserEntity> {
     try {
-      if(!userId){
+      if (!userId) {
         throw new BadRequestException('El id del usuario es obligatorio');
       }
-      if(blockStatus===undefined || blockStatus===null){
+      if (blockStatus === undefined || blockStatus === null) {
         throw new BadRequestException('El estado de bloqueo es obligatorio');
       }
       const user = await this.userRepository.findOne({
