@@ -189,7 +189,7 @@ export class UserService {
     }
   }
 
-  async update(id: number, dto: UpdateUserDto, resetPass?: boolean, file?: Express.Multer.File): Promise<UserEntity> {
+  async update(id: number, dto: UpdateUserDto, resetPass?: boolean): Promise<UserEntity> {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id },
@@ -251,6 +251,9 @@ export class UserService {
 
         }
       }
+      if(dto.profilePhoto){
+        user.profilePhoto=dto.profilePhoto;
+      }
       if (resetPass) {
         user.code = null;
         user.token = null;
@@ -284,9 +287,6 @@ export class UserService {
         }
         const peopleSaved = await this.peopleService.update(people.id, dto.people);
         user.people = peopleSaved;
-      }
-      if(file){
-        console.log('Archivo recibido en user service:');
       }
 
       const usuario = await this.userRepository.save(user);
@@ -329,7 +329,12 @@ export class UserService {
         }
         await this.cloudinaryService.deleteFile(folder, publicId);
       }
-      console.log('Subiendo nueva foto de perfil...');
+     const newImage=await this.cloudinaryService.uploadImage(folder, file); 
+     const urlNewImage=(newImage as any).secure_url;
+     const userData=new UpdateUserDto();
+     userData.profilePhoto=urlNewImage;
+     const updatedUser=await this.update(userId, userData);
+     return {status:'success', profilePhoto:urlNewImage, statusCode:200, message:'Foto de perfil actualizada correctamente'};
     } catch (error) {
       throw error;
     }

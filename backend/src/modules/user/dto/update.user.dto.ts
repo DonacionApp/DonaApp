@@ -21,6 +21,11 @@ export class UpdateUserDto {
 
   @IsOptional()
   people: UpdatePeopleDto ;
+
+  @IsOptional()
+  @IsString()
+  profilePhoto?: string;
+
   @IsOptional()
   @IsBoolean()
   block?: boolean;
@@ -46,6 +51,10 @@ export class UpdateUserDto {
   code:string | null;
   @IsOptional()
   dateSendCodigo:Date | null;
+
+  @IsOptional()
+  @IsString()
+  supportId:string;
 
   @IsOptional()
     Municipio: {

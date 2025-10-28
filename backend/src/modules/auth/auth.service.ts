@@ -349,9 +349,9 @@ export class AuthService {
       }
    }
 
-   async updateMe(dto: UpdateUserDto, userId:number,file?:Express.Multer.File):Promise<any>{
+   async updateMe(dto: UpdateUserDto, userId:number,):Promise<any>{
       try {
-         return await this.userService.update(userId, dto,false, file);
+         return await this.userService.update(userId, dto,false);
       } catch (error) {
          throw error;
       }

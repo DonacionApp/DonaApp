@@ -26,7 +26,6 @@ export class CloudinaryService {
     }
 
     async deleteFile(folder: string, publicId: string): Promise<DeleteApiResponse | UploadApiErrorResponse> {
-        console.log('eliminando imagen de la carpeta ', folder)
         if(!folder || !publicId){
             throw new BadRequestException('No folder or publicId provided');
         }
