@@ -134,7 +134,7 @@ export class AuthService {
             title: '!Verifica tu correo electrónico!',
             code: code,
             url: urlToken + `?token=${token.access_token}`,
-            secondaryUrl: urlVerify,
+            secondaryUrl: `${urlVerify}?email=${user.email}`,
          }
          await this.mailService.sendMail(info);
          return { message: 'Email de verificación enviado.' };
