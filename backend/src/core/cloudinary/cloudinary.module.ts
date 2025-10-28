@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
-import { ClodinaryController } from './cloudinary.controller';
-import { ClodinaryService } from './cloudinary.service';
+import { CloudinaryController } from './cloudinary.controller';
+import { CloudinaryService } from './cloudinary.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { v2 as cloudinary } from 'cloudinary';
 import { CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLOUDINARY_NAME } from 'src/config/constants';
 
 @Module({
   imports: [ConfigModule],
-  controllers: [ClodinaryController],
-  providers: [ClodinaryService,
+  controllers: [CloudinaryController],
+  providers: [CloudinaryService,
     {
       provide: 'CLOUDINARY',
       inject:[ConfigService],
@@ -22,4 +22,4 @@ import { CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLOUDINARY_NAME } from 'src/
     }
   ]
 })
-export class ClodinaryModule {}
+export class CloudinaryModule {}
