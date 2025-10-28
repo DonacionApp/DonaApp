@@ -10,6 +10,10 @@ import { PeopleService } from '../people/people.service';
 import { RolService } from '../rol/rol.service';
 import { json } from 'stream/consumers';
 import { CountriesService } from '../countries/countries.service';
+import { MailService } from 'src/core/mail/mail.service';
+import { ConfigService } from '@nestjs/config';
+import { CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLDER } from 'src/config/constants';
+import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 
 @Injectable()
 export class UserService {
@@ -22,7 +26,9 @@ export class UserService {
     private readonly peopleRepository: Repository<PeopleEntity>,
     private readonly peopleService: PeopleService,
     private readonly rolService: RolService,
-    private readonly countriesService: CountriesService
+    private readonly countriesService: CountriesService,
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly configService: ConfigService,
   ) { }
 
   async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
@@ -183,7 +189,7 @@ export class UserService {
     }
   }
 
-  async update(id: number, dto: UpdateUserDto, resetPass?: boolean): Promise<UserEntity> {
+  async update(id: number, dto: UpdateUserDto, resetPass?: boolean, file?: Express.Multer.File): Promise<UserEntity> {
     try {
       const user = await this.userRepository.findOne({
         where: { id: id },
@@ -279,9 +285,10 @@ export class UserService {
         const peopleSaved = await this.peopleService.update(people.id, dto.people);
         user.people = peopleSaved;
       }
+      if(file){
+        console.log('Archivo recibido en user service:');
+      }
 
-      if (dto.profilePhoto !== undefined) user.profilePhoto = dto.profilePhoto;
-      if (dto.block !== undefined) user.block = dto.block;
       const usuario = await this.userRepository.save(user);
 
       const { password, ...userWithoutPassword } = usuario as any;
@@ -294,6 +301,35 @@ export class UserService {
       }
 
       return userWithoutPassword;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateProfilePhoto(userId:number, file:Express.Multer.File):Promise<any>{
+    try {
+      if(!userId || !file){
+        throw new BadRequestException('El id del usuario y el archivo son obligatorios');
+      }
+      const folderBase = this.configService.get<string>(CLOUDINARY_FOLDER_BASE);
+      const folderPhoto = this.configService.get<string>(CLOUDINARY_PROFILE_FOLDER);
+      if(!folderBase || !folderPhoto){
+        throw new BadRequestException('La configuración de Cloudinary es incorrecta');
+      }
+      const folder=`${folderBase}/${folderPhoto}`;
+      const user = await this.findById(userId);
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      if (user.profilePhoto) {
+        const prifilePhotoLink = user.profilePhoto;
+        const publicId = prifilePhotoLink.split('/').pop()?.split('.').shift() ?? null;
+        if (!publicId) {
+          throw new BadRequestException('No se pudo obtener el identificador público de la foto de perfil');
+        }
+        await this.cloudinaryService.deleteFile(folder, publicId);
+      }
+      console.log('Subiendo nueva foto de perfil...');
     } catch (error) {
       throw error;
     }

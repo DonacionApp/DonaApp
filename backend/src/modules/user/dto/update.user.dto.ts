@@ -21,11 +21,6 @@ export class UpdateUserDto {
 
   @IsOptional()
   people: UpdatePeopleDto ;
-
-  @IsOptional()
-  @IsString()
-  profilePhoto?: string;
-
   @IsOptional()
   @IsBoolean()
   block?: boolean;

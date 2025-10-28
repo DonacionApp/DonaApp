@@ -349,9 +349,17 @@ export class AuthService {
       }
    }
 
-   async updateMe(dto: UpdateUserDto, userId:number):Promise<any>{
+   async updateMe(dto: UpdateUserDto, userId:number,file?:Express.Multer.File):Promise<any>{
       try {
-         return await this.userService.update(userId, dto);
+         return await this.userService.update(userId, dto,false, file);
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async updateProfilePhoto(userId:number, file:Express.Multer.File):Promise<any>{
+      try {
+         return await this.userService.updateProfilePhoto(userId, file);
       } catch (error) {
          throw error;
       }
