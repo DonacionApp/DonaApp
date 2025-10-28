@@ -12,6 +12,7 @@ import { UserModule } from './modules/user/user.module';
 import { MailModule } from './core/mail/mail.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CountriesModule } from './modules/countries/countries.module';
+import { CloudinaryModule } from './core/cloudinary/cloudinary.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -41,6 +42,7 @@ import { CountriesModule } from './modules/countries/countries.module';
   MailModule,
   AuthModule,
   CountriesModule,
+  CloudinaryModule,
 ],
   controllers: [AppController],
   providers: [AppService],
