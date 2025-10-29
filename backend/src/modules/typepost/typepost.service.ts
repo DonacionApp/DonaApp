@@ -51,8 +51,9 @@ export class TypepostService {
             if(!typePost){
                 throw new BadRequestException('el tipo de post es requerido');
             }
-            typePost=typePost.trim().toLowerCase();
-            const exists= await this.findByName(typePost);
+            console.log(typePost)
+            typePost=(typePost.trim()).toLowerCase();
+            const exists= await this.typePostRespository.findOne({where:{type:typePost}});
             if(exists){
                 throw new BadRequestException('el tipo de post ya existe');
             }
@@ -76,14 +77,15 @@ export class TypepostService {
             if(exists){
                 throw new BadRequestException('el tipo de post ya existe');
             }
-            const newTypePost = this.typePostRespository.create({ type: typePost });
-            return await this.typePostRespository.save(newTypePost);
+            const typeToUpdate= await this.findById(id);
+            typeToUpdate.type=typePost;
+            return await this.typePostRespository.save(typeToUpdate);
         } catch (error) {
             throw error;
         }
     }
 
-    async delete(id:number):Promise<void>{
+    async delete(id:number):Promise<any>{
         try {
             if(!id){
                 throw new BadRequestException('el id es requerido');
@@ -93,6 +95,7 @@ export class TypepostService {
                 throw new NotFoundException('no se encontró el tipo de post');
             }
             await this.typePostRespository.delete(id);
+            return {message:'tipo de post eliminado correctamente',status:200};
         } catch (error) {
             throw error;
         }
