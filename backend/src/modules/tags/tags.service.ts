@@ -63,6 +63,8 @@ export class TagsService {
             tag=tag.trim().toLowerCase();
             const tagEntity = await this.getTagById(id);
             if(!tagEntity) throw new NotFoundException('tag no encontrada');
+            const existtag= await this.getTabByName(tag).catch(()=>null);
+            if(existtag && existtag.id!==id) throw new BadRequestException('tag ya existe');
             tagEntity.tag = tag;
             return await this.tagsRepository.save(tagEntity);
         } catch (error) {
