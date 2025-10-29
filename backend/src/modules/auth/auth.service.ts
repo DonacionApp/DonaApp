@@ -75,6 +75,8 @@ export class AuthService {
 
    async registerUser(dto: CreateUserDto): Promise<{ message: string, statussCode: number }> {
       try {
+         if(!dto.password) throw new InternalServerErrorException('La contraseña es obligatoria para el registro.');
+         if((dto.password).length < 8) throw new InternalServerErrorException('La contraseña debe tener al menos 8 caracteres.');
          const salt = await bcrypt.genSalt(10);
          const hashedPassword = await bcrypt.hash(dto.password, salt);
          dto.password = hashedPassword;
@@ -274,11 +276,13 @@ export class AuthService {
          await this.updateLastLogin(user.id);
 
          const token = await this.generateToken(user);
-
-         return {
+         const response={
             message: 'Inicio de sesión exitoso.',
             access_token: token.access_token,
-         };
+         }
+         if (!user.lastLogin) response['lastLogin']=false;
+
+         return response;
       } catch (error) {
          throw error;
       }
@@ -360,6 +364,14 @@ export class AuthService {
    async updateProfilePhoto(userId:number, file:Express.Multer.File):Promise<any>{
       try {
          return await this.userService.updateProfilePhoto(userId, file);
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async updateSupportId(userId:number, file:Express.Multer.File):Promise<any>{
+      try {
+         return await this.userService.updateSupportId(userId, file);
       } catch (error) {
          throw error;
       }

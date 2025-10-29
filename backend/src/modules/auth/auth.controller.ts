@@ -118,4 +118,20 @@ export class AuthController {
       }
    }
 
+   @UseGuards(JwtAuthGuard)
+   @Post('update-support-id')
+   @UseInterceptors(FileInterceptor('supportId'))
+   async updateSupportId(@Headers('authorization') authHeader: string, @UploadedFile() file: Express.Multer.File): Promise<any> {
+      try {
+         const token = authHeader.replace('Bearer ', '');
+         if (!token) throw new UnauthorizedException('Token no proporcionado.');
+         const decoded = await this.jwtService.verifyAsync(token);
+         const { sub } = decoded;
+         return await this.authService.updateSupportId(sub, file);
+      } catch (error) {
+         throw error;
+      }
+   }
+
+
 }

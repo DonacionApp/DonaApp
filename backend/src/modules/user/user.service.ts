@@ -12,7 +12,7 @@ import { json } from 'stream/consumers';
 import { CountriesService } from '../countries/countries.service';
 import { MailService } from 'src/core/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
-import { CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLDER } from 'src/config/constants';
+import { CLOUDINARY_DOCS_FOLDER, CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLDER } from 'src/config/constants';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 
 @Injectable()
@@ -248,11 +248,12 @@ export class UserService {
           user.code = null;
           user.token = null;
           user.dateSendCodigo = null;
+          user.block = false;
 
         }
       }
-      if(dto.profilePhoto){
-        user.profilePhoto=dto.profilePhoto;
+      if (dto.profilePhoto) {
+        user.profilePhoto = dto.profilePhoto;
       }
       if (resetPass) {
         user.code = null;
@@ -306,17 +307,17 @@ export class UserService {
     }
   }
 
-  async updateProfilePhoto(userId:number, file:Express.Multer.File):Promise<any>{
+  async updateProfilePhoto(userId: number, file: Express.Multer.File): Promise<any> {
     try {
-      if(!userId || !file){
+      if (!userId || !file) {
         throw new BadRequestException('El id del usuario y el archivo son obligatorios');
       }
       const folderBase = this.configService.get<string>(CLOUDINARY_FOLDER_BASE);
       const folderPhoto = this.configService.get<string>(CLOUDINARY_PROFILE_FOLDER);
-      if(!folderBase || !folderPhoto){
+      if (!folderBase || !folderPhoto) {
         throw new BadRequestException('La configuración de Cloudinary es incorrecta');
       }
-      const folder=`${folderBase}/${folderPhoto}`;
+      const folder = `${folderBase}/${folderPhoto}`;
       const user = await this.findById(userId);
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
@@ -329,12 +330,12 @@ export class UserService {
         }
         await this.cloudinaryService.deleteFile(folder, publicId);
       }
-     const newImage=await this.cloudinaryService.uploadImage(folder, file); 
-     const urlNewImage=(newImage as any).secure_url;
-     const userData=new UpdateUserDto();
-     userData.profilePhoto=urlNewImage;
-     const updatedUser=await this.update(userId, userData);
-     return {status:'success', profilePhoto:urlNewImage, statusCode:200, message:'Foto de perfil actualizada correctamente'};
+      const newImage = await this.cloudinaryService.uploadImage(folder, file);
+      const urlNewImage = (newImage as any).secure_url;
+      const userData = new UpdateUserDto();
+      userData.profilePhoto = urlNewImage;
+      const updatedUser = await this.update(userId, userData);
+      return { status: 'success', profilePhoto: urlNewImage, statusCode: 200, message: 'Foto de perfil actualizada correctamente' };
     } catch (error) {
       throw error;
     }
@@ -423,6 +424,45 @@ export class UserService {
       }
       user.block = blockStatus;
       return await this.userRepository.save(user);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateSupportId(userId: number, file: Express.Multer.File): Promise<any> {
+    try {
+      if (!userId || !file) {
+        throw new BadRequestException('El id del usuario y el archivo son obligatorios');
+      }
+      const folderBase = this.configService.get<string>(CLOUDINARY_FOLDER_BASE);
+      const folderDocs = this.configService.get<string>(CLOUDINARY_DOCS_FOLDER);
+      if (!folderBase || !folderDocs) {
+        throw new BadRequestException('La configuración de Cloudinary es incorrecta');
+      }
+      const folder = `${folderBase}/${folderDocs}`;
+      const user = await this.findById(userId);
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      if (!user.verified) {
+        if (user.people.supportId) {
+          const supporIdLink = user.people.supportId;
+          const publicId = supporIdLink.split('/').pop()?.split('.').shift() ?? null;
+          if (!publicId) {
+            throw new BadRequestException('No se pudo obtener el identificador público del documento de soporte');
+          }
+          await this.cloudinaryService.deleteFile(folder, publicId);
+        }
+        const newDocument = await this.cloudinaryService.uploadPDF(folder, file);
+        const urlNewDocument = (newDocument as any).secure_url;
+        console.log('URL nuevo documento de soporte:', urlNewDocument);
+        const userNew = new UpdateUserDto();
+        userNew.people = { supportId: urlNewDocument } as any;
+        const updatedUser = await this.update(userId, userNew);
+        return { status: 'success', supportId: urlNewDocument, statusCode: 200, message: 'Documento de soporte actualizado correctamente' };
+      }
+      return { status: 'info', statusCode: 200, message: 'El usuario ya está verificado, no se puede actualizar el documento de soporte' };
+
     } catch (error) {
       throw error;
     }
