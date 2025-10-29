@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TypePostEntity } from './entity/type.port.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 
 @Injectable()
 export class TypepostService {
@@ -51,7 +51,28 @@ export class TypepostService {
             if(!typePost){
                 throw new BadRequestException('el tipo de post es requerido');
             }
+            typePost=typePost.trim().toLowerCase();
             const exists= await this.findByName(typePost);
+            if(exists){
+                throw new BadRequestException('el tipo de post ya existe');
+            }
+            const newTypePost = this.typePostRespository.create({ type: typePost });
+            return await this.typePostRespository.save(newTypePost);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async update(id:number,typePost:string):Promise<TypePostEntity>{
+        try {
+            if(!typePost){
+                throw new BadRequestException('el tipo de post es requerido');
+            }
+            if(!id){
+                throw new BadRequestException('el id es requerido');
+            }
+            typePost=typePost.trim().toLowerCase();
+            const exists= await this.typePostRespository.findOne({where:{type:typePost, id:Not(id)}});
             if(exists){
                 throw new BadRequestException('el tipo de post ya existe');
             }
