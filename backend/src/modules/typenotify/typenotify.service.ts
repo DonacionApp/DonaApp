@@ -39,7 +39,6 @@ export class TypeNotifyService {
    async getById(id: number): Promise<TypeNotifyEntity> {
       try {
          if (!id) throw new BadRequestException('El ID es obligatorio');
-         if (typeof id !== 'number') throw new BadRequestException('El ID debe ser un número');
          const typeNotify = await this.typeNotifyRepository.findOne({ where: { id: id } });
          if (!typeNotify) throw new NotFoundException('Tipo de notificación no encontrada');
          return typeNotify;
@@ -64,7 +63,6 @@ export class TypeNotifyService {
    async updateTypeNotify(id: number, typeNotify: string): Promise<TypeNotifyEntity> {
       try {
          if (!id) throw new BadRequestException('El ID es obligatorio');
-         if (typeof id !== 'number') throw new BadRequestException('El ID debe ser un número');
          if (!typeNotify) throw new BadRequestException('Tipo de notificación obligatorio');
          if (typeof typeNotify !== 'string') throw new BadRequestException('Tipo de notificación debe ser un string');
          if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(typeNotify)) throw new BadRequestException('Solo se permiten letras');
@@ -83,7 +81,6 @@ export class TypeNotifyService {
    async deleteTypeNotify(id: number): Promise<any> {
       try {
          if (!id) throw new BadRequestException('El ID es obligatorio');
-         if (typeof id !== 'number') throw new BadRequestException('El ID debe ser un número');
          const existTypeNotify = await this.getById(id);
          if (!existTypeNotify) throw new NotFoundException('Tipo de notificación no encontrada');
          await this.typeNotifyRepository.delete(id);
