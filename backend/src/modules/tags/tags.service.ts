@@ -13,6 +13,7 @@ export class TagsService {
     async createTag(tag: string): Promise<TagsEntity> {
         try {
             if (!tag) throw new BadRequestException('Tag necesaria');
+            tag=tag.trim().toLowerCase();
             const exist = await this.tagsRepository.findOne({ where: { tag: tag } });
             if (exist) throw new BadRequestException('Tag ya existe');
             const newTag = this.tagsRepository.create({ tag: tag });
@@ -35,6 +36,7 @@ export class TagsService {
     async getTabByName(tag: string): Promise<TagsEntity> {
         try {
             if (!tag) throw new BadRequestException('Tag necesaria');
+            tag=tag.trim().toLowerCase();
             const tagEntity = await this.tagsRepository.findOne({ where: { tag: tag } });
             if (!tagEntity) throw new BadRequestException('Tag no encontrada');
             return tagEntity;
@@ -58,6 +60,7 @@ export class TagsService {
         try {
             if(!id) throw new BadRequestException('id necesario');
             if(!tag) throw new BadRequestException('tag necesario');
+            tag=tag.trim().toLowerCase();
             const tagEntity = await this.getTagById(id);
             if(!tagEntity) throw new NotFoundException('tag no encontrada');
             tagEntity.tag = tag;
