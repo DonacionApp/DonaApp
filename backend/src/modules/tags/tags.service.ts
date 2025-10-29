@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TagsEntity } from './entity/tags.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 
 @Injectable()
 export class TagsService {
@@ -63,7 +63,7 @@ export class TagsService {
             tag=tag.trim().toLowerCase();
             const tagEntity = await this.getTagById(id);
             if(!tagEntity) throw new NotFoundException('tag no encontrada');
-            const existtag= await this.getTabByName(tag).catch(()=>null);
+            const existtag= await this.tagsRepository.findOne({where:{tag:tag,id:Not(id)}})
             if(existtag && existtag.id!==id) throw new BadRequestException('tag ya existe');
             tagEntity.tag = tag;
             return await this.tagsRepository.save(tagEntity);
