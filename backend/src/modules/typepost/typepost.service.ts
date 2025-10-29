@@ -21,4 +21,16 @@ export class TypepostService {
             throw error;
         }
     }
+
+    async findById(id:number):Promise<TypePostEntity>{
+        try {
+            const type = await this.typePostRespository.findOne({ where: { id } });
+            if (!type) {
+                throw new NotFoundException('no se encontró el tipo de post')
+            }
+            return type;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
