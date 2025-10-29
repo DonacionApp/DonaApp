@@ -53,6 +53,10 @@ export class UpdateUserDto {
   dateSendCodigo:Date | null;
 
   @IsOptional()
+  @IsString()
+  supportId:string;
+
+  @IsOptional()
     Municipio: {
     pais: {
       id: string,

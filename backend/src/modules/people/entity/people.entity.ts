@@ -22,7 +22,7 @@ export class PeopleEntity{
     residencia:string;
     @Column({type:"varchar", length:10, unique:true, nullable:false})
     telefono: string;
-    @Column({type:'varchar', length:100, nullable:true})
+    @Column({type:'varchar', nullable:true})
     supportId:string | null;
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;
