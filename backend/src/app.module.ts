@@ -15,6 +15,7 @@ import { CountriesModule } from './modules/countries/countries.module';
 import { CloudinaryModule } from './core/cloudinary/cloudinary.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { TypepostModule } from './modules/typepost/typepost.module';
+import { TypeNotifyModule } from './modules/typenotify/typenotify.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -47,6 +48,7 @@ import { TypepostModule } from './modules/typepost/typepost.module';
   CloudinaryModule,
   TagsModule,
   TypepostModule,
+  TypeNotifyModule,
 ],
   controllers: [AppController],
   providers: [AppService],
