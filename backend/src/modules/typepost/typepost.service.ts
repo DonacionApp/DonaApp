@@ -83,5 +83,19 @@ export class TypepostService {
         }
     }
 
+    async delete(id:number):Promise<void>{
+        try {
+            if(!id){
+                throw new BadRequestException('el id es requerido');
+            }
+            const exists= await this.findById(id);
+            if(!exists){
+                throw new NotFoundException('no se encontró el tipo de post');
+            }
+            await this.typePostRespository.delete(id);
+        } catch (error) {
+            throw error;
+        }
+    }
 
 }
