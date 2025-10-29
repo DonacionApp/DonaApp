@@ -14,6 +14,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CountriesModule } from './modules/countries/countries.module';
 import { CloudinaryModule } from './core/cloudinary/cloudinary.module';
 import { TagsModule } from './modules/tags/tags.module';
+import { TypepostModule } from './modules/typepost/typepost.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -45,6 +46,7 @@ import { TagsModule } from './modules/tags/tags.module';
   CountriesModule,
   CloudinaryModule,
   TagsModule,
+  TypepostModule,
 ],
   controllers: [AppController],
   providers: [AppService],
