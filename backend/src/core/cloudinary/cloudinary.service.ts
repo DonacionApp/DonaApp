@@ -26,7 +26,7 @@ export class CloudinaryService {
     }
 
     async deleteFile(folder: string, publicId: string): Promise<DeleteApiResponse | UploadApiErrorResponse> {
-        if(!folder || !publicId){
+        if (!folder || !publicId) {
             throw new BadRequestException('No folder or publicId provided');
         }
         const publicIdFull = `${folder}/${publicId}`;
@@ -38,36 +38,39 @@ export class CloudinaryService {
         })
     }
 
-    async validateTamaño(file:Express.Multer.File):Promise<any>{
+    async validateTamaño(file: Express.Multer.File): Promise<any> {
         const MAX_IMAGE_BYTES = 1 * 1024 * 1024; // 1 MB
-        const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
+        const MAX_VIDEO_BYTES = 10 * 1024 * 1024; // 10 MB
         const MAX_PDF_BYTES = 1 * 1024 * 1024; // 1 MB
         const fileType = file.mimetype.split('/')[0];
-        switch(fileType){
+        switch (fileType) {
             case 'image':
-                if(file.buffer.length > MAX_IMAGE_BYTES){
+                if (file.buffer.length > MAX_IMAGE_BYTES) {
                     const actualKB = Math.round(file.buffer.length / 1024);
-                    return  {message:(`File muy grande: ${actualKB} KB. Max 1 MB`), file:file.filename,status:413};
+                    return { message: (`File muy grande: ${actualKB} KB. Max 1 MB`), file: file.filename, status: 413 };
                 }
                 break;
             case 'video':
-                if(file.buffer.length > MAX_VIDEO_BYTES){
+                if (file.buffer.length > MAX_VIDEO_BYTES) {
                     const actualKB = Math.round(file.buffer.length / 1024);
-                    return  {message:(`File muy grande: ${actualKB} KB. Max 50 MB`), file:file.filename,status:413};
+                    return { message: (`File muy grande: ${actualKB} KB. Max 10 MB`), file: file.originalname, status: 413 };
                 }
                 break;
             case 'pdf':
-                if(file.buffer.length > MAX_PDF_BYTES){
+                if (file.buffer.length > MAX_PDF_BYTES) {
                     const actualKB = Math.round(file.buffer.length / 1024);
-                    return  {message:(`File muy grande: ${actualKB} KB. Max 1 MB`), file:file.filename,status:413};
+                    return { message: (`File muy grande: ${actualKB} KB. Max 1 MB`), file: file.filename, status: 413 };
                 }
+                break;
+            default:
+                return { message: (`Tipo de archivo no soportado: ${file.mimetype}`), file: file.filename, status: 415 };
                 break;
         }
     }
 
     async uploadImage(folder: string, file: Express.Multer.File): Promise<UploadApiErrorResponse | UploadApiResponse> {
         try {
-            if(!file || !folder){
+            if (!file || !folder) {
                 throw new BadRequestException('No file or folder provided');
             }
 
@@ -94,7 +97,7 @@ export class CloudinaryService {
             if (!file || !folder) {
                 throw new BadRequestException('No file or folder provided');
             }
-            const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
+            const MAX_VIDEO_BYTES = 10 * 1024 * 1024; // 50 MB
             const allowedVideoTypes = [
                 'video/mp4',
                 'video/quicktime',
@@ -105,7 +108,7 @@ export class CloudinaryService {
                 'video/3gpp'
             ];
 
-            this.validateFile(file, allowedVideoTypes, MAX_VIDEO_BYTES);
+            await this.validateFile(file, allowedVideoTypes, MAX_VIDEO_BYTES);
             return this.uploadFile(folder, file);
         } catch (error) {
             throw error;
