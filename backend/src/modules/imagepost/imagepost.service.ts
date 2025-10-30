@@ -2,10 +2,12 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ImagePostEntity } from './entity/image.post.entity';
 import { AddImageToPostDto } from './dto/add.image.to.post.dto';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class ImagepostService {
     constructor(
+        @InjectRepository(ImagePostEntity)
         private readonly imagePostRespository:Repository<ImagePostEntity>
     ){}
 

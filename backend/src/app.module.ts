@@ -18,6 +18,7 @@ import { TypepostModule } from './modules/typepost/typepost.module';
 import { TypeNotifyModule } from './modules/typenotify/typenotify.module';
 import { PosttagsModule } from './modules/posttags/posttags.module';
 import { ImagepostModule } from './modules/imagepost/imagepost.module';
+import { PostModule } from './modules/post/post.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -53,6 +54,7 @@ import { ImagepostModule } from './modules/imagepost/imagepost.module';
   TypeNotifyModule,
   PosttagsModule,
   ImagepostModule,
+  PostModule,
 ],
   controllers: [AppController],
   providers: [AppService],
