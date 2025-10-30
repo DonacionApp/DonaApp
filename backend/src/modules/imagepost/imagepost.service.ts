@@ -33,4 +33,27 @@ export class ImagepostService {
             throw error;
         }
     }
+
+    async deleteImageFromPost(postId:number,imageId:number):Promise<{message:string}>{
+        try {
+            const postExists= await this.postService.getPostById(postId);
+            if(!postExists){
+                throw new BadRequestException('El post no existe');
+            }
+            const imagePost= await this.imagePostRespository.findOne({
+                where:{id:imageId},
+                relations:{post:true}
+            });
+            if(!imagePost){
+                throw new BadRequestException('La imagen no existe');
+            }
+            if(imagePost.post.id !== postId){
+                throw new BadRequestException('La imagen no pertenece a este post');
+            }
+            await this.imagePostRespository.remove(imagePost);
+            return {message:'Imagen eliminada correctamente'};
+        } catch (error) {
+            throw error;
+        }
+    }
 }
