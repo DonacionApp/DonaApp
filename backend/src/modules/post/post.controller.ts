@@ -93,13 +93,6 @@ export class PostController {
         return this.postService.addTagToPost(postId, tagId, userId);
     }
 
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('admin')
-    @Post('add/tag/admin/:tagId/post/:postId')
-    async addTagToPostAdmin(@Param('tagId') tagId: number, @Param('postId') postId: number): Promise<any> {
-        return this.postService.addTagToPost(postId, tagId, undefined, true);
-    }
-
     @UseGuards(JwtAuthGuard)
     @Delete('remove/tag/:tagId/post/:postId')
     async removeTagFromPost(@Req() req: any, @Param('tagId') tagId: number, @Param('postId') postId: number): Promise<any> {
@@ -107,6 +100,22 @@ export class PostController {
         const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
         if (!userId) throw new BadRequestException('Usuario no identificado');
         return this.postService.removeTagFromPost(postId, tagId, userId);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Post('add/tag/admin/:tagId/post/:postId')
+    async addTagToPostAdmin(@Param('tagId') tagId: number, @Param('postId') postId: number): Promise<any> {
+        return this.postService.addTagToPost(postId, tagId, undefined, true);
+    }
+
+
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Delete('remove/tag/admin/:tagId/post/:postId')
+    async removeTagFromPostAdmin( @Param('tagId') tagId: number, @Param('postId') postId: number): Promise<any> {
+        return this.postService.removeTagFromPost(postId, tagId, undefined, true);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
