@@ -105,10 +105,14 @@ export class ImagepostService {
             if(!postId || postId<=0 || postId===null || postId===undefined){
                 throw new BadRequestException('ID de post inválido');
             }
-            return await this.imagePostRespository.find({
+            const images = await this.imagePostRespository.find({
                 where: { post: { id: postId } },
                 relations: { post: true }
             });
+            if(!images || images.length===0){
+                throw new BadRequestException('No hay imágenes para este post');
+            }
+            return images;
         } catch (error) {
             throw error;
         }
@@ -129,6 +133,9 @@ export class ImagepostService {
             });
             if(!imagePost){
                 throw new BadRequestException('La imagen no existe');
+            }
+            if(!imagePost.post){
+                throw new BadRequestException('La imagen no está asociada a ningún post');
             }
             return imagePost;
         } catch (error) {
