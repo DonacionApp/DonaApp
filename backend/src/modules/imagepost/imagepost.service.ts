@@ -82,6 +82,17 @@ export class ImagepostService {
             if (imagePost.post.id !== postId) {
                 throw new BadRequestException('La imagen no pertenece a este post');
             }
+            const folderBase = this.configService.get<string>(CLOUDINARY_FOLDER_BASE);
+            const folderPost = this.configService.get<string>(CLOUDINARY_POST_FOLDER);
+            if (!folderBase || !folderPost) {
+                throw new BadRequestException('La configuracion de carpetas en cloudinary es invalida');
+            }
+            const folder = `${folderBase}/${folderPost}/post_${postId}`;
+            const publicId = imagePost.image.split('/').pop()?.split('.').shift();
+            if (!publicId) {
+                throw new BadRequestException('No se pudo obtener el publicId de la imagen');
+            }
+            await this.cloudinaryService.deleteFile(folder, publicId);
             await this.imagePostRespository.remove(imagePost);
             return { message: 'Imagen eliminada correctamente' };
         } catch (error) {
