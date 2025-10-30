@@ -27,6 +27,15 @@ export class PostController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get('me/posts')
+    async getMyPosts(@Req() req: any): Promise<any> {
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        if (!userId) throw new BadRequestException('Usuario no identificado');
+        return this.postService.getPostsByUserId(userId);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Post('/create')
     @UseInterceptors(FilesInterceptor('files'))
     async createPost(@Req() req: any, @Body() body: any, @UploadedFiles() files?: Express.Multer.File[]) {
