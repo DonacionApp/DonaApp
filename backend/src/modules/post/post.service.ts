@@ -200,4 +200,39 @@ export class PostService {
         }
     }
 
+    async getPostsByUserId(userId:number):Promise<PostEntity[]>{
+        try {
+            if(!userId || userId<=0 || userId===null || userId===undefined){
+                throw new BadRequestException('ID de usuario inválido');
+            }
+            const postUser= await this.postRepository.find({
+                where:{
+                    user:{
+                        id:userId
+                    }
+                },
+                relations:{
+                    imagePost:true,
+                    tags:{
+                        tag:true
+                    },
+                    user:true
+                }
+            });
+            if(!postUser || postUser.length===0){
+                throw new NotFoundException('El usuario no tiene posts');
+            }
+            const postsWithUserInfo = postUser.map(post => {
+                if (post.user) {
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                }
+                return post;
+            });
+            return postsWithUserInfo;
+        } catch (error) {
+            throw error;
+        }
+    }
+
 }

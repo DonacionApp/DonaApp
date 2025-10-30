@@ -16,6 +16,11 @@ export class PostController {
         return this.postService.findAll();
     }
 
+    @Get('user/:userId')
+    async getPostsByUserId(@Param('userId')userId:number):Promise<any>{
+        return this.postService.getPostsByUserId(userId);
+    }
+
     @Get('/:id')
     async getPostById(@Param('id')id:number):Promise<any>{
         return this.postService.getPostById(id);
@@ -46,4 +51,6 @@ export class PostController {
     async AdminDeletePost(@Param('id')id:number):Promise<any>{
         return this.postService.deletePost(id, undefined,true);
     }
+
+
 }
