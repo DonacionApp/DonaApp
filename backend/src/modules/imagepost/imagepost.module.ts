@@ -8,6 +8,6 @@ import { ImagePostEntity } from './entity/image.post.entity';
   imports:[TypeOrmModule.forFeature([ImagePostEntity])],
   controllers: [ImagepostController],
   providers: [ImagepostService],
-  exports:[ImagePostEntity]
+  exports:[ImagepostService]
 })
 export class ImagepostModule {}
