@@ -391,4 +391,28 @@ export class PostService {
         }
     
     }
+
+    async removeTagFromPost(postId:number, tagId:number, userId?:number, admin?:boolean):Promise<{message:string, status:number}>{
+        try {
+            if(!postId || postId<=0 || postId===null || postId===undefined){
+                throw new BadRequestException('ID de post inválido');
+            }
+            const post = await this.getPostById(postId);
+            if (!post) {
+                throw new NotFoundException('Post no encontrado');
+            }
+            if (userId && post.user && post.user.id !== userId && !admin) {
+                throw new BadRequestException('No tienes permiso para actualizar este post');
+            }
+            const tag = await this.tagsService.getTagById(tagId);
+            if(!tag){
+                throw new NotFoundException('Etiqueta no encontrada');
+            }
+            await this.postTagsService.deleteTagFromPost(postId, tagId);
+            return {message:'Etiqueta eliminada del post correctamente', status:200};
+        } catch (error) {
+            throw error;
+        }
+    
+    }
 }
