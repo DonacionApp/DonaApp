@@ -9,6 +9,11 @@ export class PostController {
         private readonly postService: PostService
     ) { }
 
+    @Get('/all')
+    async getAllPosts():Promise<any>{
+        return this.postService.findAll();
+    }
+
     @Get('/:id')
     async getPostById(@Param('id')id:number):Promise<any>{
         return this.postService.getPostById(id);

@@ -145,4 +145,33 @@ export class PostService {
             throw error;
         }
     }
+
+    async findAll(): Promise<PostEntity[]> {
+        try {
+            const posts= await this.postRepository.find({
+                relations:{
+                    imagePost:true,
+                    tags:{
+                        tag:true,
+                    },
+                    user:true
+                }
+            });
+            if(!posts || posts.length===0){
+                throw new NotFoundException('No se encontraron posts');
+            }
+            const postsWithUserInfo = posts.map(post => {
+                if (post.user) {
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                }
+                return post;
+            });
+
+            return postsWithUserInfo;
+        } catch (error) {
+            throw error;
+        }
+    }
+
 }
