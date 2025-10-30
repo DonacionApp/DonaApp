@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostTagEntity } from './entity/post.tags.entity';
 import { Repository } from 'typeorm';
@@ -11,6 +11,7 @@ export class PosttagsService {
         @InjectRepository(PostTagEntity)
         private readonly postTagRepsitory: Repository<PostTagEntity>,
         private readonly tagService: TagsService,
+        @Inject(forwardRef(()=>PostService))
         private readonly postService:PostService
     ) { }
 
