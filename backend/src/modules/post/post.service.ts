@@ -262,4 +262,34 @@ export class PostService {
         }
     }
 
+    async updatePost(id:number,data:any,userId?:number,admin?:boolean):Promise<PostEntity>{
+        try {
+            if(!id || id<=0 || id===null || id===undefined){
+                throw new BadRequestException('ID de post inválido');
+            }
+            console.log('data recibida para updatePost:', data);
+            const post = await this.getPostById(id);
+            if (!post) {
+                throw new NotFoundException('Post no encontrado');
+            }
+            if (userId && post.user && post.user.id !== userId && !admin) {
+                throw new BadRequestException('No tienes permiso para actualizar este post');
+            }
+            const { title, description, message } = data;
+            if (title !== undefined) {
+                post.title = title;
+            }
+            if (description !== undefined) {
+                post.message = description;
+            }
+            if (message !== undefined) {
+                post.message = message;
+            }
+            await this.postRepository.save(post);
+            return post;
+        } catch (error) {
+            throw error;
+        }
+    }
+
 }

@@ -4,6 +4,7 @@ import { PostService } from './post.service';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorators';
 import { RolesGuard } from 'src/shared/guards/roles.guard';
+import { UpdatePostDto } from './dto/update.post.dto';
 
 @Controller('post')
 export class PostController {
@@ -61,5 +62,13 @@ export class PostController {
         return this.postService.deletePost(id, undefined,true);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Post('update/:id')
+    async updatePost(@Req() req:any, @Param('id')id:number, @Body() body: UpdatePostDto):Promise<any>{
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        if(!userId)throw new BadRequestException('Usuario no identificado');
+        return this.postService.updatePost(id, body, userId);
+    }
 
 }
