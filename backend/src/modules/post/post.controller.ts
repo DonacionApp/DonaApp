@@ -84,6 +84,15 @@ export class PostController {
         return this.postService.addImageToPost(postId, files, userId);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Post('add/tag/:tagId/post/:postId')
+    async addTagToPost(@Req() req: any, @Param('tagId') tagId: number, @Param('postId') postId: number): Promise<any> {
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        if (!userId) throw new BadRequestException('Usuario no identificado');
+        return this.postService.addTagToPost(postId, tagId, userId);
+    }
+
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @UseInterceptors(FilesInterceptor('files'))
