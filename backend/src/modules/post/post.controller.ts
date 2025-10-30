@@ -71,4 +71,12 @@ export class PostController {
         return this.postService.updatePost(id, body, userId);
     }
 
+    
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Post('update/admin/:id')
+    async updatePostAdmin( @Param('id')id:number, @Body() body: UpdatePostDto):Promise<any>{
+        return this.postService.updatePost(id, body, undefined, true);
+    }
+
 }

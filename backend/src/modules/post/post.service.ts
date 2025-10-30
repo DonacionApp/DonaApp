@@ -292,4 +292,28 @@ export class PostService {
         }
     }
 
+    async updatePostType(id:number,typePostId:number,userId?:number,admin?:boolean):Promise<PostEntity>{
+        try {
+            if(!id || id<=0 || id===null || id===undefined){
+                throw new BadRequestException('ID de post inválido');
+            }
+            const post = await this.getPostById(id);
+            if (!post) {
+                throw new NotFoundException('Post no encontrado');
+            }
+            if (userId && post.user && post.user.id !== userId && !admin) {
+                throw new BadRequestException('No tienes permiso para actualizar este post');
+            }
+            const typePost = await this.typePostService.findById(typePostId);
+            if(!typePost){
+                throw new NotFoundException('Tipo de post no encontrado');
+            }
+            post.typePost = typePost;
+            await this.postRepository.save(post);
+            return post;
+        } catch (error) {
+            throw error;
+        }
+    }
+
 }
