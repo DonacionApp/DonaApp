@@ -86,6 +86,14 @@ export class PostController {
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
+    @UseInterceptors(FilesInterceptor('files'))
+    @Post('image/admin/add/:postId')
+    async addPostImageAdmin( @Param('postId') postId: number, @UploadedFiles() files: Express.Multer.File[]): Promise<any> {
+        return this.postService.addImageToPost(postId, files, undefined, true);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
     @Delete('image/delete/admin/:imageId/post/:postId')
     async deletePostImageAdmin(@Param('imageId') imageId: number, @Param('postId') postId: number): Promise<any> {
         return this.postService.deleteImageFromPost(postId, imageId, undefined, true);
