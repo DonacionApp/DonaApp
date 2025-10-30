@@ -2,6 +2,8 @@ import { Controller, Post, UseGuards, UseInterceptors, Body, Req, UploadedFiles,
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PostService } from './post.service';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorators';
+import { RolesGuard } from 'src/shared/guards/roles.guard';
 
 @Controller('post')
 export class PostController {
@@ -37,5 +39,11 @@ export class PostController {
         const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
         if(!userId)throw new BadRequestException('Usuario no identificado');
         return this.postService.deletePost(id);
+    }
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Delete('admin/delete/:id')
+    async AdminDeletePost(@Param('id')id:number):Promise<any>{
+        return this.postService.deletePost(id, undefined,true);
     }
 }
