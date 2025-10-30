@@ -38,6 +38,33 @@ export class CloudinaryService {
         })
     }
 
+    async validateTamaño(file:Express.Multer.File):Promise<any>{
+        const MAX_IMAGE_BYTES = 1 * 1024 * 1024; // 1 MB
+        const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
+        const MAX_PDF_BYTES = 1 * 1024 * 1024; // 1 MB
+        const fileType = file.mimetype.split('/')[0];
+        switch(fileType){
+            case 'image':
+                if(file.buffer.length > MAX_IMAGE_BYTES){
+                    const actualKB = Math.round(file.buffer.length / 1024);
+                    return  {message:(`File muy grande: ${actualKB} KB. Max 1 MB`), file:file.filename,status:413};
+                }
+                break;
+            case 'video':
+                if(file.buffer.length > MAX_VIDEO_BYTES){
+                    const actualKB = Math.round(file.buffer.length / 1024);
+                    return  {message:(`File muy grande: ${actualKB} KB. Max 50 MB`), file:file.filename,status:413};
+                }
+                break;
+            case 'pdf':
+                if(file.buffer.length > MAX_PDF_BYTES){
+                    const actualKB = Math.round(file.buffer.length / 1024);
+                    return  {message:(`File muy grande: ${actualKB} KB. Max 1 MB`), file:file.filename,status:413};
+                }
+                break;
+        }
+    }
+
     async uploadImage(folder: string, file: Express.Multer.File): Promise<UploadApiErrorResponse | UploadApiResponse> {
         try {
             if(!file || !folder){
