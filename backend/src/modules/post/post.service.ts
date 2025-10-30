@@ -179,6 +179,7 @@ export class PostService {
             if(!id || id<=0 || id===null || id===undefined){
                 throw new BadRequestException('ID de post inválido');
             }
+            id=Number(id);
             const post =await this.getPostById(id);
             if(!post){
                 throw new NotFoundException('Post no encontrado');
