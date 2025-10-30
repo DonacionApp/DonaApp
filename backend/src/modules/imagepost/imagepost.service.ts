@@ -20,7 +20,10 @@ export class ImagepostService {
                 throw new BadRequestException('imagen o post no pueden ser nulos');
             }
 
-            //mas adelante manejar logica para verificar que el post exista
+            const postExists= await this.postService.getPostById(dto.postId);
+            if(!postExists){
+                throw new BadRequestException('El post al que se quiere agregar la imagen no existe');
+            }
             const newImagePost= this.imagePostRespository.create({
                 image:dto.imageUrl,
                 post:{id:dto.postId}
