@@ -17,6 +17,8 @@ import { TagsModule } from './modules/tags/tags.module';
 import { TypepostModule } from './modules/typepost/typepost.module';
 import { TypeNotifyModule } from './modules/typenotify/typenotify.module';
 import { PosttagsModule } from './modules/posttags/posttags.module';
+import { ImagepostModule } from './modules/imagepost/imagepost.module';
+import { PostModule } from './modules/post/post.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -34,7 +36,7 @@ import { PosttagsModule } from './modules/posttags/posttags.module';
       database: configService.get(DB_NAME),
       entities: [__dirname+'/**/*.entity{.ts,.js}'],
       synchronize:true,
-      logging:true,
+      logging:false,
     }),
     inject:[ConfigService]
   }),
@@ -51,6 +53,8 @@ import { PosttagsModule } from './modules/posttags/posttags.module';
   TypepostModule,
   TypeNotifyModule,
   PosttagsModule,
+  ImagepostModule,
+  PostModule,
 ],
   controllers: [AppController],
   providers: [AppService],
