@@ -59,11 +59,11 @@ export class CloudinaryService {
             case 'pdf':
                 if (file.buffer.length > MAX_PDF_BYTES) {
                     const actualKB = Math.round(file.buffer.length / 1024);
-                    return { message: (`File muy grande: ${actualKB} KB. Max 1 MB`), file: file.filename, status: 413 };
+                    return { message: (`File muy grande: ${actualKB} KB. Max 1 MB`), file: file.originalname, status: 413 };
                 }
                 break;
             default:
-                return { message: (`Tipo de archivo no soportado: ${file.mimetype}`), file: file.filename, status: 415 };
+                return { message: (`Tipo de archivo no soportado: ${file.mimetype}`), file: file.originalname, status: 415 };
                 break;
         }
     }

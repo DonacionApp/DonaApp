@@ -74,7 +74,6 @@ export class PostService {
             if (files && Array.isArray(files) && files.length > 0) {
                 console.log('validando informacion de lista ')
                 let largeFilesError: any[] = [];
-                console.log('files',files);
                 await Promise.all(files.map(async (file) => {
                     const fileSizeValidation = await this.imagePostService.verifyFileSize(file);
                     console.log('fileSizeValidation',fileSizeValidation);
