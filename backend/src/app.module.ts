@@ -19,6 +19,8 @@ import { TypeNotifyModule } from './modules/typenotify/typenotify.module';
 import { PosttagsModule } from './modules/posttags/posttags.module';
 import { ImagepostModule } from './modules/imagepost/imagepost.module';
 import { PostModule } from './modules/post/post.module';
+import { DonationModule } from './modules/donation/donation.module';
+import { EventsModule } from './core/events/events.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -55,6 +57,8 @@ import { PostModule } from './modules/post/post.module';
   PosttagsModule,
   ImagepostModule,
   PostModule,
+  DonationModule,
+  EventsModule,
 ],
   controllers: [AppController],
   providers: [AppService],
