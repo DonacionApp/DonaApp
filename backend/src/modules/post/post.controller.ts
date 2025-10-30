@@ -1,4 +1,22 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Post, UseGuards, UseInterceptors, Body, Req, UploadedFiles, BadRequestException } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { PostService } from './post.service';
+import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 
 @Controller('post')
-export class PostController {}
+export class PostController {
+    constructor(
+        private readonly postService: PostService
+    ) { }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('/create')
+    @UseInterceptors(FilesInterceptor('files'))
+    async createPost(@Req() req: any, @Body() body: any, @UploadedFiles() files?: Express.Multer.File[]) {
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        if(!userId)throw new BadRequestException('Usuario no identificado');
+        const data = { ...body, userId };
+        return await this.postService.createPost(data, files);
+    }
+}

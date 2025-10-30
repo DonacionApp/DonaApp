@@ -69,6 +69,10 @@ export class PostService {
                         largeFilesError.push(fileSizeValidation);
                     }
                 }));
+                if(largeFilesError.length>0){
+                    const errorMessages = largeFilesError.map(err => err.message).join('; ');
+                    throw new Error(`Algunos archivos son demasiado grandes: ${errorMessages}`);
+                }
             }
             
 
