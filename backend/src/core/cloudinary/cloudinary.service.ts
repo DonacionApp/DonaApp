@@ -47,7 +47,7 @@ export class CloudinaryService {
             case 'image':
                 if (file.buffer.length > MAX_IMAGE_BYTES) {
                     const actualKB = Math.round(file.buffer.length / 1024);
-                    return { message: (`File muy grande: ${actualKB} KB. Max 1 MB`), file: file.filename, status: 413 };
+                    return { message: (`File muy grande: ${actualKB} KB. Max 1 MB`), file: file.originalname, status: 413 };
                 }
                 break;
             case 'video':

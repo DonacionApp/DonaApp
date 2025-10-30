@@ -40,9 +40,11 @@ export class PostService {
             if (!post) {
                 throw new NotFoundException('post no encontrado');
             }
-            if (post.user && (post.user as any).password) {
-                delete (post.user as any).password;
+            if (post.user) {
+                const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
+                post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
             }
+
             return post;
         } catch (error) {
             throw error;
@@ -60,10 +62,10 @@ export class PostService {
             if (data?.typePost && data?.typePost <= 0) {
                 throw new BadRequestException('El tipo de post es invalido');
             }
-            const typePostNormali=typePost ? (typeof typePost === 'number'? { id: typePost }: (typePost.id? { id: typePost.id }: (!isNaN(Number(typePost)) ? { id: Number(typePost) } : undefined))): undefined;
-            if(!typePostNormali) throw new BadRequestException('El tipo de post es invalido');
-            const existTypePost= await this.typePostService.findById(typePostNormali.id);
-            if(!existTypePost)throw new NotFoundException('El tipo de post no existe');
+            const typePostNormali = typePost ? (typeof typePost === 'number' ? { id: typePost } : (typePost.id ? { id: typePost.id } : (!isNaN(Number(typePost)) ? { id: Number(typePost) } : undefined))) : undefined;
+            if (!typePostNormali) throw new BadRequestException('El tipo de post es invalido');
+            const existTypePost = await this.typePostService.findById(typePostNormali.id);
+            if (!existTypePost) throw new NotFoundException('El tipo de post no existe');
 
             const postPayload: any = {
                 title: rest.title,
@@ -72,12 +74,10 @@ export class PostService {
                 typePost: existTypePost,
             };
             if (files && Array.isArray(files) && files.length > 0) {
-                console.log('validando informacion de lista ')
                 let largeFilesError: any[] = [];
                 await Promise.all(files.map(async (file) => {
                     const fileSizeValidation = await this.imagePostService.verifyFileSize(file);
-                    console.log('fileSizeValidation',fileSizeValidation);
-                    if ((fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 413)|| (fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 415)) {
+                    if ((fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 413) || (fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 415)) {
                         largeFilesError.push(fileSizeValidation);
                     }
                 }));
@@ -86,9 +86,8 @@ export class PostService {
                     throw new HttpException({ message: `Algunos archivos son demasiado grandes: ${errorMessages}`, details: largeFilesError }, 413);
                 }
             } else if (files && !Array.isArray(files)) {
-                console.log('validando informacion')
                 const fileSizeValidation = await this.imagePostService.verifyFileSize(files);
-                if ((fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 413) || (fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 415) ) {
+                if ((fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 413) || (fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 415)) {
                     throw new HttpException({ message: `El archivo es demasiado grande`, details: [fileSizeValidation] }, 413);
                 }
             } else {
