@@ -99,4 +99,40 @@ export class ImagepostService {
             throw error;
         }
     }
+
+    async getImagesFromPostId(postId:number):Promise<ImagePostEntity[]>{
+        try {
+            if(!postId || postId<=0 || postId===null || postId===undefined){
+                throw new BadRequestException('ID de post inválido');
+            }
+            return await this.imagePostRespository.find({
+                where: { post: { id: postId } },
+                relations: { post: true }
+            });
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async getImagePostbyId(id:number):Promise<ImagePostEntity>{
+        try {
+            if(!id || id<=0 || id===null || id===undefined){
+                throw new BadRequestException('ID de imagen inválido');
+            }
+            const imagePost = await this.imagePostRespository.findOne({
+                where:{
+                    id:id
+                },
+                relations:{
+                    post:true
+                }
+            });
+            if(!imagePost){
+                throw new BadRequestException('La imagen no existe');
+            }
+            return imagePost;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
