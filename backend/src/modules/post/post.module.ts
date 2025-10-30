@@ -3,9 +3,11 @@ import { PostController } from './post.controller';
 import { PostService } from './post.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PostEntity } from './entity/post.entity';
+import { TagsModule } from '../tags/tags.module';
+import { ImagepostModule } from '../imagepost/imagepost.module';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([PostEntity])],
+  imports:[TypeOrmModule.forFeature([PostEntity]),TagsModule,ImagepostModule],
   controllers: [PostController],
   providers: [PostService],
   exports:[PostService]
