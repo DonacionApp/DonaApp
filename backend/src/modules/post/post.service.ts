@@ -174,4 +174,29 @@ export class PostService {
         }
     }
 
+    async deletePost(id:number,userId?:number, admin?:boolean):Promise<{massage:string}>{
+        try {
+            if(!id || id<=0 || id===null || id===undefined){
+                throw new BadRequestException('ID de post inválido');
+            }
+            const post =await this.getPostById(id);
+            if(!post){
+                throw new NotFoundException('Post no encontrado');
+            }
+            if(userId && post.user && post.user.id !== userId && !admin){
+                throw new BadRequestException('No tienes permiso para eliminar este post');
+            }
+            const imagePost= post.imagePost;
+            if(imagePost && imagePost.length>0){
+                for(const img of imagePost){
+                    await this.imagePostService.deleteImageFromPost(id,img.id);
+                }
+            }
+            await this.postRepository.delete(id);
+            return { massage: 'Post eliminado correctamente' };
+        } catch (error) {
+            throw error;
+        }
+    }
+
 }

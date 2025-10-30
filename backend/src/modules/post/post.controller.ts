@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, UseInterceptors, Body, Req, UploadedFiles, BadRequestException, Get, Param } from '@nestjs/common';
+import { Controller, Post, UseGuards, UseInterceptors, Body, Req, UploadedFiles, BadRequestException, Get, Param, Delete } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PostService } from './post.service';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
@@ -28,5 +28,14 @@ export class PostController {
         if(!userId)throw new BadRequestException('Usuario no identificado');
         const data = { ...body, userId };
         return await this.postService.createPost(data, files);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Delete('/delete/:id')
+    async DeletePost(@Req() req: any,@Param('id')id:number):Promise<any>{
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        if(!userId)throw new BadRequestException('Usuario no identificado');
+        return this.postService.deletePost(id);
     }
 }
