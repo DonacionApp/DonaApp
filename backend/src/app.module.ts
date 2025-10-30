@@ -36,7 +36,7 @@ import { PostModule } from './modules/post/post.module';
       database: configService.get(DB_NAME),
       entities: [__dirname+'/**/*.entity{.ts,.js}'],
       synchronize:true,
-      logging:true,
+      logging:false,
     }),
     inject:[ConfigService]
   }),
