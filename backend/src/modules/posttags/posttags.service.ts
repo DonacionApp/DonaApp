@@ -3,13 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { PostTagEntity } from './entity/post.tags.entity';
 import { Repository } from 'typeorm';
 import { TagsService } from '../tags/tags.service';
+import { PostService } from '../post/post.service';
 
 @Injectable()
 export class PosttagsService {
     constructor(
         @InjectRepository(PostTagEntity)
         private readonly postTagRepsitory: Repository<PostTagEntity>,
-        private readonly tagService: TagsService
+        private readonly tagService: TagsService,
+        private readonly postService:PostService
     ) { }
 
     /*async createTagIfNotExists(tagName:string):Promise<PostTagEntity>{    
@@ -30,6 +32,12 @@ export class PosttagsService {
         try {
             if (!postId || isNaN(postId) || postId <= 0 || postId===undefined) throw new BadRequestException('postId es requerido');
             if (!tagId || isNaN(tagId) || tagId <= 0 || tagId===undefined) throw new BadRequestException('tagid es obligatorio');
+            const tagexist= await this.tagService.getTagById(tagId);
+            if(!tagexist) throw new BadRequestException('el tag no existe');
+            const postExist= await this.postService.getPostById(postId);
+            if(!postExist) throw new BadRequestException('el post no existe');
+            const exists = await this.postTagRepsitory.findOne({ where: { post: { id: postId }, tag: { id: tagId } } });
+            if (exists) throw new BadRequestException('la relacion post-tag ya existe');            
             const postTag = this.postTagRepsitory.create({ post: { id: postId }, tag: { id: tagId } });
             return await this.postTagRepsitory.save(postTag);
         } catch (error) {
