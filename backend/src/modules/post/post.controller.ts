@@ -93,11 +93,17 @@ export class PostController {
         return this.postService.addTagToPost(postId, tagId, userId);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Post('add/tag/admin/:tagId/post/:postId')
+    async addTagToPostAdmin(@Param('tagId') tagId: number, @Param('postId') postId: number): Promise<any> {
+        return this.postService.addTagToPost(postId, tagId, undefined, true);
+    }
+
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @UseInterceptors(FilesInterceptor('files'))
     @Post('image/admin/add/:postId')
-    async addPostImageAdmin( @Param('postId') postId: number, @UploadedFiles() files: Express.Multer.File[]): Promise<any> {
+    async addPostImageAdmin(@Param('postId') postId: number, @UploadedFiles() files: Express.Multer.File[]): Promise<any> {
         return this.postService.addImageToPost(postId, files, undefined, true);
     }
 
