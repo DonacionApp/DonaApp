@@ -19,6 +19,10 @@ export class ImagepostService {
         private readonly configService: ConfigService
     ) { }
 
+    async verifyFileSize(file:Express.Multer.File):Promise<any>{
+        return this.cloudinaryService.validateTamaño(file);
+    }
+
     async addImageToPost(postId: number, file: Express.Multer.File): Promise<ImagePostEntity> {
         try {
             if (!file || !postId || postId <= 0) {
