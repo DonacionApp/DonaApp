@@ -5,6 +5,7 @@ import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorators';
 import { RolesGuard } from 'src/shared/guards/roles.guard';
 import { UpdatePostDto } from './dto/update.post.dto';
+import { PostFilterDto } from './dto/filter.dto';
 
 @Controller('post')
 export class PostController {
@@ -20,6 +21,11 @@ export class PostController {
     @Get('user/:userId')
     async getPostsByUserId(@Param('userId') userId: number): Promise<any> {
         return this.postService.getPostsByUserId(userId);
+    }
+
+    @Get('/all/filters')
+    async getPostsByFilters(@Body() filters: PostFilterDto): Promise<any> {
+        return this.postService.getPostsByFilters(filters);
     }
 
     @Get('/:id')

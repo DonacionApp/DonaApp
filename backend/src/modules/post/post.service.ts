@@ -7,6 +7,7 @@ import { TagsService } from '../tags/tags.service';
 import { PosttagsService } from '../posttags/posttags.service';
 import { isArray } from 'class-validator';
 import { TypepostService } from '../typepost/typepost.service';
+import { PostFilterDto } from './dto/filter.dto';
 
 @Injectable()
 export class PostService {
@@ -414,5 +415,31 @@ export class PostService {
             throw error;
         }
     
+    }
+
+    async getPostsByFilters(filters:PostFilterDto):Promise<PostEntity[]>{
+        try {
+            const queryBuilder = this.postRepository.createQueryBuilder('post')
+                .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('post.imagePost', 'imagePost')
+                .leftJoinAndSelect('post.tags', 'postTags')
+                .leftJoinAndSelect('postTags.tag', 'tag')
+                .leftJoinAndSelect('post.postLiked', 'postLiked');
+            if (filters.userName) {
+                queryBuilder.andWhere('user.username ILIKE :userName', { userName: `%${filters.userName}%` });
+            }
+            if (filters.search) {
+                queryBuilder.andWhere('(post.title ILIKE :search OR post.message ILIKE :search)', { search: `%${filters.search}%` });
+            }
+            if (filters.tags && filters.tags.length > 0) {
+                queryBuilder.andWhere('tag.tag IN (:...tags)', { tags: filters.tags });
+            }
+            if (filters.typePost) {
+                queryBuilder.andWhere('post.typePost = :typePost', { typePost: filters.typePost });
+            }
+            return await queryBuilder.getMany();
+        } catch (error) {
+            throw error;
+        }
     }
 }
