@@ -336,5 +336,36 @@ export class PostService {
         }
     }
 
+    async addImageToPost(postId:number, files:Express.Multer.File[],userId?:number,admin?:boolean):Promise<{message:string, status:number}>{
+        try {
+            if(!postId || postId<=0 || postId===null || postId===undefined){    
+                throw new BadRequestException('ID de post inválido');
+            }
+            const post = await this.getPostById(postId);
+            if (!post) {
+                throw new NotFoundException('Post no encontrado');
+            }
+            if (userId && post.user && post.user.id !== userId && !admin) {
+                throw new BadRequestException('No tienes permiso para actualizar este post');
+            }
+            let validateFilesErrors: any[] = [];
+            for (const file of files) {
+                const fileSizeValidation = await this.imagePostService.verifyFileSize(file);
+                if ((fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 413) || (fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 415)) {
+                    validateFilesErrors.push(fileSizeValidation);
+                }
+            }
+            if (validateFilesErrors.length > 0) {
+                const errorMessages = validateFilesErrors.map((e: any) => e.message).join('; ');
+                throw new HttpException({ message: `Algunos archivos son demasiado grandes: ${errorMessages}`, details: validateFilesErrors }, 413);
+            }
+            for (const file of files) {
+                await this.imagePostService.addImageToPost(postId, file);
+            }
+            return {message:'Imagen agregada al post correctamente', status:200};
+        } catch (error) {
+            throw error;
+        }
+    }
 
 }

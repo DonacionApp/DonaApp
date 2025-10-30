@@ -74,6 +74,16 @@ export class PostController {
         return this.postService.deleteImageFromPost(postId, imageId, userId);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @UseInterceptors(FilesInterceptor('files'))
+    @Post('image/add/:postId')
+    async addPostImage(@Req() req: any, @Param('postId') postId: number, @UploadedFiles() files: Express.Multer.File[]): Promise<any> {
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        if (!userId) throw new BadRequestException('Usuario no identificado');
+        return this.postService.addImageToPost(postId, files, userId);
+    }
+
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @Delete('image/delete/admin/:imageId/post/:postId')
