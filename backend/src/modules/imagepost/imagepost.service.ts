@@ -76,6 +76,7 @@ export class ImagepostService {
             if (!postExists) {
                 throw new BadRequestException('El post no existe');
             }
+            postId=Number(postId);
             const imagePost = await this.imagePostRespository.findOne({
                 where: { id: imageId },
                 relations: { post: true }

@@ -241,6 +241,7 @@ export class PostService {
             if (!postUser || postUser.length === 0) {
                 throw new NotFoundException('El usuario no tiene posts');
             }
+            const countPosts= postUser.length;
             const postsWithUserInfo = postUser.map(post => {
                 if (post.user) {
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
@@ -312,6 +313,25 @@ export class PostService {
             await this.postRepository.save(post);
             return post;
         } catch (error) {
+            throw error;
+        }
+    }
+
+    async deleteImageFromPost(postId:number,imageId:number,userId?:number,admin?:boolean):Promise<{message:string, status:number}>{
+        try {
+            if(!postId || postId<=0 || postId===null || postId===undefined){    
+                throw new BadRequestException('ID de post inválido');
+            }
+            const post = await this.getPostById(postId);
+            if (!post) {
+                throw new NotFoundException('Post no encontrado');
+            }
+            if (userId && post.user && post.user.id !== userId && !admin) {
+                throw new BadRequestException('No tienes permiso para actualizar este post');
+            }
+            await this.imagePostService.deleteImageFromPost(postId,imageId);
+            return {message:'Imagen eliminada del post correctamente', status:200};
+        }catch (error) {
             throw error;
         }
     }

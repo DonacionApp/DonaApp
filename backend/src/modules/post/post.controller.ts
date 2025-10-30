@@ -55,12 +55,6 @@ export class PostController {
         if(!userId)throw new BadRequestException('Usuario no identificado');
         return this.postService.deletePost(id);
     }
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('admin')
-    @Delete('admin/delete/:id')
-    async AdminDeletePost(@Param('id')id:number):Promise<any>{
-        return this.postService.deletePost(id, undefined,true);
-    }
 
     @UseGuards(JwtAuthGuard)
     @Post('update/:id')
@@ -71,6 +65,21 @@ export class PostController {
         return this.postService.updatePost(id, body, userId);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Delete('image/delete/:imageId/post/:postId')
+    async deletePostImage(@Req() req:any, @Param('imageId')imageId:number, @Param('postId')postId:number):Promise<any>{
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        if(!userId)throw new BadRequestException('Usuario no identificado');
+        return this.postService.deleteImageFromPost(postId,imageId, userId);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Delete('admin/delete/:id')
+    async AdminDeletePost(@Param('id')id:number):Promise<any>{
+        return this.postService.deletePost(id, undefined,true);
+    }
     
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
@@ -78,5 +87,6 @@ export class PostController {
     async updatePostAdmin( @Param('id')id:number, @Body() body: UpdatePostDto):Promise<any>{
         return this.postService.updatePost(id, body, undefined, true);
     }
+
 
 }
