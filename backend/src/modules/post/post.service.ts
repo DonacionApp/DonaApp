@@ -27,22 +27,31 @@ export class PostService {
             if (id <= 0 || id === undefined || id === null || isNaN(id) || !id) {
                 throw new Error('El id del post es invalido');
             }
-            const post = await this.postRepository.findOne({
+            let post = await this.postRepository.findOne({
                 where: { id },
                 relations: {
                     imagePost: true,
                     tags: {
                         tag: true
                     },
-                    user: true
+                    user: true,
+                    postLiked: true
                 }
             });
+
             if (!post) {
                 throw new NotFoundException('post no encontrado');
             }
             if (post.user) {
                 const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
                 post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+            }
+            if (post.postLiked) {
+                (post as any).likesCount = post.postLiked.length;
+            }
+            if (post.postLiked) {
+                const { postLiked, ...rest } = post;
+                post = rest as PostEntity;
             }
 
             return post;
@@ -148,22 +157,31 @@ export class PostService {
 
     async findAll(): Promise<PostEntity[]> {
         try {
-            const posts= await this.postRepository.find({
-                relations:{
-                    imagePost:true,
-                    tags:{
-                        tag:true,
+            const posts = await this.postRepository.find({
+                relations: {
+                    imagePost: true,
+                    tags: {
+                        tag: true,
                     },
-                    user:true
+                    user: true,
+                    postLiked: true
                 }
             });
-            if(!posts || posts.length===0){
+            if (!posts || posts.length === 0) {
                 throw new NotFoundException('No se encontraron posts');
             }
             const postsWithUserInfo = posts.map(post => {
                 if (post.user) {
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
                     post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                }
+
+                if (post.postLiked) {
+                    (post as any).likesCount = post.postLiked.length;
+                }
+                if (post.postLiked) {
+                    const { postLiked, ...rest } = post;
+                    post = rest as PostEntity;
                 }
                 return post;
             });
@@ -174,23 +192,23 @@ export class PostService {
         }
     }
 
-    async deletePost(id:number,userId?:number, admin?:boolean):Promise<{massage:string}>{
+    async deletePost(id: number, userId?: number, admin?: boolean): Promise<{ massage: string }> {
         try {
-            if(!id || id<=0 || id===null || id===undefined){
+            if (!id || id <= 0 || id === null || id === undefined) {
                 throw new BadRequestException('ID de post inválido');
             }
-            id=Number(id);
-            const post =await this.getPostById(id);
-            if(!post){
+            id = Number(id);
+            const post = await this.getPostById(id);
+            if (!post) {
                 throw new NotFoundException('Post no encontrado');
             }
-            if(userId && post.user && post.user.id !== userId && !admin){
+            if (userId && post.user && post.user.id !== userId && !admin) {
                 throw new BadRequestException('No tienes permiso para eliminar este post');
             }
-            const imagePost= post.imagePost;
-            if(imagePost && imagePost.length>0){
-                for(const img of imagePost){
-                    await this.imagePostService.deleteImageFromPost(id,img.id);
+            const imagePost = post.imagePost;
+            if (imagePost && imagePost.length > 0) {
+                for (const img of imagePost) {
+                    await this.imagePostService.deleteImageFromPost(id, img.id);
                 }
             }
             await this.postRepository.delete(id);
@@ -200,32 +218,41 @@ export class PostService {
         }
     }
 
-    async getPostsByUserId(userId:number):Promise<PostEntity[]>{
+    async getPostsByUserId(userId: number): Promise<PostEntity[]> {
         try {
-            if(!userId || userId<=0 || userId===null || userId===undefined){
+            if (!userId || userId <= 0 || userId === null || userId === undefined) {
                 throw new BadRequestException('ID de usuario inválido');
             }
-            const postUser= await this.postRepository.find({
-                where:{
-                    user:{
-                        id:userId
+            const postUser = await this.postRepository.find({
+                where: {
+                    user: {
+                        id: userId
                     }
                 },
-                relations:{
-                    imagePost:true,
-                    tags:{
-                        tag:true
+                relations: {
+                    imagePost: true,
+                    tags: {
+                        tag: true
                     },
-                    user:true
+                    user: true,
+                    postLiked: true
                 }
             });
-            if(!postUser || postUser.length===0){
+            if (!postUser || postUser.length === 0) {
                 throw new NotFoundException('El usuario no tiene posts');
             }
             const postsWithUserInfo = postUser.map(post => {
                 if (post.user) {
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
                     post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                }
+
+                if (post.postLiked) {
+                    (post as any).likesCount = post.postLiked.length;
+                }
+                if (post.postLiked) {
+                    const { postLiked, ...rest } = post;
+                    post = rest as PostEntity;
                 }
                 return post;
             });
