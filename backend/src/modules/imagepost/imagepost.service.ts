@@ -1,14 +1,17 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ImagePostEntity } from './entity/image.post.entity';
 import { AddImageToPostDto } from './dto/add.image.to.post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PostService } from '../post/post.service';
 
 @Injectable()
 export class ImagepostService {
     constructor(
         @InjectRepository(ImagePostEntity)
-        private readonly imagePostRespository:Repository<ImagePostEntity>
+        private readonly imagePostRespository:Repository<ImagePostEntity>,
+        @Inject(forwardRef(()=>PostService))
+        private readonly postService:PostService
     ){}
 
     async addImageToPost(dto:AddImageToPostDto):Promise<ImagePostEntity>{

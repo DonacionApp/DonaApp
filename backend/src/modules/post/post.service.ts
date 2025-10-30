@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entity/post.entity';
 import { Repository } from 'typeorm';
@@ -8,10 +8,11 @@ import { TagsService } from '../tags/tags.service';
 @Injectable()
 export class PostService {
     constructor(
-        @InjectRepository(PostEntity)
-        private readonly postRepository:Repository<PostEntity>,
-        private readonly imagePostService:ImagepostService,
-        private readonly tagsService:TagsService
+    @InjectRepository(PostEntity)
+    private readonly postRepository:Repository<PostEntity>,
+    @Inject(forwardRef(() => ImagepostService))
+    private readonly imagePostService:ImagepostService,
+    private readonly tagsService:TagsService
     ){}
 
     async getPostById(id:number):Promise<PostEntity>{
