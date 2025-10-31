@@ -127,4 +127,22 @@ export class PostlikedService {
             throw error;
         }
     }
+    async counLtLikesForPost(postId:number):Promise<number>{
+        try {
+            if (!postId || postId <= 0 || postId === undefined || postId === null || isNaN(postId)) {
+                throw new BadRequestException('no se ha recibido correctamente el post');
+            }
+            postId = Number(postId);
+            const count = await this.postLikedRepository.count({
+                where: {
+                    post: {
+                        id: postId
+                    }
+                }
+            });
+            return count;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
