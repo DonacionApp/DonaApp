@@ -15,7 +15,7 @@ export class PostlikedService {
         private readonly userService: UserService,
     ) { }
 
-    async addLikeToPost(userId: number, postId: number): Promise<PostLikedEntity> {
+    async addLikeToPost(userId: number, postId: number): Promise<{message:string, status:number} > {
         try {
             if (!userId || userId <= 0 || userId === undefined || userId === null || isNaN(userId)) {
                 throw new BadRequestException('no se ha recibido correctamente el usuario');
@@ -50,7 +50,8 @@ export class PostlikedService {
                 post: post,
                 user: user
             });
-            return await this.postLikedRepository.save(postliked);
+             await this.postLikedRepository.save(postliked);
+            return { message: 'Like agregado correctamente', status: 201 };
         } catch (error) {
             throw error;
         }
