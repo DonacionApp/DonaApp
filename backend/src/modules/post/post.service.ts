@@ -22,11 +22,28 @@ export class PostService {
         private readonly postTagsService: PosttagsService,
         @Inject(forwardRef(() => TypepostService))
         private readonly typePostService: TypepostService,
-        @Inject(forwardRef(()=>PostlikedService))
-        private readonly postLikedService:PostlikedService,
+        @Inject(forwardRef(() => PostlikedService))
+        private readonly postLikedService: PostlikedService,
     ) { }
 
-    async getPostById(id: number, userId?:number): Promise<PostEntity> {
+    async userLikedPost(userId: number, postId: number): Promise<boolean> {
+        try {
+            if (!userId || userId <= 0 || userId === undefined || userId === null || isNaN(userId)) {
+                throw new BadRequestException('no se ha recibido correctamente el usuario');
+            }
+            if (!postId || postId <= 0 || postId === undefined || postId === null || isNaN(postId)) {
+                throw new BadRequestException('no se ha recibido correctamente el post');
+            }
+            userId = Number(userId);
+            postId = Number(postId);
+            const liked = await this.postLikedService.userLikedPost(userId, postId);
+            return liked;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async getPostById(id: number, userId?: number): Promise<PostEntity> {
         try {
             if (id <= 0 || id === undefined || id === null || isNaN(id) || !id) {
                 throw new Error('El id del post es invalido');
@@ -42,7 +59,7 @@ export class PostService {
                     postLiked: true
                 }
             });
-            console.log(userId ? 'user encontrado '+userId : 'no userId recibido en getPostById');
+            userId = Number(userId);
 
             if (!post) {
                 throw new NotFoundException('post no encontrado');
@@ -53,6 +70,10 @@ export class PostService {
             }
             if (post.postLiked) {
                 (post as any).likesCount = post.postLiked.length;
+            }
+            if (userId && userId > 0) {
+                const liked = await this.postLikedService.userLikedPost(userId, id);
+                (post as any).userHasLiked = liked;
             }
             if (post.postLiked) {
                 const { postLiked, ...rest } = post;
@@ -160,7 +181,7 @@ export class PostService {
         }
     }
 
-    async findAll(): Promise<PostEntity[]> {
+    async findAll(userId?: number): Promise<PostEntity[]> {
         try {
             const posts = await this.postRepository.find({
                 relations: {
@@ -175,12 +196,16 @@ export class PostService {
             if (!posts || posts.length === 0) {
                 throw new NotFoundException('No se encontraron posts');
             }
-            const postsWithUserInfo = posts.map(post => {
+            userId = Number(userId);
+            const postsWithUserInfo = await Promise.all(posts.map(async post => {
                 if (post.user) {
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
                     post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
                 }
-
+                if (userId && userId > 0) {
+                    const liked = await this.postLikedService.userLikedPost(userId, post.id);
+                    (post as any).userHasLiked = liked;
+                }
                 if (post.postLiked) {
                     (post as any).likesCount = post.postLiked.length;
                 }
@@ -189,7 +214,7 @@ export class PostService {
                     post = rest as PostEntity;
                 }
                 return post;
-            });
+            }));
 
             return postsWithUserInfo;
         } catch (error) {
@@ -246,7 +271,7 @@ export class PostService {
             if (!postUser || postUser.length === 0) {
                 throw new NotFoundException('El usuario no tiene posts');
             }
-            const countPosts= postUser.length;
+            const countPosts = postUser.length;
             const postsWithUserInfo = postUser.map(post => {
                 if (post.user) {
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
@@ -268,9 +293,9 @@ export class PostService {
         }
     }
 
-    async updatePost(id:number,data:any,userId?:number,admin?:boolean):Promise<PostEntity>{
+    async updatePost(id: number, data: any, userId?: number, admin?: boolean): Promise<PostEntity> {
         try {
-            if(!id || id<=0 || id===null || id===undefined){
+            if (!id || id <= 0 || id === null || id === undefined) {
                 throw new BadRequestException('ID de post inválido');
             }
             console.log('data recibida para updatePost:', data);
@@ -298,9 +323,9 @@ export class PostService {
         }
     }
 
-    async updatePostType(id:number,typePostId:number,userId?:number,admin?:boolean):Promise<PostEntity>{
+    async updatePostType(id: number, typePostId: number, userId?: number, admin?: boolean): Promise<PostEntity> {
         try {
-            if(!id || id<=0 || id===null || id===undefined){
+            if (!id || id <= 0 || id === null || id === undefined) {
                 throw new BadRequestException('ID de post inválido');
             }
             const post = await this.getPostById(id);
@@ -311,7 +336,7 @@ export class PostService {
                 throw new BadRequestException('No tienes permiso para actualizar este post');
             }
             const typePost = await this.typePostService.findById(typePostId);
-            if(!typePost){
+            if (!typePost) {
                 throw new NotFoundException('Tipo de post no encontrado');
             }
             post.typePost = typePost;
@@ -322,9 +347,9 @@ export class PostService {
         }
     }
 
-    async deleteImageFromPost(postId:number,imageId:number,userId?:number,admin?:boolean):Promise<{message:string, status:number}>{
+    async deleteImageFromPost(postId: number, imageId: number, userId?: number, admin?: boolean): Promise<{ message: string, status: number }> {
         try {
-            if(!postId || postId<=0 || postId===null || postId===undefined){    
+            if (!postId || postId <= 0 || postId === null || postId === undefined) {
                 throw new BadRequestException('ID de post inválido');
             }
             const post = await this.getPostById(postId);
@@ -334,16 +359,16 @@ export class PostService {
             if (userId && post.user && post.user.id !== userId && !admin) {
                 throw new BadRequestException('No tienes permiso para actualizar este post');
             }
-            await this.imagePostService.deleteImageFromPost(postId,imageId);
-            return {message:'Imagen eliminada del post correctamente', status:200};
-        }catch (error) {
+            await this.imagePostService.deleteImageFromPost(postId, imageId);
+            return { message: 'Imagen eliminada del post correctamente', status: 200 };
+        } catch (error) {
             throw error;
         }
     }
 
-    async addImageToPost(postId:number, files:Express.Multer.File[],userId?:number,admin?:boolean):Promise<{message:string, status:number}>{
+    async addImageToPost(postId: number, files: Express.Multer.File[], userId?: number, admin?: boolean): Promise<{ message: string, status: number }> {
         try {
-            if(!postId || postId<=0 || postId===null || postId===undefined){    
+            if (!postId || postId <= 0 || postId === null || postId === undefined) {
                 throw new BadRequestException('ID de post inválido');
             }
             const post = await this.getPostById(postId);
@@ -367,15 +392,15 @@ export class PostService {
             for (const file of files) {
                 await this.imagePostService.addImageToPost(postId, file);
             }
-            return {message:'Imagen agregada al post correctamente', status:200};
+            return { message: 'Imagen agregada al post correctamente', status: 200 };
         } catch (error) {
             throw error;
         }
     }
 
-    async addTagToPost(postId:number, tagId:number, userId?:number, admin?:boolean):Promise<{message:string, status:number}>{
+    async addTagToPost(postId: number, tagId: number, userId?: number, admin?: boolean): Promise<{ message: string, status: number }> {
         try {
-            if(!postId || postId<=0 || postId===null || postId===undefined){
+            if (!postId || postId <= 0 || postId === null || postId === undefined) {
                 throw new BadRequestException('ID de post inválido');
             }
             const post = await this.getPostById(postId);
@@ -386,20 +411,20 @@ export class PostService {
                 throw new BadRequestException('No tienes permiso para actualizar este post');
             }
             const tag = await this.tagsService.getTagById(tagId);
-            if(!tag){
+            if (!tag) {
                 throw new NotFoundException('Etiqueta no encontrada');
             }
             await this.postTagsService.createPostTag(postId, tagId);
-            return {message:'Etiqueta agregada al post correctamente', status:200};
+            return { message: 'Etiqueta agregada al post correctamente', status: 200 };
         } catch (error) {
             throw error;
         }
-    
+
     }
 
-    async removeTagFromPost(postId:number, tagId:number, userId?:number, admin?:boolean):Promise<{message:string, status:number}>{
+    async removeTagFromPost(postId: number, tagId: number, userId?: number, admin?: boolean): Promise<{ message: string, status: number }> {
         try {
-            if(!postId || postId<=0 || postId===null || postId===undefined){
+            if (!postId || postId <= 0 || postId === null || postId === undefined) {
                 throw new BadRequestException('ID de post inválido');
             }
             const post = await this.getPostById(postId);
@@ -410,18 +435,18 @@ export class PostService {
                 throw new BadRequestException('No tienes permiso para actualizar este post');
             }
             const tag = await this.tagsService.getTagById(tagId);
-            if(!tag){
+            if (!tag) {
                 throw new NotFoundException('Etiqueta no encontrada');
             }
             await this.postTagsService.deleteTagFromPost(postId, tagId);
-            return {message:'Etiqueta eliminada del post correctamente', status:200};
+            return { message: 'Etiqueta eliminada del post correctamente', status: 200 };
         } catch (error) {
             throw error;
         }
-    
+
     }
 
-    async getPostsByFilters(filters:PostFilterDto):Promise<PostEntity[]>{
+    async getPostsByFilters(filters: PostFilterDto): Promise<PostEntity[]> {
         try {
             const queryBuilder = this.postRepository.createQueryBuilder('post')
                 .leftJoinAndSelect('post.user', 'user')

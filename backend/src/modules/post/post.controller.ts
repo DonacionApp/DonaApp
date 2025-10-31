@@ -1,7 +1,7 @@
 import { Controller, Post, UseGuards, UseInterceptors, Body, Req, UploadedFiles, BadRequestException, Get, Param, Delete } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PostService } from './post.service';
-import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { JwtAuthGuard, OptionalJwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorators';
 import { RolesGuard } from 'src/shared/guards/roles.guard';
 import { UpdatePostDto } from './dto/update.post.dto';
@@ -13,9 +13,12 @@ export class PostController {
         private readonly postService: PostService
     ) { }
 
+    @UseGuards(OptionalJwtAuthGuard)
     @Get('/all')
-    async getAllPosts(): Promise<any> {
-        return this.postService.findAll();
+    async getAllPosts(@Req() req: any): Promise<any> {
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        return this.postService.findAll( userId);
     }
 
     @Get('user/:userId')
@@ -28,9 +31,16 @@ export class PostController {
         return this.postService.getPostsByFilters(filters);
     }
 
+    @UseGuards(OptionalJwtAuthGuard)
     @Get('/:id')
-    async getPostById(@Param('id') id: number): Promise<any> {
-        return this.postService.getPostById(id);
+    async getPostById(@Param('id') id: number, @Req() req: any): Promise<any> {
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        if (!userId) {
+            return this.postService.getPostById(id);
+        }
+
+        return this.postService.getPostById(id, userId);
     }
 
     @UseGuards(JwtAuthGuard)
