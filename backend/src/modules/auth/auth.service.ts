@@ -280,7 +280,7 @@ export class AuthService {
             message: 'Inicio de sesión exitoso.',
             access_token: token.access_token,
          }
-         if (!user.lastLogin) response['lastLogin']=false;
+         if (!user.lastLogin) response['firstLogin']=true;
 
          return response;
       } catch (error) {
