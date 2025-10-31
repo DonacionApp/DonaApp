@@ -29,9 +29,12 @@ export class PostController {
         return this.postService.getPostsByUserId(userId, currentUserId);
     }
 
+    @UseGuards(OptionalJwtAuthGuard)
     @Get('/all/filters')
-    async getPostsByFilters(@Body() filters: PostFilterDto): Promise<any> {
-        return this.postService.getPostsByFilters(filters);
+    async getPostsByFilters(@Body() filters: PostFilterDto, @Req() req:any): Promise<any> {
+        const userFromToken = req && req.user ? req.user : null;
+        const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        return this.postService.getPostsByFilters(filters, userId);
     }
 
     @UseGuards(OptionalJwtAuthGuard)

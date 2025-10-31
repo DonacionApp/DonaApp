@@ -248,7 +248,7 @@ export class PostService {
         }
     }
 
-    async getPostsByUserId(userId: number,userRequest?:number): Promise<PostEntity[]> {
+    async getPostsByUserId(userId: number, userRequest?: number): Promise<PostEntity[]> {
         try {
             if (!userId || userId <= 0 || userId === null || userId === undefined) {
                 throw new BadRequestException('ID de usuario inválido');
@@ -268,7 +268,7 @@ export class PostService {
                     postLiked: true
                 }
             });
-            userRequest=Number(userRequest);
+            userRequest = Number(userRequest);
             if (!postUser || postUser.length === 0) {
                 throw new NotFoundException('El usuario no tiene posts');
             }
@@ -450,7 +450,7 @@ export class PostService {
 
     }
 
-    async getPostsByFilters(filters: PostFilterDto): Promise<PostEntity[]> {
+    async getPostsByFilters(filters: PostFilterDto, userId?: number): Promise<PostEntity[]> {
         try {
             const queryBuilder = this.postRepository.createQueryBuilder('post')
                 .leftJoinAndSelect('post.user', 'user')
@@ -470,7 +470,30 @@ export class PostService {
             if (filters.typePost) {
                 queryBuilder.andWhere('post.typePost = :typePost', { typePost: filters.typePost });
             }
-            return await queryBuilder.getMany();
+            userId = Number(userId);
+            const posts = await queryBuilder.getMany();
+            if(!posts || posts.length===0){
+                throw new NotFoundException('No se encontraron posts con los filtros proporcionados');
+            }
+            const postsWithUserInfo = await Promise.all(posts.map(async post => {
+                if (post.user) {
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                }
+                if (userId && userId > 0) {
+                    const liked = await this.postLikedService.userLikedPost(userId, post.id);
+                    (post as any).userHasLiked = liked;
+                }
+                if (post.postLiked) {
+                    (post as any).likesCount = post.postLiked.length;
+                }
+                if (post.postLiked) {
+                    const { postLiked, ...rest } = post;
+                    post = rest as PostEntity;
+                }
+                return post;
+            }));
+            return postsWithUserInfo;
         } catch (error) {
             throw error;
         }
