@@ -22,6 +22,7 @@ import { PostModule } from './modules/post/post.module';
 import { DonationModule } from './modules/donation/donation.module';
 import { EventsModule } from './core/events/events.module';
 import { StatusdonationModule } from './modules/statusdonation/statusdonation.module';
+import { PostlikedModule } from './modules/postLiked/postliked.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -61,6 +62,7 @@ import { StatusdonationModule } from './modules/statusdonation/statusdonation.mo
   DonationModule,
   EventsModule,
   StatusdonationModule,
+  PostlikedModule,
 ],
   controllers: [AppController],
   providers: [AppService],
