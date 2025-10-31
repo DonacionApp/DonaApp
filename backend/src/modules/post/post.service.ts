@@ -8,6 +8,7 @@ import { PosttagsService } from '../posttags/posttags.service';
 import { isArray } from 'class-validator';
 import { TypepostService } from '../typepost/typepost.service';
 import { PostFilterDto } from './dto/filter.dto';
+import { PostlikedService } from '../postLiked/postliked.service';
 
 @Injectable()
 export class PostService {
@@ -20,10 +21,12 @@ export class PostService {
         @Inject(forwardRef(() => PosttagsService))
         private readonly postTagsService: PosttagsService,
         @Inject(forwardRef(() => TypepostService))
-        private readonly typePostService: TypepostService
+        private readonly typePostService: TypepostService,
+        @Inject(forwardRef(()=>PostlikedService))
+        private readonly postLikedService:PostlikedService,
     ) { }
 
-    async getPostById(id: number): Promise<PostEntity> {
+    async getPostById(id: number, userId?:number): Promise<PostEntity> {
         try {
             if (id <= 0 || id === undefined || id === null || isNaN(id) || !id) {
                 throw new Error('El id del post es invalido');
@@ -39,6 +42,7 @@ export class PostService {
                     postLiked: true
                 }
             });
+            console.log(userId ? 'user encontrado '+userId : 'no userId recibido en getPostById');
 
             if (!post) {
                 throw new NotFoundException('post no encontrado');
