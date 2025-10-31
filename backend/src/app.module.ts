@@ -21,6 +21,7 @@ import { ImagepostModule } from './modules/imagepost/imagepost.module';
 import { PostModule } from './modules/post/post.module';
 import { DonationModule } from './modules/donation/donation.module';
 import { EventsModule } from './core/events/events.module';
+import { StatusdonationModule } from './modules/statusdonation/statusdonation.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -59,6 +60,7 @@ import { EventsModule } from './core/events/events.module';
   PostModule,
   DonationModule,
   EventsModule,
+  StatusdonationModule,
 ],
   controllers: [AppController],
   providers: [AppService],
