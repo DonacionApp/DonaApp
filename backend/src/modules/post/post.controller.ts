@@ -21,9 +21,12 @@ export class PostController {
         return this.postService.findAll( userId);
     }
 
+    @UseGuards(OptionalJwtAuthGuard)
     @Get('user/:userId')
-    async getPostsByUserId(@Param('userId') userId: number): Promise<any> {
-        return this.postService.getPostsByUserId(userId);
+    async getPostsByUserId(@Param('userId') userId: number, @Req() req: any): Promise<any> {
+        const userFromToken = req && req.user ? req.user : null;
+        const currentUserId = userFromToken?.sub ?? userFromToken?.id ?? null;
+        return this.postService.getPostsByUserId(userId, currentUserId);
     }
 
     @Get('/all/filters')

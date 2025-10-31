@@ -248,7 +248,7 @@ export class PostService {
         }
     }
 
-    async getPostsByUserId(userId: number): Promise<PostEntity[]> {
+    async getPostsByUserId(userId: number,userRequest?:number): Promise<PostEntity[]> {
         try {
             if (!userId || userId <= 0 || userId === null || userId === undefined) {
                 throw new BadRequestException('ID de usuario inválido');
@@ -268,16 +268,20 @@ export class PostService {
                     postLiked: true
                 }
             });
+            userRequest=Number(userRequest);
             if (!postUser || postUser.length === 0) {
                 throw new NotFoundException('El usuario no tiene posts');
             }
             const countPosts = postUser.length;
-            const postsWithUserInfo = postUser.map(post => {
+            const postsWithUserInfo = await Promise.all(postUser.map(async post => {
                 if (post.user) {
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
                     post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
                 }
-
+                if (userRequest && userRequest > 0) {
+                    const liked = await this.postLikedService.userLikedPost(userRequest, post.id);
+                    (post as any).userHasLiked = liked;
+                }
                 if (post.postLiked) {
                     (post as any).likesCount = post.postLiked.length;
                 }
@@ -286,7 +290,7 @@ export class PostService {
                     post = rest as PostEntity;
                 }
                 return post;
-            });
+            }));
             return postsWithUserInfo;
         } catch (error) {
             throw error;
