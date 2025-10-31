@@ -10,45 +10,45 @@ export class PostlikedService {
     constructor(
         @InjectRepository(PostLikedEntity)
         private readonly postLikedRepository: Repository<PostLikedEntity>,
-        @Inject(forwardRef(()=>PostService))
-        private readonly postService:PostService,
-        private readonly userService:UserService,
-    ){}
+        @Inject(forwardRef(() => PostService))
+        private readonly postService: PostService,
+        private readonly userService: UserService,
+    ) { }
 
-    async addLikeToPost(userId:number, postId:number):Promise<PostLikedEntity>{
+    async addLikeToPost(userId: number, postId: number): Promise<PostLikedEntity> {
         try {
-            if(!userId || userId<=0 || userId===undefined || userId===null || isNaN(userId)){
+            if (!userId || userId <= 0 || userId === undefined || userId === null || isNaN(userId)) {
                 throw new BadRequestException('no se ha recibido correctamente el usuario');
             }
-            if(!postId || postId<=0 || postId===undefined || postId===null || isNaN(postId)){
+            if (!postId || postId <= 0 || postId === undefined || postId === null || isNaN(postId)) {
                 throw new BadRequestException('no se ha recibido correctamente el post');
             }
-            postId=Number(postId);
-            userId=Number(userId);
-            const post =  await this.postService.getPostById(postId);
-            if(!post){
+            postId = Number(postId);
+            userId = Number(userId);
+            const post = await this.postService.getPostById(postId);
+            if (!post) {
                 throw new BadRequestException('el post al que se le quiere dar like no existe');
             }
-            const user= await this.userService.findById(userId);
-            if(!user){
+            const user = await this.userService.findById(userId);
+            if (!user) {
                 throw new BadRequestException('el usuario que quiere dar like no existe');
             }
-            const postLikedExist= await this.postLikedRepository.findOne({
-                where:{
-                    post:{
-                        id:postId
+            const postLikedExist = await this.postLikedRepository.findOne({
+                where: {
+                    post: {
+                        id: postId
                     },
-                    user:{
-                        id:userId
+                    user: {
+                        id: userId
                     }
                 }
             });
-            if(postLikedExist){
+            if (postLikedExist) {
                 throw new BadRequestException('el usuario ya le ha dado like a este post');
             };
-            const postliked=this.postLikedRepository.create({
-                post:post,
-                user:user
+            const postliked = this.postLikedRepository.create({
+                post: post,
+                user: user
             });
             return await this.postLikedRepository.save(postliked);
         } catch (error) {
@@ -56,22 +56,22 @@ export class PostlikedService {
         }
     }
 
-    async userLikedPost(userId:number, postId:number):Promise<boolean>{
+    async userLikedPost(userId: number, postId: number): Promise<boolean> {
         try {
-            if(!userId || userId<=0 || userId===undefined || userId===null || isNaN(userId)){
+            if (!userId || userId <= 0 || userId === undefined || userId === null || isNaN(userId)) {
                 throw new BadRequestException('no se ha recibido correctamente el usuario');
             }
-            if(!postId || postId<=0 || postId===undefined || postId===null || isNaN(postId)){
+            if (!postId || postId <= 0 || postId === undefined || postId === null || isNaN(postId)) {
                 throw new BadRequestException('no se ha recibido correctamente el post');
             }
-            postId=Number(postId);
-            userId=Number(userId);
-            const post =  await this.postService.getPostById(postId);
-            if(!post){
+            postId = Number(postId);
+            userId = Number(userId);
+            const post = await this.postService.getPostById(postId);
+            if (!post) {
                 throw new BadRequestException('el post no existe');
             }
-            const user= await this.userService.findById(userId);
-            if(!user){
+            const user = await this.userService.findById(userId);
+            if (!user) {
                 throw new BadRequestException('el usuario no existe');
             }
             const postLiked = await this.postLikedRepository.findOne({
@@ -85,6 +85,44 @@ export class PostlikedService {
                 }
             });
             return !!postLiked;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async removeLikeFromPost(userId: number, postId: number): Promise<{ message: string, status: number }> {
+        try {
+            if (!userId || userId <= 0 || userId === undefined || userId === null || isNaN(userId)) {
+                throw new BadRequestException('no se ha recibido correctamente el usuario');
+            }
+            if (!postId || postId <= 0 || postId === undefined || postId === null || isNaN(postId)) {
+                throw new BadRequestException('no se ha recibido correctamente el post');
+            }
+            postId = Number(postId);
+            userId = Number(userId);
+            const post = await this.postService.getPostById(postId);
+            if (!post) {
+                throw new BadRequestException('el post al que se le quiere quitar el like no existe');
+            }
+            const user = await this.userService.findById(userId);
+            if (!user) {
+                throw new BadRequestException('el usuario que quiere quitar el like no existe');
+            }
+            const postLiked = await this.postLikedRepository.findOne({
+                where: {
+                    post: {
+                        id: postId,
+                    },
+                    user: {
+                        id: userId,
+                    },
+                }
+            });
+            if (!postLiked) {
+                throw new BadRequestException('el usuario no ha dado like a este post');
+            }
+            await this.postLikedRepository.remove(postLiked);
+            return { message: 'Like eliminado correctamente', status: 200 };
         } catch (error) {
             throw error;
         }
