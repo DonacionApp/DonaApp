@@ -145,4 +145,35 @@ export class PostlikedService {
             throw error;
         }
     }
+    async getLikesByPostId(postId:number):Promise<PostLikedEntity[]>{
+        try{
+            if (!postId || postId <= 0 || postId === undefined || postId === null || isNaN(postId)) {
+                throw new BadRequestException('no se ha recibido correctamente el post');
+            }
+            postId = Number(postId);
+            const likes= await this.postLikedRepository.find({
+                where:{
+                    post:{
+                        id:postId
+                    }
+                },
+                relations:{
+                    user:true
+                }
+            });
+            if(!likes || likes.length===0){
+                throw new BadRequestException('el post no tiene likes');
+            }
+            const postWithOutUserInfo= likes.map(like=>{
+                if(like.user){
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = like.user;
+                    like.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                }
+                return like;
+            });
+            return postWithOutUserInfo;
+        }catch(error){
+            throw error;
+        }
+    }
 }
