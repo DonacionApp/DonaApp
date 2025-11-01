@@ -10,9 +10,8 @@ export class CreateNotifyDto {
    @Min(1)
    typeNotifyId: number;
 
-   @IsOptional()
    @IsArray()
    @ArrayNotEmpty()
    @ArrayUnique()
-   recipientIds?: number[];
+   UsersIds: number[];
 }
