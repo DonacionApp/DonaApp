@@ -10,8 +10,18 @@ export class DonationEntity{
     user:UserEntity;
     @ManyToOne(()=>StatusDonationEntity,(statusDonation)=>statusDonation.donation, {onDelete:'SET NULL', nullable:true})
     statusDonation:StatusDonationEntity;
-    @Column({type:'varchar', nullable:false})
-    lugarEntrega:string;
+    @Column({type:'varchar', nullable:true})
+    lugarRecogida:string | null;
+    @Column({type:'varchar', nullable:true})
+    lugarDonacion:string | null;
+    @Column({type:'json', nullable:true})
+    articles:any | null;
+    @Column({type:'json', nullable:true})
+    comments:any | null;
+    @Column({type:'varchar', nullable:true})
+    comunity:string | null;
+    @Column({type:'date', nullable:true})
+    fechaMaximaEntrega:Date | null;
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;
