@@ -6,6 +6,7 @@ import { CreateNotifyDto } from "./dto/create.notify.dto";
 import { TypeNotifyService } from "../typenotify/typenotify.service";
 import { UserNotifyService } from "../userNotify/usernotify.service";
 import { UserService } from "../user/user.service";
+import { UpdateNotifyDto } from "./dto/update.notify.dto";
 
 @Injectable()
 export class NotifyService {
@@ -144,6 +145,51 @@ export class NotifyService {
          });
 
          return sanitized;
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async updateNotify(id: number, dto: UpdateNotifyDto): Promise<NotifyEntity> {
+      try {
+         if (!id || isNaN(Number(id)) || Number(id) <= 0) {
+            throw new BadRequestException('El id de la notificación es inválido');
+         }
+         id = Number(id);
+
+         if (!dto || Object.keys(dto).length === 0) {
+            throw new BadRequestException('Debe proporcionar al menos un campo para actualizar');
+         }
+
+         const existingNotify = await this.notifyRepository.findOne({
+            where: { id },
+            relations: { type: true }
+         });
+         if (!existingNotify) {
+            throw new NotFoundException('Notificación no encontrada');
+         }
+
+         if (dto.message !== undefined) {
+            if (!dto.message || dto.message.trim().length === 0) {
+               throw new BadRequestException('El mensaje no puede estar vacío');
+            }
+            existingNotify.message = dto.message.trim();
+         }
+
+         if (dto.typeNotifyId !== undefined) {
+            if (dto.typeNotifyId <= 0) {
+               throw new BadRequestException('El id de tipo de notificación es inválido');
+            }
+            const typeNotify = await this.typeNotifyService.getById(dto.typeNotifyId);
+            if (!typeNotify) {
+               throw new NotFoundException('El tipo de notificación especificado no existe');
+            }
+            existingNotify.type = typeNotify;
+         }
+
+         const updatedNotify = await this.notifyRepository.save(existingNotify);
+
+         return await this.findById(updatedNotify.id);
       } catch (error) {
          throw error;
       }

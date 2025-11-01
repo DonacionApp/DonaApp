@@ -4,6 +4,7 @@ import { JwtAuthGuard } from "src/shared/guards/jwt-auth.guard";
 import { RolesGuard } from "src/shared/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorators";
 import { CreateNotifyDto } from "./dto/create.notify.dto";
+import { UpdateNotifyDto } from "./dto/update.notify.dto";
 
 @UsePipes(new ValidationPipe())
 @Controller('notify')
@@ -38,5 +39,15 @@ export class NotifyController {
    @Get('user/:userId')
    async getNotifiesByUser(@Param('userId') userId: number) {
       return await this.notifyService.findByUserId(userId);
+   }
+
+   @UseGuards(JwtAuthGuard, RolesGuard)
+   @Roles('admin')
+   @Post('update/:id')
+   async updateNotify(
+      @Param('id') id: number,
+      @Body() dto: UpdateNotifyDto
+   ) {
+      return await this.notifyService.updateNotify(id, dto);
    }
 }
