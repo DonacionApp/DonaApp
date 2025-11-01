@@ -45,6 +45,35 @@ export class NotifyService {
       }
    }
 
+   async findAllNotifies(): Promise<NotifyEntity[]> {
+      try {
+         const notifies = await this.notifyRepository.find({
+            relations: {
+               type: true,
+               userNotify: {
+                  user: true,
+               }
+            }
+         });
+         if (!notifies || !notifies.length) throw new NotFoundException('No hay notificaciones registradas');
+         const notifiesWithFilteredUsers = notifies.map(notify => {
+            if (notify.userNotify && notify.userNotify.length > 0) {
+               notify.userNotify = notify.userNotify.map(userNotify => {
+                  if (userNotify.user) {
+                     const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } = userNotify.user;
+                     userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } as any;
+                  }
+                  return userNotify;
+               });
+            }
+            return notify;
+         });
+         return notifiesWithFilteredUsers;
+      } catch (error) {
+         throw error;
+      }
+   }
+
    async createNotify(dto: CreateNotifyDto): Promise<NotifyEntity> {
       try {
          if (!dto) throw new BadRequestException('Los datos son obligatorios');

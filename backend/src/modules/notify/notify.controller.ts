@@ -25,4 +25,11 @@ export class NotifyController {
    async getNotifyById(@Param('id') id: number) {
       return await this.notifyService.findById(id);
    }
+
+   @UseGuards(JwtAuthGuard, RolesGuard)
+   @Roles('admin')
+   @Get('all')
+   async getAllNotifies() {
+      return await this.notifyService.findAllNotifies();
+   }
 }
