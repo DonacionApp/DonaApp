@@ -1,4 +1,4 @@
-import { BadRequestException, Module } from "@nestjs/common";
+import { BadRequestException, Module, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UserNotifyEntity } from "./entity/user.notify.entity";
 import { Repository } from "typeorm";
@@ -31,5 +31,22 @@ export class UserNotifyModule {
          }
       }
       return validUsers;
+   }
+
+   async assignToUsers(notifyId: number, usersIds: number[]): Promise<UserNotifyEntity[]> {
+      try {
+         if (!notifyId || notifyId <= 0) throw new BadRequestException('El id de notificación es inválido');
+         const validUsers = await this.validateUsersExist(usersIds);
+         if (validUsers.length === 0) throw new NotFoundException('Ninguno de los usuarios especificados existe');
+         const userNotifications = validUsers.map(
+            (user) => this.userNotifyRepository.create({
+               user: user,
+               notify: { id: notifyId },
+            })
+         );
+         return await this.userNotifyRepository.save(userNotifications);
+      } catch (error) {
+         throw error;
+      }
    }
 }
