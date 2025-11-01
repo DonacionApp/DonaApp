@@ -13,5 +13,7 @@ export class CreateNotifyDto {
    @IsArray()
    @ArrayNotEmpty()
    @ArrayUnique()
-   UsersIds: number[];
+   @IsInt({ each: true })
+   @Min(1, { each: true })
+   usersIds: number[];
 }
