@@ -5,6 +5,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { CreateNotifyDto } from "./dto/create.notify.dto";
 import { TypeNotifyService } from "../typenotify/typenotify.service";
 import { UserNotifyService } from "../userNotify/usernotify.service";
+import { UserService } from "../user/user.service";
 
 @Injectable()
 export class NotifyService {
@@ -13,6 +14,7 @@ export class NotifyService {
       private readonly notifyRepository: Repository<NotifyEntity>,
       private readonly typeNotifyService: TypeNotifyService,
       private readonly userNotifyService: UserNotifyService,
+      private readonly userService: UserService,
    ) { }
 
    async findById(id: number): Promise<NotifyEntity> {
@@ -99,6 +101,49 @@ export class NotifyService {
          await this.userNotifyService.assignToUsers(savedNotify.id, uniqueUserIds);
          const findNotify = await this.findById(savedNotify.id);
          return findNotify;
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async findByUserId(userId: number): Promise<NotifyEntity[]> {
+      try {
+         if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
+            throw new BadRequestException('El id de usuario es inválido');
+         }
+         userId = Number(userId);
+
+         const existUser = await this.userService.findById(userId);
+         if (!existUser) throw new NotFoundException('Usuario no encontrado');
+
+         await this.userNotifyService.validateUsersExist([userId]);
+
+         const notifies = await this.notifyRepository.createQueryBuilder('notify')
+            .leftJoinAndSelect('notify.type', 'type')
+            .leftJoinAndSelect('notify.userNotify', 'userNotify')
+            .leftJoinAndSelect('userNotify.user', 'user')
+            .where('user.id = :userId', { userId })
+            .orderBy('notify.createdAt', 'DESC')
+            .getMany();
+
+         if (!notifies || notifies.length === 0) {
+            throw new NotFoundException('El usuario no tiene notificaciones');
+         }
+
+         const sanitized = notifies.map(notify => {
+            if (notify.userNotify && notify.userNotify.length > 0) {
+               notify.userNotify = notify.userNotify.map(userNotify => {
+                  if (userNotify.user) {
+                     const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } = userNotify.user as any;
+                     userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } as any;
+                  }
+                  return userNotify;
+               });
+            }
+            return notify;
+         });
+
+         return sanitized;
       } catch (error) {
          throw error;
       }
