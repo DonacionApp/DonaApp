@@ -15,6 +15,36 @@ export class NotifyService {
       private readonly userNotifyService: UserNotifyService,
    ) { }
 
+   async findById(id: number): Promise<NotifyEntity> {
+      try {
+         if (id <= 0 || id === null || id === undefined || isNaN(id)) {
+            throw new BadRequestException('El id de la notificación es inválido');
+         }
+         const notify = await this.notifyRepository.findOne({
+            where: { id },
+            relations: {
+               type: true,
+               userNotify: {
+                  user: true,
+               }
+            }
+         });
+         if (!notify) throw new NotFoundException('Notificación no encontrada');
+         if (notify.userNotify && notify.userNotify.length > 0) {
+            notify.userNotify = notify.userNotify.map(userNotify => {
+               if (userNotify.user) {
+                  const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } = userNotify.user;
+                  userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } as any;
+               }
+               return userNotify;
+            });
+         }
+         return notify;
+      } catch (error) {
+         throw error;
+      }
+   }
+
    async createNotify(dto: CreateNotifyDto): Promise<NotifyEntity> {
       try {
          if (!dto) throw new BadRequestException('Los datos son obligatorios');
@@ -38,7 +68,8 @@ export class NotifyService {
          });
          const savedNotify = await this.notifyRepository.save(notify);
          await this.userNotifyService.assignToUsers(savedNotify.id, uniqueUserIds);
-         return savedNotify;
+         const findNotify = await this.findById(savedNotify.id);
+         return findNotify;
       } catch (error) {
          throw error;
       }
