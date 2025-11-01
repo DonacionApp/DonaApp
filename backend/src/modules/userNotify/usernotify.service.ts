@@ -49,4 +49,22 @@ export class UserNotifyService {
          throw error;
       }
    }
+
+   async deleteByNotifyId(notifyId: number): Promise<void> {
+      try {
+         if (!notifyId || notifyId <= 0) {
+            throw new BadRequestException('El id de notificación es inválido');
+         }
+
+         const userNotifications = await this.userNotifyRepository.find({
+            where: { notify: { id: notifyId } }
+         });
+
+         if (userNotifications.length > 0) {
+            await this.userNotifyRepository.remove(userNotifications);
+         }
+      } catch (error) {
+         throw error;
+      }
+   }
 }

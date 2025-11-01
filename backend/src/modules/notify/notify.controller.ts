@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { NotifyService } from "./notify.service";
 import { JwtAuthGuard } from "src/shared/guards/jwt-auth.guard";
 import { RolesGuard } from "src/shared/guards/roles.guard";
@@ -49,5 +49,12 @@ export class NotifyController {
       @Body() dto: UpdateNotifyDto
    ) {
       return await this.notifyService.updateNotify(id, dto);
+   }
+
+   @UseGuards(JwtAuthGuard, RolesGuard)
+   @Roles('admin')
+   @Delete('delete/:id')
+   async deleteNotify(@Param('id') id: number) {
+      return await this.notifyService.deleteNotify(id);
    }
 }

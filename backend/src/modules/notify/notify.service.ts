@@ -194,4 +194,39 @@ export class NotifyService {
          throw error;
       }
    }
+
+   async deleteNotify(id: number): Promise<{ message: string }> {
+      try {
+         if (!id || isNaN(Number(id)) || Number(id) <= 0) {
+            throw new BadRequestException('El id de la notificación es inválido');
+         }
+         id = Number(id);
+
+         const existingNotify = await this.notifyRepository.findOne({
+            where: { id },
+            relations: {
+               type: true,
+               userNotify: {
+                  user: true,
+               }
+            }
+         });
+
+         if (!existingNotify) {
+            throw new NotFoundException('Notificación no encontrada');
+         }
+
+         if (existingNotify.userNotify && existingNotify.userNotify.length > 0) {
+            await this.userNotifyService.deleteByNotifyId(id);
+         }
+
+         await this.notifyRepository.remove(existingNotify);
+
+         return {
+            message: 'Notificación eliminada exitosamente'
+         };
+      } catch (error) {
+         throw error;
+      }
+   }
 }
