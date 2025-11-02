@@ -227,4 +227,76 @@ export class DonationService {
       throw error;
     }
   }
+
+  async getDonationHistory(currentUser: any, filters: any): Promise<DonationEntity[]> {
+    try {
+      if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
+
+      // Validar permisos: usuario ve solo sus donaciones, admin ve todas
+      const isAdmin = currentUser.rol === 'admin' || (currentUser.rol && String(currentUser.rol).toLowerCase() === 'admin');
+      const userId = isAdmin && filters.userId ? filters.userId : currentUser.id;
+
+      let query = this.donationRepo.createQueryBuilder('d')
+        .leftJoinAndSelect('d.user', 'user')
+        .leftJoinAndSelect('d.statusDonation', 'statusDonation');
+
+      // Filtro por usuario
+      query = query.where('d.userId = :userId', { userId });
+
+      // Filtro por rango de fechas
+      if (filters.startDate || filters.endDate) {
+        if (filters.startDate) {
+          query = query.andWhere('d.createdAt >= :startDate', { startDate: new Date(filters.startDate) });
+        }
+        if (filters.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          query = query.andWhere('d.createdAt <= :endDate', { endDate });
+        }
+      }
+
+      // Filtro de búsqueda por campos específicos
+      if (filters.searchParam && filters.typeSearch && filters.typeSearch.length > 0) {
+        const searchTerm = `%${filters.searchParam}%`;
+        const conditions: string[] = [];
+
+        for (const field of filters.typeSearch) {
+          if (field === 'lugar') {
+            conditions.push(`(d.lugarRecogida ILIKE :searchTerm OR d.lugarDonacion ILIKE :searchTerm)`);
+          } else if (field === 'articulos.content') {
+            conditions.push(`(d.articles::text ILIKE :searchTerm)`);
+          }
+        }
+
+        if (conditions.length > 0) {
+          query = query.andWhere(`(${conditions.join(' OR ')})`);
+          query = query.setParameter('searchTerm', searchTerm);
+        }
+      }
+
+      // Ordenamiento
+      if (filters.orderBy) {
+        const orderField = filters.orderBy === 'createdAt' || filters.orderBy === 'updatedAt' 
+          ? `d.${filters.orderBy}` 
+          : 'd.createdAt';
+        query = query.orderBy(orderField, 'DESC');
+      } else {
+        query = query.orderBy('d.createdAt', 'DESC');
+      }
+
+      const donations = await query.getMany();
+
+      // Remover campos sensibles
+      donations.forEach(donation => {
+        if (donation.user) {
+          const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
+          donation.user = userWithoutSensitive as any;
+        }
+      });
+
+      return donations;
+    } catch (error) {
+      throw error;
+    }
+  }
 }

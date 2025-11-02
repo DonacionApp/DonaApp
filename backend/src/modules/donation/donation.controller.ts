@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards, Query } from '@nestjs/common';
 import { DonationService } from './donation.service';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/shared/guards/roles.guard';
@@ -6,6 +6,7 @@ import { Roles } from '../auth/decorators/roles.decorators';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { CreateDonationDto } from './dto/create-donation.dto';
 import { UpdateDonationDto } from './dto/update-donation.dto';
+import { FilterDonationDto } from './dto/filter-donation.dto';
 
 @Controller('donation')
 export class DonationController {
@@ -119,6 +120,18 @@ export class DonationController {
     try {
       const donationId = Number(id);
       return await this.donationService.changeStatus(donationId, body.status);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // get /donation/history/search - Obtener historial de donaciones con filtros (usuario autenticado)
+  @UseGuards(JwtAuthGuard)
+  @Get('history/search')
+  async getDonationHistory(@Req() req: any, @Query() filters: FilterDonationDto) {
+    try {
+      const user = req.user;
+      return await this.donationService.getDonationHistory(user, filters);
     } catch (error) {
       throw error;
     }
