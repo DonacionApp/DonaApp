@@ -67,4 +67,9 @@ export class UserController {
     return await this.userService.changeBlockStatus(Number(id), block);
   }
 
+  @Get(':id/donation')
+  async getUserDonationHistory(@Param('id') id: number) {
+    return await this.userService.getUserDonationHistory(Number(id));
+  }
+
 }

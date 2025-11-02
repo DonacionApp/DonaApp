@@ -11,10 +11,11 @@ import { CountriesModule } from '../countries/countries.module';
 import { ConfigModule } from '@nestjs/config';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { CloudinaryModule } from 'src/core/cloudinary/cloudinary.module';
+import { DonationModule } from '../donation/donation.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserEntity, RolEntity, PeopleEntity]),RolModule, PeopleModule, CountriesModule, ConfigModule,
-forwardRef(() => CloudinaryModule)],
+forwardRef(() => CloudinaryModule), forwardRef(() => DonationModule)],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService]
