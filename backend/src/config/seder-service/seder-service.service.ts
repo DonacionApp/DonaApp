@@ -49,7 +49,9 @@ export class SederServiceService {
         if (countTypeDni === 0) {
             await this.typeDniRepository.save([
                 { type: 'NIT' },
-                { type: 'CC' }
+                { type: 'CC' },
+                { type: 'CE' },
+                { type: 'PAS' }
             ]);
             console.log('Type DNI iniciales creados');
         };
@@ -61,7 +63,8 @@ export class SederServiceService {
                 { tag: 'alimentos' },
                 { tag: 'medicamentos' },
                 { tag: 'dinero' },
-                { tag: 'electronicos' }
+                { tag: 'electronicos' },
+                { tag: 'comidas' }
             ]);
             console.log('Tags iniciales creados');
         };
@@ -72,7 +75,14 @@ export class SederServiceService {
                 { status: 'pendiente' },
                 { status: 'aceptada' },
                 { status: 'rechazada' },
-                { status: 'entregada' }
+                { status: 'entregada' },
+                { status: 'cancelada' },
+                { status: 'en progreso' },
+                { status: 'completada' },
+                { status: 'recogida '},
+                { status: 'en camino' },
+                { status: 'en espera' },
+                { status: 'recibida' }
             ]);
             console.log('Status Donation iniciales creados');
         };
@@ -92,7 +102,7 @@ export class SederServiceService {
         const countTypeNotify = await this.typeNotifyRepository.count();
         if (countTypeNotify === 0) {
             await this.typeNotifyRepository.save([
-                { type: 'informaacion' },
+                { type: 'informacion' },
                 { type: 'alerta' },
                 { type: 'recordatorio' },
             ]);
@@ -102,8 +112,10 @@ export class SederServiceService {
         const countTypePost = await this.typePostRepository.count();
         if (countTypePost === 0) {
             await this.typePostRepository.save([
-                { type: 'donacion' },
+                { type: 'donacion completada' },
                 { type: 'publicacion' },
+                { type: 'solicitud de donacion'},
+                { type: 'articulos para donar'}
             ]);
             console.log('typost iniciales creados con exito')
         };
@@ -113,7 +125,9 @@ export class SederServiceService {
             await this.typeReportRepository.save([
                 { type: 'solicitud' },
                 { type: 'cumplimiento' },
-                { type: 'entrega' }
+                { type: 'entrega' },
+                { type: 'usuario' },
+                { type: 'publicacion' }
             ])
         }
 
