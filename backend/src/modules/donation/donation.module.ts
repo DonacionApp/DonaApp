@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DonationEntity } from './entity/donation.entity';
 import { DonationController } from './donation.controller';
@@ -17,14 +17,8 @@ import { EventsModule } from 'src/core/events/events.module';
   imports: [
     TypeOrmModule.forFeature([
       DonationEntity,
-      StatusDonationEntity,
-      NotifyEntity,
-      TypeNotifyEntity,
-      UserNotifyEntity,
-      AuditEntity,
-      UserEntity,
     ]),
-    UserModule,
+    forwardRef(() => UserModule),
     StatusdonationModule,
     EventsModule,
   ],

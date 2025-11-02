@@ -1,5 +1,4 @@
 import { Body, Controller, Delete, Get, Param, Post, UseGuards, Req, UnauthorizedException, Put, Head, Header, Headers } from '@nestjs/common';
-import { UpdateUserProfileDto } from './dto/update.user.profile.dto';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
@@ -66,5 +65,6 @@ export class UserController {
   async changeBlockStatus(@Param('id') id: number, @Body('block') block: boolean) {
     return await this.userService.changeBlockStatus(Number(id), block);
   }
+
 
 }

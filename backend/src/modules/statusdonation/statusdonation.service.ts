@@ -36,4 +36,20 @@ export class StatusdonationService {
             throw error;
         }
     }
+
+    async findByname(name:string):Promise<StatusDonationEntity>{
+        try {
+            if(!name || name.trim()===''){
+                throw new NotFoundException('El nombre proporcionado no es válido');
+            }
+            const status= await this.statusDonationRepository.findOne({where:{status:name}});
+            if(!status){
+                throw new NotFoundException('No se encontró el estado de donación con el nombre proporcionado');
+            }
+
+            return status;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
