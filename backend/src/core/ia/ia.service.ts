@@ -50,8 +50,6 @@ export class IaService {
                 }
 
                 let text = result.response.text();
-
-                this.logger.log(`Respuesta Gemini (Cruda) para ${file.originalname}: ${text}`)
                 text = text.replace(/```json|```/g, '').trim();
 
                 let tags: string[] = [];
