@@ -25,6 +25,7 @@ import { StatusdonationModule } from './modules/statusdonation/statusdonation.mo
 import { PostlikedModule } from './modules/postLiked/postliked.module';
 import { NotifyModule } from './modules/notify/notify.module';
 import { UserNotifyModule } from './modules/userNotify/usernotify.module';
+import { IaModule } from './core/ia/ia.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -67,6 +68,7 @@ import { UserNotifyModule } from './modules/userNotify/usernotify.module';
   PostlikedModule,
   NotifyModule,
   UserNotifyModule,
+  IaModule,
 ],
   controllers: [AppController],
   providers: [AppService],
