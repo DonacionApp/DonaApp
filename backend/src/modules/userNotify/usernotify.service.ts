@@ -4,6 +4,7 @@ import { UserNotifyEntity } from "./entity/user.notify.entity";
 import { Repository } from "typeorm";
 import { UserService } from "../user/user.service";
 import { UserEntity } from "../user/entity/user.entity";
+import { NotifyEntity } from "../notify/entity/notify.entity";
 
 @Injectable()
 export class UserNotifyService {
@@ -63,6 +64,39 @@ export class UserNotifyService {
          if (userNotifications.length > 0) {
             await this.userNotifyRepository.remove(userNotifications);
          }
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async getMyNotifications(userId: number): Promise<NotifyEntity[]> {
+      try {
+         if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
+            throw new BadRequestException('El id de usuario es inválido');
+         }
+         userId = Number(userId);
+
+         await this.userService.findById(userId);
+
+         const userNotifications = await this.userNotifyRepository.find({
+            where: { user: { id: userId } },
+            relations: {
+               notify: {
+                  type: true
+               }
+            },
+            order: {
+               createdAt: 'DESC'
+            }
+         });
+
+         if (!userNotifications || userNotifications.length === 0) {
+            throw new NotFoundException('El usuario no tiene notificaciones');
+         }
+
+         const notifications = userNotifications.map(userNotify => userNotify.notify);
+
+         return notifications;
       } catch (error) {
          throw error;
       }
