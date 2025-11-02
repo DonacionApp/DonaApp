@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { UserEntity } from './entity/user.entity';
@@ -14,7 +14,6 @@ import { MailService } from 'src/core/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { CLOUDINARY_DOCS_FOLDER, CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLDER } from 'src/config/constants';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
-import { DonationService } from '../donation/donation.service';
 
 @Injectable()
 export class UserService {
@@ -30,7 +29,6 @@ export class UserService {
     private readonly countriesService: CountriesService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly configService: ConfigService,
-    private readonly donationService: DonationService,
   ) { }
 
   async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
@@ -465,23 +463,6 @@ export class UserService {
       }
       return { status: 'info', statusCode: 200, message: 'El usuario ya está verificado, no se puede actualizar el documento de soporte' };
 
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async getUserDonationHistory(userId: number): Promise<any> {
-    try {
-      if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
-
-      // Validar que el usuario exista
-      const user = await this.userRepository.findOne({ where: { id: userId } });
-      if (!user) throw new NotFoundException('Usuario no encontrado');
-
-      // Obtener donaciones del usuario usando DonationService
-      const donations = await this.donationService.getUserDonations(userId);
-      
-      return donations;
     } catch (error) {
       throw error;
     }

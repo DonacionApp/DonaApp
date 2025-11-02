@@ -13,11 +13,9 @@ export class DonationService {
   constructor(
     @InjectRepository(DonationEntity)
     private readonly donationRepo: Repository<DonationEntity>,
-    @InjectRepository(StatusDonationEntity)
-    private readonly statusDonationRepo: Repository<StatusDonationEntity>,
     private readonly statusDonationService: StatusdonationService,
     private readonly userService: UserService,
-  ) {}
+  ) { }
 
   async getDonationById(id: number): Promise<DonationEntity> {
     try {
@@ -41,7 +39,7 @@ export class DonationService {
   async createDonation(createDonationDto: CreateDonationDto, currentUser: any): Promise<DonationEntity> {
     try {
       if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
-      
+
       // Validar campos requeridos
       if (!createDonationDto.lugarRecogida) {
         throw new BadRequestException('El lugar de recogida es obligatorio');
@@ -50,20 +48,33 @@ export class DonationService {
       // Obtener usuario completo desde la base de datos para validar verificación
       const user = await this.userService.findById(currentUser.sub || currentUser.id);
       if (!user) throw new NotFoundException('Usuario no encontrado');
+      let idDonationStatus= createDonationDto.statusDonation;
+      if(!idDonationStatus || idDonationStatus<=0 || isNaN(idDonationStatus)){
+        throw new BadRequestException('El estado de donación es obligatorio y debe ser un id válido');
+      }
+      idDonationStatus=Number(idDonationStatus);
+      const existEstatus= await this.statusDonationService.findById(idDonationStatus);
+      if(!existEstatus){
+        throw new NotFoundException('El estado de donación proporcionado no existe');
+      }
 
       // Validar que el usuario sea una organización verificada
       if (!user.verified) {
         throw new ForbiddenException('Solo organizaciones verificadas pueden crear donaciones');
       }
 
-      // Crear la donación
-      const donation = this.donationRepo.create({
-        ...createDonationDto,
-        user,
-      });
+      const donationData: any = { ...createDonationDto };
+      // Reemplazar el campo statusDonation (viene como id) por la entidad encontrada
+      donationData.statusDonation = existEstatus;
+      donationData.user = user;
+      const donation = this.donationRepo.create(donationData);
 
-      const saved = await this.donationRepo.save(donation);
-      
+      // TypeORM save can sometimes return an array (depending on input/overloads), normalize to a single entity
+      const savedRaw = await this.donationRepo.save(donation);
+      const saved = Array.isArray(savedRaw) ? savedRaw[0] : savedRaw;
+      if(!saved){
+        throw new BadRequestException('No se pudo crear la donación');
+      }
       // Remover campos sensibles
       if (saved.user) {
         const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = saved.user as any;
@@ -79,7 +90,7 @@ export class DonationService {
   async getUserDonations(userId: number): Promise<DonationEntity[]> {
     try {
       if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
-      
+
       const donations = await this.donationRepo.find({
         where: { user: { id: userId } },
         relations: ['user', 'statusDonation'],
@@ -107,25 +118,22 @@ export class DonationService {
     }
   }
 
-  async updateDonation(id: number, updateDonationDto: UpdateDonationDto, currentUser: any): Promise<DonationEntity> {
+  async updateDonation(id: number, updateDonationDto: UpdateDonationDto, currentUser?: any): Promise<DonationEntity> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
-      if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
-
-      const donation = await this.donationRepo.findOne({
+        const donation = await this.donationRepo.findOne({
         where: { id },
         relations: ['user', 'statusDonation'],
       });
 
-      if (!donation) throw new NotFoundException('Donación no encontrada');
+      if (currentUser) {
+        const isOwner = donation?.user.id === currentUser.id;
 
-      // Validar permisos: solo el dueño o admin
-      const isOwner = donation.user.id === currentUser.id;
-      const isAdmin = currentUser.rol === 'admin' || (currentUser.rol && String(currentUser.rol).toLowerCase() === 'admin');
-      
-      if (!isOwner && !isAdmin) {
-        throw new ForbiddenException('No tienes permiso para actualizar esta donación');
+        if (!isOwner) {
+          throw new ForbiddenException('No tienes permiso para actualizar esta donación');
+        }
       }
+      if (!donation) throw new NotFoundException('Donación no encontrada');
 
       // Actualizar campos
       Object.assign(donation, updateDonationDto);
@@ -157,17 +165,14 @@ export class DonationService {
 
       // Validar permisos
       const isOwner = donation.user.id === currentUser.id;
-      const isAdmin = currentUser.rol === 'admin' || (currentUser.rol && String(currentUser.rol).toLowerCase() === 'admin');
 
-      if (!isOwner && !isAdmin) {
+      if (!isOwner) {
         throw new ForbiddenException('No tienes permiso para eliminar esta donación');
       }
 
       // Validar estado: si no es propietario pero es admin, puede eliminar sin restricción
-      if (isOwner && !isAdmin) {
-        const completedStatus = await this.statusDonationRepo.findOne({
-          where: { status: 'completado' },
-        });
+      if (isOwner) {
+        const completedStatus = await this.statusDonationService.findByname('completado')
 
         if (donation.statusDonation && completedStatus && donation.statusDonation.id === completedStatus.id) {
           throw new ForbiddenException('No se puede eliminar una donación con estado completado');
@@ -209,7 +214,6 @@ export class DonationService {
       const statusEntity = await this.statusDonationService.findById(newStatus);
       if (!statusEntity) throw new NotFoundException('Estado no encontrado en la base de datos');
 
-      // permiso solo a propietario o admin
       if (currentUser) {
         const isOwner = donation.user && currentUser && donation.user.id === currentUser.id;
         if (!isOwner) throw new ForbiddenException('No tienes permiso para cambiar el estado');
@@ -232,9 +236,7 @@ export class DonationService {
     try {
       if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
 
-      // Validar permisos: usuario ve solo sus donaciones, admin ve todas
-      const isAdmin = currentUser.rol === 'admin' || (currentUser.rol && String(currentUser.rol).toLowerCase() === 'admin');
-      const userId = isAdmin && filters.userId ? filters.userId : currentUser.id;
+      const userId =filters.userId ? filters.userId : currentUser.id;
 
       let query = this.donationRepo.createQueryBuilder('d')
         .leftJoinAndSelect('d.user', 'user')
@@ -276,8 +278,8 @@ export class DonationService {
 
       // Ordenamiento
       if (filters.orderBy) {
-        const orderField = filters.orderBy === 'createdAt' || filters.orderBy === 'updatedAt' 
-          ? `d.${filters.orderBy}` 
+        const orderField = filters.orderBy === 'createdAt' || filters.orderBy === 'updatedAt'
+          ? `d.${filters.orderBy}`
           : 'd.createdAt';
         query = query.orderBy(orderField, 'DESC');
       } else {

@@ -1,5 +1,4 @@
 import { Body, Controller, Delete, Get, Param, Post, UseGuards, Req, UnauthorizedException, Put, Head, Header, Headers } from '@nestjs/common';
-import { UpdateUserProfileDto } from './dto/update.user.profile.dto';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
@@ -67,9 +66,5 @@ export class UserController {
     return await this.userService.changeBlockStatus(Number(id), block);
   }
 
-  @Get(':id/donation')
-  async getUserDonationHistory(@Param('id') id: number) {
-    return await this.userService.getUserDonationHistory(Number(id));
-  }
 
 }

@@ -17,12 +17,6 @@ import { EventsModule } from 'src/core/events/events.module';
   imports: [
     TypeOrmModule.forFeature([
       DonationEntity,
-      StatusDonationEntity,
-      NotifyEntity,
-      TypeNotifyEntity,
-      UserNotifyEntity,
-      AuditEntity,
-      UserEntity,
     ]),
     forwardRef(() => UserModule),
     StatusdonationModule,

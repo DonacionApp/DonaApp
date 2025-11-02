@@ -38,7 +38,7 @@ export class DonationController {
 
   // get /donation/me - Obtener donaciones del usuario autenticado
   @UseGuards(JwtAuthGuard)
-  @Get('me')
+  @Get('me/all')
   async getMyDonations(@Req() req: any) {
     try {
       const user = req.user;
@@ -49,7 +49,6 @@ export class DonationController {
   }
 
   // get /donation/users/:idUser - Obtener donaciones de un usuario específico
-  @UseGuards(JwtAuthGuard)
   @Get('users/:idUser')
   async getDonationsByUser(@Param('idUser') idUser: number) {
     try {
@@ -62,7 +61,7 @@ export class DonationController {
 
   // post /donation/:id - Actualizar una donación (owner/admin)
   @UseGuards(JwtAuthGuard)
-  @Post(':id')
+  @Post('/update/:id')
   async updateDonation(@Param('id') id: number, @Body() updateDonationDto: UpdateDonationDto, @Req() req: any) {
     try {
       const donationId = Number(id);
@@ -73,7 +72,18 @@ export class DonationController {
     }
   }
 
-  // Delete /donation/:id - Eliminar una donación (owner con restricción de estado, admin sin restricción)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Post('admin/update/:id')
+  async adminUpdateDonation(@Param('id') id:number, @Body() updateDonationDto:UpdateDonationDto):Promise<any>{
+    try {
+      return await this.donationService.updateDonation(id, updateDonationDto);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Delete /donation/:id - Eliminar una donación (owner con restricción de estado,)
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async deleteDonation(@Param('id') id: number, @Req() req: any) {
@@ -99,7 +109,7 @@ export class DonationController {
     }
   }
 
-  // post /donation/:id/status - Cambiar estado de donación (owner/admin)
+  // post /donation/:id/status - Cambiar estado de donación (owner)
   @UseGuards(JwtAuthGuard)
   @Post(':id/status')
   async updateStatus(@Param('id') id: number, @Body() body: UpdateStatusDto, @Req() req: any) {
@@ -128,7 +138,7 @@ export class DonationController {
   // get /donation/history/search - Obtener historial de donaciones con filtros (usuario autenticado)
   @UseGuards(JwtAuthGuard)
   @Get('history/search')
-  async getDonationHistory(@Req() req: any, @Query() filters: FilterDonationDto) {
+  async getDonationHistory(@Req() req: any, @Body() filters: FilterDonationDto) {
     try {
       const user = req.user;
       return await this.donationService.getDonationHistory(user, filters);
@@ -136,5 +146,6 @@ export class DonationController {
       throw error;
     }
   }
+
 }
 

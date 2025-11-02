@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsDateString, IsArray, IsObject } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsDateString, IsArray, IsObject, IsNumber } from 'class-validator';
 
 export class CreateDonationDto {
   @IsString()
@@ -16,6 +16,10 @@ export class CreateDonationDto {
   @IsArray()
   @IsOptional()
   comments?: any[];
+
+  @IsNotEmpty()
+  @IsNumber()
+  statusDonation: number;
 
   @IsString()
   @IsOptional()
