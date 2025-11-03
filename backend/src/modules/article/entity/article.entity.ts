@@ -1,3 +1,4 @@
+import { PostArticleEntity } from "src/modules/postarticle/entity/postarticle.entity";
 import { UserArticleEntity } from "src/modules/userarticle/entity/useraticle.entity";
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
@@ -9,4 +10,6 @@ export class ArticleEntity{
     name: string;
     @OneToMany(()=> UserArticleEntity, (userArticle)=> userArticle.article)
     userArticle:UserArticleEntity[];
+    @OneToMany(()=> PostArticleEntity,(postArticle)=>postArticle.article)
+    postArticle:PostArticleEntity[];
 }
