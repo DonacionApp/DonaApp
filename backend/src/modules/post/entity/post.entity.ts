@@ -1,5 +1,6 @@
 import { ImagePostEntity } from "src/modules/imagepost/entity/image.post.entity";
 import { PostArticleEntity } from "src/modules/postarticle/entity/postarticle.entity";
+import { PostArticleDonationEntity } from "src/modules/postdonationarticle/entity/post.article.donation.entity";
 import { PostLikedEntity } from "src/modules/postLiked/entity/post.liked.entity";
 import { PostTagEntity } from "src/modules/posttags/entity/post.tags.entity";
 import { TypePostEntity } from "src/modules/typepost/entity/type.port.entity";
@@ -24,8 +25,8 @@ export class PostEntity{
     imagePost:ImagePostEntity[]
     @OneToMany(()=>PostLikedEntity,(postLiked)=>postLiked.post)
     postLiked:PostLikedEntity[];
-    @OneToMany(()=> PostArticleEntity,(postArticle)=>postArticle.post)
-    postArticle:PostArticleEntity[];
+    @OneToMany(()=>PostArticleDonationEntity,(postArticleDonation)=>postArticleDonation.post)
+    donationArticlePost:PostArticleDonationEntity[];
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;
