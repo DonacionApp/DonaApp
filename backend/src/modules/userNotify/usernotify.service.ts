@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UserNotifyEntity } from "./entity/user.notify.entity";
 import { Repository } from "typeorm";
 import { UserService } from "../user/user.service";
 import { UserEntity } from "../user/entity/user.entity";
 import { NotifyEntity } from "../notify/entity/notify.entity";
+import { NotifyService } from "../notify/notify.service";
 
 @Injectable()
 export class UserNotifyService {
@@ -12,6 +13,8 @@ export class UserNotifyService {
       @InjectRepository(UserNotifyEntity)
       private readonly userNotifyRepository: Repository<UserNotifyEntity>,
       private readonly userService: UserService,
+      @Inject(forwardRef(() => NotifyService))
+      private readonly notifyService: NotifyService,
    ) { }
 
    async validateUsersExist(usersIds: number[]): Promise<UserEntity[]> {
@@ -97,6 +100,43 @@ export class UserNotifyService {
          const notifications = userNotifications.map(userNotify => userNotify.notify);
 
          return notifications;
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async getMyNotificationById(userId: number, notifyId: number): Promise<NotifyEntity> {
+      try {
+         if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
+            throw new BadRequestException('El id de usuario es inválido');
+         }
+         userId = Number(userId);
+
+         if (!notifyId || isNaN(Number(notifyId)) || Number(notifyId) <= 0) {
+            throw new BadRequestException('El id de notificación es inválido');
+         }
+         notifyId = Number(notifyId);
+
+         await this.userService.findById(userId);
+         await this.notifyService.findById(notifyId);
+
+         const userNotification = await this.userNotifyRepository.findOne({
+            where: {
+               user: { id: userId },
+               notify: { id: notifyId }
+            },
+            relations: {
+               notify: {
+                  type: true
+               }
+            }
+         });
+
+         if (!userNotification) {
+            throw new ForbiddenException('No tienes acceso a esta notificacion');
+         }
+
+         return userNotification.notify;
       } catch (error) {
          throw error;
       }
