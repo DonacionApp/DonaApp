@@ -9,6 +9,9 @@ export class PostArticleEntity{
     id:number;
     @ManyToOne(()=>ArticleEntity,(article)=>article.postArticle, {onDelete:'CASCADE', nullable:false})
     article:ArticleEntity;
+    @ManyToOne(()=>PostEntity,(post)=>post.postArticle, {onDelete:'CASCADE', nullable:false})
+    post:PostEntity;
+
     @OneToMany(()=>PostArticleDonationEntity,(postDonationArticle)=>postDonationArticle.postArticle)
     donationArticle:PostArticleDonationEntity[];
 }
