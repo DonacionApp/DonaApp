@@ -141,4 +141,40 @@ export class UserNotifyService {
          throw error;
       }
    }
+
+   async deleteMyNotification(userId: number, notifyId: number): Promise<{ message: string }> {
+      try {
+         if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
+            throw new BadRequestException('El id de usuario es inválido');
+         }
+         userId = Number(userId);
+
+         if (!notifyId || isNaN(Number(notifyId)) || Number(notifyId) <= 0) {
+            throw new BadRequestException('El id de notificación es inválido');
+         }
+         notifyId = Number(notifyId);
+
+         await this.userService.findById(userId);
+         await this.notifyService.findById(notifyId);
+
+         const userNotification = await this.userNotifyRepository.findOne({
+            where: {
+               user: { id: userId },
+               notify: { id: notifyId }
+            }
+         });
+
+         if (!userNotification) {
+            throw new ForbiddenException('No tienes permiso para eliminar esta notificacion');
+         }
+
+         await this.userNotifyRepository.remove(userNotification);
+
+         return {
+            message: 'Notificación eliminada exitosamente'
+         };
+      } catch (error) {
+         throw error;
+      }
+   }
 }

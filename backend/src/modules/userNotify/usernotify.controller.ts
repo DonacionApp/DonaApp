@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Param, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Controller, Delete, Get, Param, Req, UseGuards } from "@nestjs/common";
 import { UserNotifyService } from "./usernotify.service";
 import { JwtAuthGuard } from "src/shared/guards/jwt-auth.guard";
 
@@ -30,5 +30,16 @@ export class UserNotifyController {
          throw new Error('Usuario no identificado');
       }
       return await this.userNotifyService.getMyNotificationById(userId, notifyId);
+   }
+
+   @UseGuards(JwtAuthGuard)
+   @Delete('my-notifications/delete/:notifyId')
+   async deleteMyNotification(@Req() req: any, @Param('notifyId') notifyId: number) {
+      const userFromToken = req && req.user ? req.user : null;
+      const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+      if (!userId) {
+         throw new Error('Usuario no identificado');
+      }
+      return await this.userNotifyService.deleteMyNotification(userId, notifyId);
    }
 }
