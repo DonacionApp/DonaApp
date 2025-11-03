@@ -6,6 +6,8 @@ import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "ty
 export class ChatEntity{
     @PrimaryGeneratedColumn()
     id:number;
+    @Column({type:'varchar', nullable:false})
+    chatName:string;
     @ManyToOne(()=>ChatStatusEntity,(chatStatus)=>chatStatus.chat, {onDelete:'CASCADE', nullable:false})
     chatStatus:ChatStatusEntity;
     @OneToMany(()=>PostEntity,(post)=>post.chat)

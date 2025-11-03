@@ -1,4 +1,5 @@
 import { ChatEntity } from "src/modules/chat/entity/chat.entity";
+import { DonationEntity } from "src/modules/donation/entity/donation.entity";
 import { ImagePostEntity } from "src/modules/imagepost/entity/image.post.entity";
 import { PostArticleEntity } from "src/modules/postarticle/entity/postarticle.entity";
 import { PostArticleDonationEntity } from "src/modules/postdonationarticle/entity/post.article.donation.entity";
@@ -31,6 +32,8 @@ export class PostEntity{
     donationArticlePost:PostArticleDonationEntity[];
     @ManyToOne(()=>ChatEntity,(chat)=>chat.post, {onDelete:'CASCADE', nullable:true})
     chat:ChatEntity;
+    @OneToMany(()=>DonationEntity,(donation)=>donation.post)
+    donation:DonationEntity[];
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;
