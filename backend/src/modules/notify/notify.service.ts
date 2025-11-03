@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { NotifyEntity } from "./entity/notify.entity";
 import { Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -14,6 +14,7 @@ export class NotifyService {
       @InjectRepository(NotifyEntity)
       private readonly notifyRepository: Repository<NotifyEntity>,
       private readonly typeNotifyService: TypeNotifyService,
+      @Inject(forwardRef(() => UserNotifyService))
       private readonly userNotifyService: UserNotifyService,
       private readonly userService: UserService,
    ) { }
