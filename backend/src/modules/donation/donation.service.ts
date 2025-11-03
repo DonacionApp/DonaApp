@@ -172,7 +172,7 @@ export class DonationService {
 
       // Validar estado: si no es propietario pero es admin, puede eliminar sin restricción
       if (isOwner) {
-        const completedStatus = await this.statusDonationService.findByname('completado')
+        const completedStatus = await this.statusDonationService.findByname('completada')
 
         if (donation.statusDonation && completedStatus && donation.statusDonation.id === completedStatus.id) {
           throw new ForbiddenException('No se puede eliminar una donación con estado completado');

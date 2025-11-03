@@ -26,6 +26,7 @@ import { PostlikedModule } from './modules/postLiked/postliked.module';
 import { NotifyModule } from './modules/notify/notify.module';
 import { UserNotifyModule } from './modules/userNotify/usernotify.module';
 import { IaModule } from './core/ia/ia.module';
+import { ArticleModule } from './modules/article/article.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -69,6 +70,7 @@ import { IaModule } from './core/ia/ia.module';
   NotifyModule,
   UserNotifyModule,
   IaModule,
+  ArticleModule,
 ],
   controllers: [AppController],
   providers: [AppService],
