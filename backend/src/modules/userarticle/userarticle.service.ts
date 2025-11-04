@@ -6,6 +6,7 @@ import { ArticleService } from '../article/article.service';
 import { UserService } from '../user/user.service';
 import { CreateUserArticleDto } from './dto/create.user.article.dto';
 import { FilterUserArticleDto } from './dto/filter.user.article.dto';
+import { UpdateQuantityDto } from './dto/update.quantity.dto';
 
 @Injectable()
 export class UserarticleService {
@@ -33,12 +34,15 @@ export class UserarticleService {
                 queryBuilder.andWhere('userArticle.needed = :needed', { needed: dto.needed });
             }
             if (dto.search) {
-                queryBuilder.andWhere('article.title ILIKE :search OR article.content ILIKE :search', { search: `%${dto.search}%` });
+                queryBuilder.andWhere('article.name ILIKE :search OR article.descripcion ILIKE :search', { search: `%${dto.search}%` });
+
             }
             const query = await queryBuilder.getMany();
             if(!query || query.length===0){
                 throw new NotFoundException('No se encontraron articulos para el usuario')
             }
+            const userArticlesWithouthUser = query.map(({ user: { password, email, token, loginAttempts, lockUntil, block, dateSendCodigo, ...userRest }, ...userArticleRest }) => userArticleRest as any);
+            return userArticlesWithouthUser;
             return query;
         } catch (error) {
             throw error;
@@ -79,14 +83,18 @@ export class UserarticleService {
                 user:user,
                 article:article
             });
-            return await this.userArticleRepository.save(userArticle);
+            const userArticleSave= await this.userArticleRepository.save(userArticle);
+            const { user: { password, email, token, loginAttempts, lockUntil, block, dateSendCodigo, ...userRest }, ...userArticleRest } = userArticleSave;
+            return userArticleRest as any;
         } catch (error) {
             throw error;
         }
     }
 
-    async updateUserArticle(id:number, cant:number):Promise<UserArticleEntity>{
+    async updateUserArticle(idUser:number, dto:UpdateQuantityDto, admin?:boolean):Promise<UserArticleEntity>{
         try{
+            const id=dto.userArticleId;
+            const cant=dto.cant;
             if(!id || id<=0 || isNaN(id) || id===undefined || !cant  || isNaN(cant) || cant===undefined){
                 throw new BadRequestException('Datos invalidos')
             };
@@ -96,39 +104,54 @@ export class UserarticleService {
             const userArticle = await this.userArticleRepository.findOne({
                 where:{
                     id
+                },
+                relations:{
+                    user:true
                 }
             });
             if(!userArticle){
                 throw new NotFoundException('El articulo no existe')
             };
+            if(userArticle.user.id!==idUser && !admin){
+                throw new BadRequestException('El articulo no pertenece al usuario')
+            }
             userArticle.cant = cant;
-            return await this.userArticleRepository.save(userArticle);
+            const articleuser= await this.userArticleRepository.save(userArticle);
+            const { user: { password, email, token, loginAttempts, lockUntil, block, dateSendCodigo, ...userRest }, ...userArticleRest } = articleuser;
+            return userArticleRest as any;
         } catch (error) {
             throw error;
         }
     }
 
-    async changeNeededStatus(id:number, needed:boolean):Promise<UserArticleEntity>{
+    async changeNeededStatus(id:number,userId:number, admin?:boolean):Promise<UserArticleEntity>{
         try{
-            if(!id || id<=0 || isNaN(id) || id===undefined || needed===undefined){
+            if(!id || id<=0 || isNaN(id) || id===undefined ){
                 throw new BadRequestException('Datos invalidos')
             };
             const userArticle = await this.userArticleRepository.findOne({
                 where:{
                     id
+                },relations:{
+                    user:true
                 }
             });
             if(!userArticle){
                 throw new NotFoundException('El articulo no existe')
             };
-            userArticle.needed = needed;
-            return await this.userArticleRepository.save(userArticle);
+            if(userArticle.user.id!==userId && !admin){
+                throw new BadRequestException('El articulo no pertenece al usuario')
+            }
+            userArticle.needed = userArticle.needed ? false : true;
+            const articleUser= await this.userArticleRepository.save(userArticle);
+            const { user: { password, email, token, loginAttempts, lockUntil, block, dateSendCodigo, ...userRest }, ...userArticleRest } = articleUser;
+            return userArticleRest as any;
         } catch (error) {
             throw error;
         }
     }
 
-    async deleteUserArticle(id:number):Promise<{message:string, status:number}>{
+    async deleteUserArticle(id:number, userId:number, admin?:boolean,):Promise<{message:string, status:number}>{
         try {
             if(!id || id<=0 || isNaN(id) || id===undefined){
                 throw new BadRequestException('Datos invalidos')
@@ -136,11 +159,17 @@ export class UserarticleService {
             const userArticle = await this.userArticleRepository.findOne({
                 where: {
                     id
+                },
+                relations:{
+                    user:true
                 }
             });
             if(!userArticle){
                 throw new NotFoundException('El articulo no existe')
             };
+            if(userArticle.user.id!==userId && !admin){
+                throw new BadRequestException('El articulo no pertenece al usuario')
+            }
             await this.userArticleRepository.remove(userArticle);
             return { message: 'Articulo eliminado', status: 200 };
         } catch (error) {
