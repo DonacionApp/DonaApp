@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MailDto } from 'src/core/mail/dto/mail.dto';
 import { MailService } from 'src/core/mail/mail.service';
+import { ArticleEntity } from 'src/modules/article/entity/article.entity';
 import { RolEntity } from 'src/modules/rol/entity/rol.entity';
 import { StatusDonationEntity } from 'src/modules/statusdonation/entity/status.donation.entity';
 import { TagsEntity } from 'src/modules/tags/entity/tags.entity';
@@ -31,7 +32,8 @@ export class SederServiceService {
         private readonly typePostRepository: Repository<TypePostEntity>,
         @InjectRepository(TypeReportEntity)
         private readonly typeReportRepository: Repository<TypeReportEntity>,
-        private readonly mailService: MailService,
+        @InjectRepository(ArticleEntity)
+        private readonly articleRepository: Repository<ArticleEntity>,
     ) { }
 
     async onModuleInit() {
@@ -128,6 +130,21 @@ export class SederServiceService {
                 { type: 'entrega' },
                 { type: 'usuario' },
                 { type: 'publicacion' }
+            ])
+        }
+
+        const counArticle = await this.articleRepository.count();
+        if (counArticle === 0) {
+            await this.articleRepository.save([
+                {name: 'camiseta',descripcion: 'camiseta de algodon talla m'},
+                {name: 'pantalon',descripcion: 'pantalon jean talla 32'},
+                {name: 'zapatos',descripcion: 'zapatos deportivos talla 42'},
+                {name: 'paracetamol 500mg',descripcion: 'medicamento para aliviar el dolor y la fiebre'},
+                {name: 'ibuprofeno 400mg',descripcion: 'medicamento antiinflamatorio y analgésico'},
+                {name: 'amoxicilina 250mg',descripcion: 'antibiótico para tratar infecciones bacterianas'},
+                {name: 'arroz 1kg',descripcion: 'bolsa de arroz blanco de 1 kilogramo'},
+                {name: 'frijoles 1kg',descripcion: 'bolsa de frijoles negros de 1 kilogramo'}
+                
             ])
         }
 

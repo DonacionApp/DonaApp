@@ -8,8 +8,15 @@ export class ArticleEntity{
     id:number;
     @Column({type:'varchar', length:255})
     name: string;
+    @Column({type:'text', nullable:true})
+    descripcion:string;
     @OneToMany(()=> UserArticleEntity, (userArticle)=> userArticle.article)
     userArticle:UserArticleEntity[];
     @OneToMany(()=> PostArticleEntity,(postArticle)=>postArticle.article)
     postArticle:PostArticleEntity[];
+
+    @Column({type:'timestamp', default: () => 'CURRENT_TIMESTAMP'})
+    createdAt: Date;
+    @Column({type:'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP'})
+    updatedAt: Date;
 }

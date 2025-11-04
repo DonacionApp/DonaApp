@@ -10,9 +10,12 @@ import { TypeNotifyEntity } from 'src/modules/typenotify/entity/type.notify.enti
 import { TypePostEntity } from 'src/modules/typepost/entity/type.port.entity';
 import { TypeReportEntity } from 'src/modules/typeReport/entity/type.report.entity';
 import { MailModule } from 'src/core/mail/mail.module';
+import { ArticleEntity } from 'src/modules/article/entity/article.entity';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([RolEntity,TypeDniEntity,TagsEntity,StatusDonationEntity, TypeMessageEntity, TypeNotifyEntity,TypePostEntity,TypeReportEntity,]), MailModule],
+  imports:[TypeOrmModule.forFeature([RolEntity,TypeDniEntity,TagsEntity,StatusDonationEntity,
+     TypeMessageEntity, TypeNotifyEntity,TypePostEntity,TypeReportEntity, ArticleEntity
+    ]), MailModule],
   providers: [SederServiceService]
 })
 export class SederServiceModule {}

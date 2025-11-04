@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsOptional, IsString } from "class-validator";
 
-export class CreateArticleDto{
-    @IsNotEmpty()
+export class UpdateArticleDto{
+    @IsOptional()
     @IsString()
     name:string;
     @IsOptional()
