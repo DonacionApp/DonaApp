@@ -1,4 +1,5 @@
 import { AuditEntity } from "src/modules/audit/entity/audit.entity";
+import { CommentSupportIdEntity } from "src/modules/commentSupportId/entity/comment.supportid.entity";
 import { DonationEntity } from "src/modules/donation/entity/donation.entity";
 import { PeopleEntity } from "src/modules/people/entity/people.entity";
 import { PostEntity } from "src/modules/post/entity/post.entity";
@@ -40,6 +41,7 @@ export class UserEntity{
     code:string | null;
     @Column({type:'boolean', default:true})
     block:boolean;
+
     @OneToOne(()=>PeopleEntity,(people)=>people.user, {onDelete:'CASCADE', nullable:false})
     @JoinColumn()
     people:PeopleEntity;
@@ -61,6 +63,8 @@ export class UserEntity{
     postLiked:PostLikedEntity[];
     @OneToMany(()=>UserArticleEntity,(userArticle)=>userArticle.user)
     userArticle:UserArticleEntity[];
+    @OneToMany(()=>CommentSupportIdEntity,(commentSupport)=>commentSupport.user)
+    commentSupportId: CommentSupportIdEntity[];
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;
