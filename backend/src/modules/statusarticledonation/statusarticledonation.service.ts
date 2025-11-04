@@ -58,9 +58,12 @@ export class StatusarticledonationService {
 
     async createStatus(name: string): Promise<StatusPostDonationArticle> {
         try {
-            if (!name || name.trim().length <= 0) {
-                throw new BadRequestException('nombre de estado invalido')
+            if (!name || name.length <= 0) {
+                throw new
+                 BadRequestException('nombre de estado invalido')
             }
+            
+            typeof(name) !== 'string' ? name = String(name) : null;
             const existingStatus = await this.statusPostDonationArticleRepository.findOne({
                 where: {
                     status: name
