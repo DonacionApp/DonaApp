@@ -27,6 +27,7 @@ import { NotifyModule } from './modules/notify/notify.module';
 import { UserNotifyModule } from './modules/userNotify/usernotify.module';
 import { IaModule } from './core/ia/ia.module';
 import { ArticleModule } from './modules/article/article.module';
+import { UserarticleModule } from './modules/userarticle/userarticle.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -71,6 +72,7 @@ import { ArticleModule } from './modules/article/article.module';
   UserNotifyModule,
   IaModule,
   ArticleModule,
+  UserarticleModule,
 ],
   controllers: [AppController],
   providers: [AppService],
