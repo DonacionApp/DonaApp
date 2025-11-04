@@ -4,6 +4,7 @@ import { MailDto } from 'src/core/mail/dto/mail.dto';
 import { MailService } from 'src/core/mail/mail.service';
 import { ArticleEntity } from 'src/modules/article/entity/article.entity';
 import { RolEntity } from 'src/modules/rol/entity/rol.entity';
+import { StatusPostDonationArticle } from 'src/modules/statusarticledonation/entity/status.postdonationarticle.entity';
 import { StatusDonationEntity } from 'src/modules/statusdonation/entity/status.donation.entity';
 import { TagsEntity } from 'src/modules/tags/entity/tags.entity';
 import { TypeDniEntity } from 'src/modules/typedni/entity/type.dni.entity';
@@ -34,6 +35,8 @@ export class SederServiceService {
         private readonly typeReportRepository: Repository<TypeReportEntity>,
         @InjectRepository(ArticleEntity)
         private readonly articleRepository: Repository<ArticleEntity>,
+        @InjectRepository(StatusPostDonationArticle)
+        private readonly statusPostDonationArticleRepository: Repository<StatusPostDonationArticle>
     ) { }
 
     async onModuleInit() {
@@ -145,6 +148,14 @@ export class SederServiceService {
                 {name: 'arroz 1kg',descripcion: 'bolsa de arroz blanco de 1 kilogramo'},
                 {name: 'frijoles 1kg',descripcion: 'bolsa de frijoles negros de 1 kilogramo'}
                 
+            ])
+        }
+
+        const countStatusDonationArticle = await this.statusPostDonationArticleRepository.count();
+        if (countStatusDonationArticle === 0) {
+            await this.statusPostDonationArticleRepository.save([
+                {status:'disponible'},
+                {status:'no disponible'},
             ])
         }
 

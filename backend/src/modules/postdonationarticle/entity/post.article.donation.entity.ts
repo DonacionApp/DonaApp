@@ -14,6 +14,8 @@ export class PostArticleDonationEntity{
     post:PostEntity;
     @ManyToOne(()=>PostArticleEntity,(postArticle)=>postArticle.donationArticle, {onDelete:'CASCADE', nullable:false})
     postArticle:PostArticleEntity;
+
+    
     @ManyToOne(()=>StatusPostDonationArticle,(status)=>status.donationArticleStatus, {onDelete:'CASCADE', nullable:false})
     status:StatusPostDonationArticle;
 }

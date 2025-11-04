@@ -1,5 +1,5 @@
 import { PostArticleDonationEntity } from "src/modules/postdonationarticle/entity/post.article.donation.entity";
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('status_post_donation_article')
 export class StatusPostDonationArticle{
@@ -8,5 +8,6 @@ export class StatusPostDonationArticle{
     @Column({type:'varchar', nullable:false})
     status:string;
 
+    @OneToMany(()=>PostArticleDonationEntity,(postDonationArticle)=>postDonationArticle.status)
     donationArticleStatus:PostArticleDonationEntity[];
 }

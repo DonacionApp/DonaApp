@@ -14,4 +14,5 @@ export class PostArticleEntity{
 
     @OneToMany(()=>PostArticleDonationEntity,(postDonationArticle)=>postDonationArticle.postArticle)
     donationArticle:PostArticleDonationEntity[];
+    
 }

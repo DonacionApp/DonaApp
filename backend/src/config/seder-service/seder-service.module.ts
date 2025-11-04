@@ -11,10 +11,11 @@ import { TypePostEntity } from 'src/modules/typepost/entity/type.port.entity';
 import { TypeReportEntity } from 'src/modules/typeReport/entity/type.report.entity';
 import { MailModule } from 'src/core/mail/mail.module';
 import { ArticleEntity } from 'src/modules/article/entity/article.entity';
+import { StatusPostDonationArticle } from 'src/modules/statusarticledonation/entity/status.postdonationarticle.entity';
 
 @Module({
   imports:[TypeOrmModule.forFeature([RolEntity,TypeDniEntity,TagsEntity,StatusDonationEntity,
-     TypeMessageEntity, TypeNotifyEntity,TypePostEntity,TypeReportEntity, ArticleEntity
+     TypeMessageEntity, TypeNotifyEntity,TypePostEntity,TypeReportEntity, ArticleEntity, StatusPostDonationArticle
     ]), MailModule],
   providers: [SederServiceService]
 })

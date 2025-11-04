@@ -28,6 +28,8 @@ import { UserNotifyModule } from './modules/userNotify/usernotify.module';
 import { IaModule } from './core/ia/ia.module';
 import { ArticleModule } from './modules/article/article.module';
 import { UserarticleModule } from './modules/userarticle/userarticle.module';
+import { PostdonationarticleModule } from './modules/postdonationarticle/postdonationarticle.module';
+import { PostarticleModule } from './modules/postarticle/postarticle.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -73,6 +75,8 @@ import { UserarticleModule } from './modules/userarticle/userarticle.module';
   IaModule,
   ArticleModule,
   UserarticleModule,
+  PostdonationarticleModule,
+  PostarticleModule,
 ],
   controllers: [AppController],
   providers: [AppService],
