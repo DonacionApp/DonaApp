@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber } from "class-validator";
+import { IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 export class CreatePostArticleDto {
     @IsNotEmpty()
@@ -8,4 +8,7 @@ export class CreatePostArticleDto {
     @IsNotEmpty()
     @IsNumber()
     post: number;
+    @IsNotEmpty()
+    @IsString()
+    quantity:string;
 }
