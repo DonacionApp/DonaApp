@@ -81,6 +81,7 @@ export class PostarticleService {
             if(!existArticle){
                 throw new NotFoundException('el articulo no existe')
             }
+            //agregar estado            
             const newPostArticle= this.postArticleRepository.create({
                 post:postExists,
                 article:existArticle

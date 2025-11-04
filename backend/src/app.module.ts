@@ -30,6 +30,7 @@ import { ArticleModule } from './modules/article/article.module';
 import { UserarticleModule } from './modules/userarticle/userarticle.module';
 import { PostdonationarticleModule } from './modules/postdonationarticle/postdonationarticle.module';
 import { PostarticleModule } from './modules/postarticle/postarticle.module';
+import { StatusarticledonationModule } from './modules/statusarticledonation/statusarticledonation.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -77,6 +78,7 @@ import { PostarticleModule } from './modules/postarticle/postarticle.module';
   UserarticleModule,
   PostdonationarticleModule,
   PostarticleModule,
+  StatusarticledonationModule,
 ],
   controllers: [AppController],
   providers: [AppService],
