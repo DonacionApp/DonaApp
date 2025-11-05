@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostArticleDonationEntity } from './entity/post.article.donation.entity';
 import { Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import { AddArticleToDonationFromPost } from './dto/add.aticle.to.donation.dto';
 import { DonationService } from '../donation/donation.service';
 import { StatusdonationService } from '../statusdonation/statusdonation.service';
 import { ModifyQuantityPostdonationarticleService } from './dto/modify.quantity.donation.article.dto';
+import { StatusarticledonationService } from '../statusarticledonation/statusarticledonation.service';
 
 @Injectable()
 export class PostdonationarticleService {
@@ -18,6 +19,8 @@ export class PostdonationarticleService {
         private readonly donationService: DonationService,
         private readonly postArticleService: PostarticleService,
         private readonly statusDonationService: StatusdonationService,
+        @Inject(forwardRef(() => StatusarticledonationService))
+        private readonly statusPostArticleService:StatusarticledonationService
     ) { }
 
     async getAllArticlesFromDonation(filter: FilterSearchPostDonationArticleDto): Promise<any> {
@@ -107,6 +110,19 @@ export class PostdonationarticleService {
             if (donation.statusDonation.id !== statusPending.id) {
                 throw new BadRequestException('No se pueden agregar artículos a una donación que no está en estado pendiente');
             }
+            const statusPostArticle=await this.statusPostArticleService.getStatusByName('disponible');
+            if (postArticle.status.id !== statusPostArticle.id) {
+                throw new BadRequestException('El artículo del post no está disponible');
+            }
+            const existArticleInDonation = await this.postDonationArticleRepository.findOne({
+                where: {
+                    donation: { id: donation.id },
+                    postArticle: { id: postArticle.id }
+                }
+            }); 
+            if (existArticleInDonation) {
+                throw new BadRequestException('El artículo del post ya ha sido agregado a la donación');
+            }
             const existQuantity = Number(postArticle.quantity);
             const requestedQuantity = Number(dtoAdd.quantity);
             if (existQuantity < requestedQuantity) {
@@ -118,7 +134,33 @@ export class PostdonationarticleService {
                 postArticle: postArticle,
             });
             const saved = await this.postDonationArticleRepository.save(newPostDonationArticle);
-            return saved;
+            
+            // Return sanitized response without sensitive user data
+            return {
+                id: saved.id,
+                quantity: saved.quantity,
+                postArticleId: postArticle.id,
+                article: {
+                    id: postArticle.article.id,
+                    name: postArticle.article.name,
+                    descripcion: postArticle.article.descripcion,
+                    createdAt: postArticle.article.createdAt,
+                    updatedAt: postArticle.article.updatedAt,
+                },
+                status: {
+                    id: postArticle.status.id,
+                    status: postArticle.status.status,
+                },
+                donation: {
+                    id: donation.id,
+                    lugarRecogida: donation.lugarRecogida,
+                    lugarDonacion: donation.lugarDonacion,
+                    comunity: donation.comunity,
+                    fechaMaximaEntrega: donation.fechaMaximaEntrega,
+                    createdAt: donation.createdAt,
+                    updatedAt: donation.updatedAt,
+                },
+            };
         } catch (error) {
             throw error;
         }
