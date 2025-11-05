@@ -1,6 +1,11 @@
 import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
 
 export class UpdateNotifyDto {
+
+   @IsOptional()
+   @IsString()
+   @IsNotEmpty()
+   title?: string;
    @IsOptional()
    @IsString()
    @IsNotEmpty()

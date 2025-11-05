@@ -1,6 +1,10 @@
 import { ArrayNotEmpty, ArrayUnique, IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Min } from "class-validator";
 
 export class CreateNotifyDto {
+
+   @IsNotEmpty()
+   @IsString()
+   title: string;
    @IsNotEmpty()
    @IsString()
    message: string;

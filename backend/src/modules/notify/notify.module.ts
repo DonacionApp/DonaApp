@@ -6,6 +6,7 @@ import { NotifyService } from "./notify.service";
 import { NotifyController } from "./notify.controller";
 import { UserNotifyModule } from "../userNotify/usernotify.module";
 import { UserModule } from "../user/user.module";
+import { NotifyGateway } from './notify.gateway';
 
 @Module({
    imports: [
@@ -14,7 +15,7 @@ import { UserModule } from "../user/user.module";
       forwardRef(() => UserNotifyModule),
       UserModule,
    ],
-   providers: [NotifyService],
+   providers: [NotifyService, NotifyGateway],
    controllers: [NotifyController],
    exports: [NotifyService],
 })

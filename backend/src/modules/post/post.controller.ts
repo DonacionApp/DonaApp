@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, UseInterceptors, Body, Req, UploadedFiles, BadRequestException, Get, Param, Delete } from '@nestjs/common';
+import { Controller, Post, UseGuards, UseInterceptors, Body, Req, UploadedFiles, BadRequestException, Get, Param, Delete, Query } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PostService } from './post.service';
 import { JwtAuthGuard, OptionalJwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
@@ -15,10 +15,13 @@ export class PostController {
 
     @UseGuards(OptionalJwtAuthGuard)
     @Get('/all')
-    async getAllPosts(@Req() req: any): Promise<any> {
+    async getAllPosts(@Req() req: any, @Query('limit') limit?: string,@Query('cursor') cursor?: string): Promise<any> {
         const userFromToken = req && req.user ? req.user : null;
         const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
-        return this.postService.findAll( userId);
+        const parsedLimit = limit ? parseInt(limit, 10) : 20;
+        const parsedCursor = cursor ? parseInt(cursor, 10) : undefined;
+        
+        return this.postService.findAll(userId, parsedLimit, parsedCursor);
     }
 
     @UseGuards(OptionalJwtAuthGuard)
