@@ -1,7 +1,8 @@
 import { PostEntity } from "src/modules/post/entity/post.entity";
+import { PostArticleDonationEntity } from "src/modules/postdonationarticle/entity/post.article.donation.entity";
 import { StatusDonationEntity } from "src/modules/statusdonation/entity/status.donation.entity";
 import { UserEntity } from "src/modules/user/entity/user.entity";
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('donation')
 export class DonationEntity{
@@ -25,6 +26,8 @@ export class DonationEntity{
     user:UserEntity;
     @ManyToOne(()=>StatusDonationEntity,(statusDonation)=>statusDonation.donation, {onDelete:'SET NULL', nullable:true})
     statusDonation:StatusDonationEntity;
+    @OneToMany(()=>PostArticleDonationEntity,(postArticleDonation)=>postArticleDonation.donation)
+    postDonationArticlePost:PostArticleDonationEntity[];
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;

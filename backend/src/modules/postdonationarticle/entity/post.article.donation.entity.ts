@@ -8,9 +8,9 @@ import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "ty
 export class PostArticleDonationEntity{
     @PrimaryGeneratedColumn()
     id:number;
-    @Column({type:'varchar', nullable:false})
+    @ManyToOne(()=>DonationEntity,(donation)=>donation.postDonationArticlePost, {onDelete:'CASCADE', nullable:false})
     donation:DonationEntity;
-
+    @ManyToOne(()=>PostEntity,(post)=>post.donationArticlePost, {onDelete:'CASCADE', nullable:false})
     post:PostEntity;
     @ManyToOne(()=>PostArticleEntity,(postArticle)=>postArticle.donationArticle, {onDelete:'CASCADE', nullable:false})
     postArticle:PostArticleEntity;

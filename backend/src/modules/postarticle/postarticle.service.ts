@@ -34,6 +34,36 @@ export class PostarticleService {
         }
     }
 
+    async getPostArticleById(id:number):Promise<PostArticleEntity>{
+        try {
+            if(!id || id<=0 || isNaN(id) || id===undefined){
+                throw new BadRequestException('post articulo invalido')
+            }
+            const postArticle= await this.postArticleRepository.findOne({
+                where:{
+                    id:id
+                },
+                relations:{
+                    post:{
+                        user:true
+                    },
+                    article:true,
+                    status:true
+                }
+            });
+            if(!postArticle){
+                throw new NotFoundException('el post articulo no existe')
+            }
+            const postArticleWithoutUserInfo = (() => {
+                const { post, ...articleData } = postArticle;
+                return articleData;
+            })();
+            return postArticleWithoutUserInfo as any;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async findByPost(postId: number): Promise<PostArticleEntity[]> {
         try {
             if (!postId || postId <= 0 || isNaN(postId) || postId === undefined) {
