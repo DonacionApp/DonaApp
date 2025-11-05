@@ -234,4 +234,27 @@ export class PostarticleService {
             throw error;
         }
     }
+
+    async asignNewQuantity(postArticleId:number, newQuantity:number):Promise<PostArticleEntity>{
+        try {
+            if(!postArticleId || postArticleId<=0 || isNaN(postArticleId) || postArticleId===undefined){
+                throw new BadRequestException('post articulo invalido')
+            }
+            const postArticleExist= await this.postArticleRepository.findOne({
+                where:{
+                    id:postArticleId
+                },
+                relations:{
+                    status:true
+                }
+            });
+            if(!postArticleExist){
+                throw new NotFoundException('el post articulo no existe')
+            }
+            postArticleExist.quantity=newQuantity.toString();
+            return await this.postArticleRepository.save(postArticleExist);
+        } catch (error) {
+            throw error;
+        }   
+    }
 }

@@ -431,7 +431,16 @@ export class DonationService {
         const isOwner = donation.post.user && currentUser && donation.post.user.id === currentUser.id;
         if (!isOwner) throw new ForbiddenException('No tienes permiso para cambiar el estado');
       }
-      const statusDonation=await this.statusDonationService.findByname('pendiente')
+      const statusDeclined= await this.statusDonationService.findByname('rechazada');
+      const statusDonation=await this.statusDonationService.findByname('pendiente');
+      const statusCanceled= await this.statusDonationService.findByname('cancelada');
+      if(statusEntity.id !== statusDeclined.id && statusEntity.id !== statusDonation.id && statusEntity.id !== statusCanceled.id){
+        const post=await this.postService.getPostById(donation.post.id);
+        for(const pda of donation.postDonationArticlePost as any[]){
+          let quantity= Number(pda.quantity);
+          const newQuantity=1;
+        }
+      }
 
       const oldStatus = donation.statusDonation?.status ?? null;
       donation.statusDonation = statusEntity;
