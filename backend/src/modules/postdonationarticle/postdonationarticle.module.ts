@@ -7,10 +7,11 @@ import { PostarticleModule } from '../postarticle/postarticle.module';
 import { DonationModule } from '../donation/donation.module';
 import { StatusdonationModule } from '../statusdonation/statusdonation.module';
 import { StatusarticledonationModule } from '../statusarticledonation/statusarticledonation.module';
+import { PostModule } from '../post/post.module';
 
 @Module({
   imports:[TypeOrmModule.forFeature([PostArticleDonationEntity]),PostarticleModule, DonationModule,StatusdonationModule,
-  forwardRef(() => StatusarticledonationModule),
+  forwardRef(() => StatusarticledonationModule),PostModule,
 ],
   controllers: [PostdonationarticleController],
   providers: [PostdonationarticleService],

@@ -20,7 +20,8 @@ export class PostdonationarticleService {
         private readonly postArticleService: PostarticleService,
         private readonly statusDonationService: StatusdonationService,
         @Inject(forwardRef(() => StatusarticledonationService))
-        private readonly statusPostArticleService:StatusarticledonationService
+        private readonly statusPostArticleService:StatusarticledonationService,
+        private readonly postService: PostService,
     ) { }
 
     async getAllArticlesFromDonation(filter: FilterSearchPostDonationArticleDto): Promise<any> {
@@ -100,6 +101,7 @@ export class PostdonationarticleService {
                 throw new BadRequestException('No existe el artículo del post indicado');
             }
             const donation = await this.donationService.getDonationById(dtoAdd.donationId);
+            const post= await this.postService.getPostById(donation.post.id)
             if (!donation) {
                 throw new BadRequestException('No existe la donación indicada');
             }
