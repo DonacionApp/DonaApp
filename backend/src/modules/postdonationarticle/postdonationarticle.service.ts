@@ -101,7 +101,7 @@ export class PostdonationarticleService {
             if (!postArticle) {
                 throw new BadRequestException('No existe el artículo del post indicado');
             }
-            const donation = await this.donationService.getDonationById(dtoAdd.donationId);
+            const donation = await this.donationService.getDonationById(dtoAdd.donationId, false);
             const post= await this.postService.getPostById(donation.post.id)
             if (!donation) {
                 throw new BadRequestException('No existe la donación indicada');
@@ -207,7 +207,7 @@ export class PostdonationarticleService {
             if (!postDonationArticle) {
                 throw new BadRequestException('No existe el artículo de donación del post indicado');
             }
-            const donation = await this.donationService.getDonationById(postDonationArticle.donation.id);
+            const donation = await this.donationService.getDonationById(postDonationArticle.donation.id, false);
             if (!donation) {
                 throw new BadRequestException('No existe la donación indicada');
             }
@@ -243,7 +243,7 @@ export class PostdonationarticleService {
             if (!postDonationArticle) {
                 throw new BadRequestException('No existe el artículo de donación del post indicado');
             }
-            const donation = await this.donationService.getDonationById(postDonationArticle.donation.id);
+            const donation = await this.donationService.getDonationById(postDonationArticle.donation.id, false);
             if (!donation) {
                 throw new BadRequestException('No existe la donación indicada');
             }

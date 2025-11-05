@@ -26,7 +26,7 @@ export class DonationService {
      private readonly statusArticleDonationService:StatusarticledonationService,
   ) { }
 
-  async getDonationById(id: number): Promise<DonationEntity> {
+  async getDonationById(id: number, format: boolean = true): Promise<DonationEntity> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
       const donation = await this.donationRepo.findOne({
@@ -49,7 +49,7 @@ export class DonationService {
         const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
         donation.user = userWithoutSensitive as any;
       }
-      return this.formatDonationResponse(donation);
+      return format ? this.formatDonationResponse(donation) : donation;
     } catch (error) {
       throw error;
     }
@@ -164,12 +164,18 @@ export class DonationService {
         if (!qty || isNaN(qty) || qty <= 0) {
           throw new BadRequestException('Cada artículo debe tener una cantidad válida (> 0)');
         }
-        
+
         if (!postArticleMap.has(articlePostId)) {
           throw new BadRequestException(`El artículo solicitado (${articlePostId}) no pertenece al post indicado`);
         }
-        
+
         const articleData = postArticleMap.get(articlePostId)!;
+
+        const newQuantity = Number(articleData.quantity) - qty;
+        if (newQuantity < 0) {
+          throw new BadRequestException(`La cantidad solicitada para el artículo del post (${articlePostId}) excede la disponible (${articleData.quantity})`);
+        }
+
         if (!articleData.statusId || articleData.statusId !== statusAvalaibleArticleDonation.id) {
           throw new BadRequestException(
             `El artículo del post (${articlePostId}) no está disponible para donación. Artículo: ${articleData.articleName}`
@@ -431,14 +437,44 @@ export class DonationService {
         const isOwner = donation.post.user && currentUser && donation.post.user.id === currentUser.id;
         if (!isOwner) throw new ForbiddenException('No tienes permiso para cambiar el estado');
       }
-      const statusDeclined= await this.statusDonationService.findByname('rechazada');
-      const statusDonation=await this.statusDonationService.findByname('pendiente');
-      const statusCanceled= await this.statusDonationService.findByname('cancelada');
-      if(statusEntity.id !== statusDeclined.id && statusEntity.id !== statusDonation.id && statusEntity.id !== statusCanceled.id){
-        const post=await this.postService.getPostById(donation.post.id);
-        for(const pda of donation.postDonationArticlePost as any[]){
-          let quantity= Number(pda.quantity);
-          const newQuantity=1;
+      const statusDeclined = await this.statusDonationService.findByname('rechazada');
+      const statusPending = await this.statusDonationService.findByname('pendiente');
+      const statusCanceled = await this.statusDonationService.findByname('cancelada');
+      
+      if (donation.statusDonation.id === statusDeclined.id || donation.statusDonation.id === statusCanceled.id) {
+        throw new BadRequestException('No se puede cambiar el estado de una donación que ya ha sido rechazada o cancelada.');
+      }
+      
+      if (donation.statusDonation.id === statusPending.id && statusEntity.id === statusPending.id) {
+        throw new BadRequestException('La donación ya se encuentra en estado pendiente.');
+      }
+      
+      if (donation.statusDonation.id !== statusPending.id && statusEntity.id === statusPending.id) {
+        throw new BadRequestException('No se puede cambiar una donación de vuelta a estado pendiente.');
+      }
+      
+      if (donation.statusDonation.id === statusPending.id && 
+          statusEntity.id !== statusDeclined.id && 
+          statusEntity.id !== statusCanceled.id) {
+        for (const pda of donation.postDonationArticlePost as any[]) {
+          const postArticleId = pda.postArticle?.id;
+          if (!postArticleId) continue;
+          
+          const cantidadActual = Number(pda.postArticle.quantity);
+          const cantidadDonada = Number(pda.quantity);
+          const nuevaCantidad = cantidadActual - cantidadDonada;
+          
+          console.log('Cantidad actual:', cantidadActual, 'Cantidad donada:', cantidadDonada, 'Nueva cantidad:', nuevaCantidad);
+          
+          if (nuevaCantidad < 0) {
+            throw new BadRequestException('Error: no se puede actualizar el estado de la donación porque la cantidad donada excede la cantidad actual del artículo.');
+          }
+          
+          await this.postArticleService.asignNewQuantity(postArticleId, nuevaCantidad);
+          
+          if (nuevaCantidad <= 0) {
+            await this.postArticleService.asignUnvalaiblesStatus(postArticleId);
+          }
         }
       }
 
