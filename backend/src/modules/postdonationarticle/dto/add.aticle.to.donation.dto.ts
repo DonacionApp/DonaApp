@@ -6,8 +6,8 @@ export class AddArticleToDonationFromPost{
     donationId:number;
     @IsNumber()
     @IsNotEmpty()
-    postId:number;
+    postArticleId:number;
     @IsNumber()
     @IsNotEmpty()
-    postArticleId:number;
+    quantity?:number;
 }

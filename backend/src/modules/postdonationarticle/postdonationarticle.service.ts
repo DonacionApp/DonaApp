@@ -1,28 +1,33 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostArticleDonationEntity } from './entity/post.article.donation.entity';
 import { Repository } from 'typeorm';
 import { PostService } from '../post/post.service';
 import { PostarticleService } from '../postarticle/postarticle.service';
 import { FilterSearchPostDonationArticleDto } from './dto/filter.search.dto';
+import { AddArticleToDonationFromPost } from './dto/add.aticle.to.donation.dto';
+import { DonationService } from '../donation/donation.service';
+import { StatusdonationService } from '../statusdonation/statusdonation.service';
+import { ModifyQuantityPostdonationarticleService } from './dto/modify.quantity.donation.article.dto';
 
 @Injectable()
 export class PostdonationarticleService {
     constructor(
         @InjectRepository(PostArticleDonationEntity)
         private readonly postDonationArticleRepository: Repository<PostArticleDonationEntity>,
-        private readonly postServiece: PostService,
+        private readonly donationService: DonationService,
         private readonly postArticleService: PostarticleService,
+        private readonly statusDonationService: StatusdonationService,
     ) { }
 
     async getAllArticlesFromDonation(filter: FilterSearchPostDonationArticleDto): Promise<any> {
         try {
             const qb = this.postDonationArticleRepository
                 .createQueryBuilder('pad')
-                .leftJoinAndSelect('pad.donation', 'donation')   
+                .leftJoinAndSelect('pad.donation', 'donation')
                 .leftJoinAndSelect('pad.post', 'post')
                 .leftJoinAndSelect('pad.postArticle', 'postArticle')
-                .leftJoinAndSelect('postArticle.status', 'status')      
+                .leftJoinAndSelect('postArticle.status', 'status')
                 .leftJoinAndSelect('donation.user', 'donationUser')
                 .leftJoinAndSelect('post.user', 'postUser')
                 .leftJoinAndSelect('postArticle.article', 'article');
@@ -46,5 +51,136 @@ export class PostdonationarticleService {
         }
     }
 
-    async addArticleToDonationFromPost() { }
+    async addArticleToDonationFromPost(dtoAdd: AddArticleToDonationFromPost, userId: number, admin?: boolean): Promise<any> {
+        try {
+            if (!userId || userId <= 0 || isNaN(userId) || userId === undefined) {
+                throw new BadRequestException('Usuario no identificado');
+            }
+            if (!dtoAdd || !dtoAdd.postArticleId || !dtoAdd.donationId) {
+                throw new BadRequestException('Datos de entrada inválidos');
+            }
+            const postArticle = await this.postArticleService.getPostArticleById(dtoAdd.postArticleId);
+            if (!postArticle) {
+                throw new BadRequestException('No existe el artículo del post indicado');
+            }
+            const donation = await this.donationService.getDonationById(dtoAdd.donationId);
+            if (!donation) {
+                throw new BadRequestException('No existe la donación indicada');
+            }
+            if (!admin && donation.user.id !== userId) {
+                throw new BadRequestException('No tiene permisos para agregar artículos a esta donación');
+            }
+            const statusPending = await this.statusDonationService.findByname('pendiente');
+            if (donation.statusDonation.id !== statusPending.id) {
+                throw new BadRequestException('No se pueden agregar artículos a una donación que no está en estado pendiente');
+            }
+            const existQuantity = Number(postArticle.quantity);
+            const requestedQuantity = Number(dtoAdd.quantity);
+            if (existQuantity < requestedQuantity) {
+                throw new BadRequestException('La cantidad solicitada excede la cantidad disponible en el artículo del post');
+            }
+            const newPostDonationArticle = this.postDonationArticleRepository.create({
+                quantity: requestedQuantity.toString(),
+                donation: donation,
+                postArticle: postArticle,
+            });
+            const saved = await this.postDonationArticleRepository.save(newPostDonationArticle);
+            return saved;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async getPostDonationArticleById(id: number): Promise<PostArticleDonationEntity> {
+        try {
+            if(!id || id <=0 || isNaN(id) || id === undefined){
+                throw new BadRequestException('ID de artículo de donación del post inválido');
+            }
+            const postDonationArticle = await this.postDonationArticleRepository.findOne({
+                where: { id: id },
+                relations: { donation: true, postArticle: true }
+            });
+            if(!postDonationArticle){
+                throw new BadRequestException('No existe el artículo de donación del post indicado');
+            }
+            return postDonationArticle;
+        } catch (error) {
+            throw error;
+        }   
+     }
+
+     async modifyQuantityInPostDonationArticle(dto:ModifyQuantityPostdonationarticleService, userId: number, admin?: boolean): Promise<PostArticleDonationEntity> {
+        try {
+            if (!userId || userId <= 0 || isNaN(userId) || userId === undefined) {
+                throw new BadRequestException('Usuario no identificado');
+            }
+            if (!dto || !dto.postDonationArticleId || dto.newQuantity === undefined || dto.newQuantity === null || isNaN(dto.newQuantity) || dto.newQuantity < 0) {
+                throw new BadRequestException('Datos de entrada inválidos');
+            }
+            const { postDonationArticleId, newQuantity } = dto;
+            const postDonationArticle = await this.postDonationArticleRepository.findOne({
+                where: {
+                     id: postDonationArticleId 
+                    },
+                relations: {
+                     donation: true, 
+                     postArticle: true 
+                    }
+            });
+            if (!postDonationArticle) {
+                throw new BadRequestException('No existe el artículo de donación del post indicado');
+            }
+            const donation = await this.donationService.getDonationById(postDonationArticle.donation.id);
+            if (!donation) {
+                throw new BadRequestException('No existe la donación indicada');
+            }
+            if (!admin && donation.user.id !== userId) {
+                throw new BadRequestException('No tiene permisos para modificar la cantidad de este artículo en la donación');
+            }
+            const existQuantity = Number(postDonationArticle.quantity);
+            if (existQuantity < newQuantity) {
+                throw new BadRequestException('La nueva cantidad excede la cantidad existente en el artículo de donación del post');
+            }
+            postDonationArticle.quantity = newQuantity.toString();
+            const saved = await this.postDonationArticleRepository.save(postDonationArticle);
+            return saved;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async removeArticleFromDonationFromPost(postDonationArticleId: number, userId: number, admin?: boolean): Promise<{message:string, status:number}> {
+        try {
+            if (!userId || userId <= 0 || isNaN(userId) || userId === undefined) {
+                throw new BadRequestException('Usuario no identificado');
+            }
+            const postDonationArticle = await this.postDonationArticleRepository.findOne({
+                where: {
+                     id: postDonationArticleId 
+                    },
+                relations: {
+                     donation: true, 
+                     postArticle: true 
+                    }
+            });
+            if (!postDonationArticle) {
+                throw new BadRequestException('No existe el artículo de donación del post indicado');
+            }
+            const donation = await this.donationService.getDonationById(postDonationArticle.donation.id);
+            if (!donation) {
+                throw new BadRequestException('No existe la donación indicada');
+            }
+            if (!admin && donation.user.id !== userId) {
+                throw new BadRequestException('No tiene permisos para eliminar artículos de esta donación');
+            }
+            const statusPending = await this.statusDonationService.findByname('pendiente');
+            if (donation.statusDonation.id !== statusPending.id) {
+                throw new BadRequestException('No se pueden eliminar artículos de una donación que no está en estado pendiente');
+            }
+            await this.postDonationArticleRepository.delete(postDonationArticleId);
+            return {message: 'Artículo de donación del post eliminado correctamente', status: 200};
+        } catch (error) {
+            throw error;
+        }
+    }
 }

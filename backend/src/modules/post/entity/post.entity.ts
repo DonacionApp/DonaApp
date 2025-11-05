@@ -28,8 +28,6 @@ export class PostEntity{
     imagePost:ImagePostEntity[]
     @OneToMany(()=>PostLikedEntity,(postLiked)=>postLiked.post)
     postLiked:PostLikedEntity[];
-    @OneToMany(()=>PostArticleDonationEntity,(postArticleDonation)=>postArticleDonation.post)
-    donationArticlePost:PostArticleDonationEntity[];
     @ManyToOne(()=>ChatEntity,(chat)=>chat.post, {onDelete:'CASCADE', nullable:true})
     chat:ChatEntity;
     @OneToMany(()=>DonationEntity,(donation)=>donation.post)
