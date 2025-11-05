@@ -36,4 +36,26 @@ export class StatussupportidService {
             throw error;
         }
     }
+
+    async createStatusSupportId(name:string):Promise<StatusSupportIdEntity>{
+        try {
+            if(!name || name.trim().length===0){
+                throw new BadRequestException('El nombre del estado de soporte de identificación no puede estar vacío');
+            }
+            name=name.trim().toLowerCase();
+            const existStatus= await this.statusSupportIdRepository.findOne({
+                where:{
+                    name:name
+                }
+            });
+            if(existStatus){
+                throw new BadRequestException(`El estado de soporte de identificación con nombre ${name} ya existe`);
+            }
+            const newStatus= this.statusSupportIdRepository.create({name:name.trim()});
+            return await this.statusSupportIdRepository.save(newStatus);
+        } catch (error) {
+            throw error;
+        }
+    }
+
 }
