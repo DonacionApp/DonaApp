@@ -7,6 +7,7 @@ import { TypeNotifyService } from "../typenotify/typenotify.service";
 import { UserNotifyService } from "../userNotify/usernotify.service";
 import { UserService } from "../user/user.service";
 import { UpdateNotifyDto } from "./dto/update.notify.dto";
+import { title } from "process";
 
 @Injectable()
 export class NotifyService {
@@ -83,6 +84,7 @@ export class NotifyService {
          if (!dto) throw new BadRequestException('Los datos son obligatorios');
          const { message, typeNotifyId } = dto;
          if (!message || message.trim().length === 0) throw new BadRequestException('El mensaje es obligatorio');
+         if(!title || title.trim().length ===0) throw new BadRequestException('El título es obligatorio');
          if (!typeNotifyId || typeNotifyId <= 0) throw new BadRequestException('El id de tipo de notificación es inválido');
          const typeNotify = await this.typeNotifyService.getById(typeNotifyId);
          if (!typeNotify) throw new NotFoundException('El tipo de notificación no existe');
@@ -96,6 +98,7 @@ export class NotifyService {
          const validUsers = await this.userNotifyService.validateUsersExist(uniqueUserIds);
          if (validUsers.length === 0) throw new NotFoundException('Ninguno de los usuarios especificados existe');
          const notify = this.notifyRepository.create({
+            title: title,
             message: message,
             type: typeNotify,
          });
@@ -168,6 +171,11 @@ export class NotifyService {
          });
          if (!existingNotify) {
             throw new NotFoundException('Notificación no encontrada');
+         }
+         if( dto.title){
+            if( dto.title.trim().length !==0){
+               existingNotify.title = dto.title.trim();
+            }
          }
 
          if (dto.message !== undefined) {

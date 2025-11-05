@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { NotifyService } from "./notify.service";
 import { JwtAuthGuard } from "src/shared/guards/jwt-auth.guard";
 import { RolesGuard } from "src/shared/guards/roles.guard";
@@ -12,6 +12,13 @@ export class NotifyController {
    constructor(
       private readonly notifyService: NotifyService,
    ) { }
+
+   @UseGuards(JwtAuthGuard)
+   @Get('/all/me')
+   async getMyNotifies(@Req() req:any) {
+      const userId = req.user.id;
+      return await this.notifyService.findByUserId(userId);
+   }
 
    @UseGuards(JwtAuthGuard, RolesGuard)
    @Roles('admin')
