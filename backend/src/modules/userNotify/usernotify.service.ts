@@ -177,4 +177,38 @@ export class UserNotifyService {
          throw error;
       }
    }
+
+   async markAsRead(userId: number, notifyId: number): Promise<{ message: string }> {
+      try {
+         if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
+            throw new BadRequestException('El id de usuario es inválido');
+         }
+         userId = Number(userId);
+         if (!notifyId || isNaN(Number(notifyId)) || Number
+            (notifyId) <= 0) {
+            throw new BadRequestException('El id de notificación es inválido');
+         }
+         notifyId = Number(notifyId);
+
+         await this.userService.findById(userId);
+         await this.notifyService.findById(notifyId);
+         const userNotification = await this.userNotifyRepository.findOne({
+            where: {
+               user: { id: userId },
+               notify: { id: notifyId }
+            }
+         });
+         if (!userNotification) {
+            throw new ForbiddenException('No tienes permiso para modificar esta notificacion');
+         }
+         userNotification.read = true;
+         await this.userNotifyRepository.save(userNotification);
+         return {
+            message: 'Notificación marcada como leída exitosamente'
+         };
+      }
+      catch (error) {
+         throw error;
+      }
+   }
 }

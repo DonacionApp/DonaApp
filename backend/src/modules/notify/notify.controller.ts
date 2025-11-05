@@ -5,12 +5,14 @@ import { RolesGuard } from "src/shared/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorators";
 import { CreateNotifyDto } from "./dto/create.notify.dto";
 import { UpdateNotifyDto } from "./dto/update.notify.dto";
+import { NotifyGateway } from "./notify.gateway";
 
 @UsePipes(new ValidationPipe())
 @Controller('notify')
 export class NotifyController {
    constructor(
       private readonly notifyService: NotifyService,
+      private readonly notifyGateway: NotifyGateway,
    ) { }
 
    @UseGuards(JwtAuthGuard)
@@ -63,5 +65,86 @@ export class NotifyController {
    @Delete('delete/:id')
    async deleteNotify(@Param('id') id: number) {
       return await this.notifyService.deleteNotify(id);
+   }
+
+   /**
+    * Endpoint para enviar notificación en tiempo real a un usuario específico
+    */
+   @UseGuards(JwtAuthGuard, RolesGuard)
+   @Roles('admin')
+   @Post('send/:userId')
+   async sendNotificationToUser(
+      @Param('userId') userId: number,
+      @Body() notification: { title: string; message: string; data?: any }
+   ) {
+      const sent = this.notifyGateway.sendNotificationToUser(+userId, notification);
+      return {
+         success: sent,
+         message: sent 
+            ? `Notificación enviada al usuario ${userId}` 
+            : `Usuario ${userId} no está conectado`,
+         userId: +userId,
+         isConnected: this.notifyGateway.isUserConnected(+userId),
+      };
+   }
+
+   /**
+    * Endpoint para enviar notificación a múltiples usuarios
+    */
+   @UseGuards(JwtAuthGuard, RolesGuard)
+   @Roles('admin')
+   @Post('send/multiple')
+   async sendNotificationToMultipleUsers(
+      @Body() body: { userIds: number[]; notification: { title: string; message: string; data?: any } }
+   ) {
+      const results = this.notifyGateway.sendNotificationToUsers(
+         body.userIds,
+         body.notification
+      );
+      return {
+         success: true,
+         ...results,
+         message: `Notificación enviada a ${results.sent} usuarios, ${results.failed} no conectados`,
+      };
+   }
+
+   /**
+    * Endpoint para broadcast a todos los usuarios conectados
+    */
+   @UseGuards(JwtAuthGuard, RolesGuard)
+   @Roles('admin')
+   @Post('broadcast')
+   async broadcastNotification(
+      @Body() notification: { title: string; message: string; data?: any }
+   ) {
+      this.notifyGateway.broadcastNotification(notification);
+      const connectedUsers = this.notifyGateway.getConnectedUsers();
+      return {
+         success: true,
+         message: `Notificación enviada a ${connectedUsers.length} usuarios conectados`,
+         connectedUsers: connectedUsers.length,
+      };
+   }
+
+   @UseGuards(JwtAuthGuard, RolesGuard)
+   @Roles('admin')
+   @Get('connected-users')
+   async getConnectedUsers() {
+      const connectedUsers = this.notifyGateway.getConnectedUsers();
+      return {
+         success: true,
+         total: connectedUsers.length,
+         userIds: connectedUsers,
+      };
+   }
+
+   @UseGuards(JwtAuthGuard)
+   @Get('is-connected/:userId')
+   async isUserConnected(@Param('userId') userId: number) {
+      const isConnected = this.notifyGateway.isUserConnected(+userId);
+      return {
+         userId: +userId,
+         isConnected,
+      };
    }
 }

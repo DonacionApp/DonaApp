@@ -8,6 +8,7 @@ import { UserNotifyService } from "../userNotify/usernotify.service";
 import { UserService } from "../user/user.service";
 import { UpdateNotifyDto } from "./dto/update.notify.dto";
 import { title } from "process";
+import { NotifyGateway } from "./notify.gateway";
 
 @Injectable()
 export class NotifyService {
@@ -18,6 +19,8 @@ export class NotifyService {
       @Inject(forwardRef(() => UserNotifyService))
       private readonly userNotifyService: UserNotifyService,
       private readonly userService: UserService,
+      @Inject(forwardRef(() => NotifyGateway))
+      private readonly notifyGateway: NotifyGateway,
    ) { }
 
    async findById(id: number): Promise<NotifyEntity> {
@@ -49,7 +52,6 @@ export class NotifyService {
          throw error;
       }
    }
-
    async findAllNotifies(): Promise<NotifyEntity[]> {
       try {
          const notifies = await this.notifyRepository.find({
@@ -105,6 +107,20 @@ export class NotifyService {
          const savedNotify = await this.notifyRepository.save(notify);
          await this.userNotifyService.assignToUsers(savedNotify.id, uniqueUserIds);
          const findNotify = await this.findById(savedNotify.id);
+         
+         this.notifyGateway.sendNotificationToUsers(uniqueUserIds, {
+            id: findNotify.id,
+            title: findNotify.title,
+            message: findNotify.message,
+            type: findNotify.type,
+            createdAt: findNotify.createdAt,
+            data: {
+               notificationId: findNotify.id,
+               typeId: findNotify.type.id,
+               typeName: findNotify.type.type,
+            }
+         });
+
          return findNotify;
       } catch (error) {
          throw error;
@@ -198,7 +214,28 @@ export class NotifyService {
 
          const updatedNotify = await this.notifyRepository.save(existingNotify);
 
-         return await this.findById(updatedNotify.id);
+         const finalNotify = await this.findById(updatedNotify.id);
+
+         // Emitir actualización en tiempo real a los usuarios afectados
+         if (finalNotify.userNotify && finalNotify.userNotify.length > 0) {
+            const userIds = finalNotify.userNotify.map(un => un.user.id);
+            this.notifyGateway.sendNotificationToUsers(userIds, {
+               id: finalNotify.id,
+               title: finalNotify.title,
+               message: finalNotify.message,
+               type: finalNotify.type,
+               createdAt: finalNotify.createdAt,
+               updatedAt: finalNotify.updatedAt,
+               action: 'updated',
+               data: {
+                  notificationId: finalNotify.id,
+                  typeId: finalNotify.type.id,
+                  typeName: finalNotify.type.type,
+               }
+            });
+         }
+
+         return finalNotify;
       } catch (error) {
          throw error;
       }
@@ -225,11 +262,23 @@ export class NotifyService {
             throw new NotFoundException('Notificación no encontrada');
          }
 
+         // Obtener userIds antes de eliminar
+         const userIds = existingNotify.userNotify?.map(un => un.user.id) || [];
+
          if (existingNotify.userNotify && existingNotify.userNotify.length > 0) {
             await this.userNotifyService.deleteByNotifyId(id);
          }
 
          await this.notifyRepository.remove(existingNotify);
+
+         // Notificar a los usuarios que la notificación fue eliminada
+         if (userIds.length > 0) {
+            this.notifyGateway.sendNotificationToUsers(userIds, {
+               action: 'deleted',
+               notificationId: id,
+               message: 'Una notificación ha sido eliminada',
+            });
+         }
 
          return {
             message: 'Notificación eliminada exitosamente'
