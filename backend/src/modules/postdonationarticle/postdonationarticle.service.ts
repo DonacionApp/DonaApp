@@ -25,8 +25,8 @@ export class PostdonationarticleService {
             const qb = this.postDonationArticleRepository
                 .createQueryBuilder('pad')
                 .leftJoinAndSelect('pad.donation', 'donation')
-                .leftJoinAndSelect('pad.post', 'post')
                 .leftJoinAndSelect('pad.postArticle', 'postArticle')
+                .leftJoinAndSelect('postArticle.post', 'post')
                 .leftJoinAndSelect('postArticle.status', 'status')
                 .leftJoinAndSelect('donation.user', 'donationUser')
                 .leftJoinAndSelect('post.user', 'postUser')
@@ -36,7 +36,7 @@ export class PostdonationarticleService {
                 qb.andWhere('pad.donationId = :donationId', { donationId: filter.donationId });
             }
             if (filter.postId) {
-                qb.andWhere('pad.postId = :postId', { postId: filter.postId });
+                qb.andWhere('post.id = :postId', { postId: filter.postId });
             }
             if (filter.postArticleId) {
                 qb.andWhere('pad.postArticleId = :postArticleId', { postArticleId: filter.postArticleId });
@@ -45,7 +45,40 @@ export class PostdonationarticleService {
                 qb.andWhere('(post.title ILIKE :search OR post.message ILIKE :search OR article.name ILIKE :search OR article.descripcion ILIKE :search)', { search: `%${filter.search}%` });
             }
 
-            return await qb.getMany();
+            const rows = await qb.getMany();
+
+            const articles = rows.map((item) => {
+                const art = item.postArticle?.article as any;
+                return {
+                    id: item.id,
+                    quantity: item.quantity,
+                    postArticleId: item.postArticle?.id ?? null,
+                    article: art
+                        ? {
+                              id: art.id,
+                              name: art.name,
+                              descripcion: art.descripcion,
+                              createdAt: art.createdAt,
+                              updatedAt: art.updatedAt,
+                          }
+                        : null,
+                };
+            });
+            if (filter.postId && rows.length > 0) {
+                const p = (rows[0].postArticle as any)?.post;
+                const postOnce = p
+                    ? {
+                          id: p.id,
+                          title: p.title,
+                          message: p.message,
+                          createdAt: p.createdAt,
+                          updatedAt: p.updatedAt,
+                      }
+                    : null;
+                return { post: postOnce, articles };
+            }
+
+            return articles;
         } catch (error) {
             throw error;
         }
