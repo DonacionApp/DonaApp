@@ -74,9 +74,10 @@ export class DonationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post('admin/update/:id')
-  async adminUpdateDonation(@Param('id') id:number, @Body() updateDonationDto:UpdateDonationDto):Promise<any>{
+  async adminUpdateDonation(@Param('id') id:number,@Req() req: any, @Body() updateDonationDto:UpdateDonationDto):Promise<any>{
     try {
-      return await this.donationService.updateDonation(id, updateDonationDto);
+      const user = req.user;
+      return await this.donationService.updateDonation(id, updateDonationDto, user, true);
     } catch (error) {
       throw error;
     }
@@ -125,10 +126,11 @@ export class DonationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post(':id/status/admin')
-  async updateStatusAdmin(@Param('id') id: number, @Body() body: UpdateStatusDto) {
+  async updateStatusAdmin(@Param('id') id: number,@Req() req: any, @Body() body: UpdateStatusDto) {
     try {
+      const user = req.user;
       const donationId = Number(id);
-      return await this.donationService.changeStatus(donationId, body.status);
+      return await this.donationService.changeStatus(donationId, body.status, user, true);
     } catch (error) {
       throw error;
     }

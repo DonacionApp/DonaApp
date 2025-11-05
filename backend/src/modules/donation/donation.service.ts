@@ -297,40 +297,53 @@ export class DonationService {
     }
   }
 
-  async updateDonation(id: number, updateDonationDto: UpdateDonationDto, currentUser?: any): Promise<DonationEntity> {
+  async updateDonation(id: number, updateDonationDto: UpdateDonationDto, currentUser?: any, admin?:boolean): Promise<DonationEntity> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
       const donation = await this.donationRepo.findOne({
         where: { id },
-        relations: ['user', 'statusDonation'],
+        relations: {
+          user:true,
+          statusDonation:true,
+          post:{
+            user:true,
+          },
+          postDonationArticlePost:{
+            postArticle:{
+              article:true
+            }
+          }
+        },
       });
 
-      if (currentUser) {
-        const isOwner = donation?.user.id === currentUser.id;
+      if (currentUser && !admin) {
+        const isOwner = donation?.user.id === currentUser.id || donation?.post.user.id === currentUser.id;
 
         if (!isOwner) {
           throw new ForbiddenException('No tienes permiso para actualizar esta donación');
         }
       }
       if (!donation) throw new NotFoundException('Donación no encontrada');
+      
+      const statusPendiente = await this.statusDonationService.findByname('pendiente');
+      if (donation.statusDonation && statusPendiente && donation.statusDonation.id !== statusPendiente.id) {
+        throw new ForbiddenException('Solo se pueden actualizar donaciones con estado pendiente');
+      }
 
       // Actualizar campos
       Object.assign(donation, updateDonationDto);
       const updated = await this.donationRepo.save(donation);
 
       // Remover campos sensibles
-      if (updated.user) {
-        const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = updated.user as any;
-        updated.user = userWithoutSensitive as any;
-      }
+      const formatted = this.formatDonationResponse(updated, currentUser.id);
 
-      return updated;
+      return formatted;
     } catch (error) {
       throw error;
     }
   }
 
-  async deleteDonation(id: number, currentUser: any): Promise<{ message: string }> {
+  async deleteDonation(id: number, currentUser: any): Promise<{ message: string, status:number }> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
       if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
@@ -351,61 +364,80 @@ export class DonationService {
 
       // Validar estado: si no es propietario pero es admin, puede eliminar sin restricción
       if (isOwner) {
-        const completedStatus = await this.statusDonationService.findByname('completada')
+        const pendingStatus = await this.statusDonationService.findByname('pendiente')
 
-        if (donation.statusDonation && completedStatus && donation.statusDonation.id === completedStatus.id) {
-          throw new ForbiddenException('No se puede eliminar una donación con estado completado');
+        if (donation.statusDonation && pendingStatus && donation.statusDonation.id !== pendingStatus.id) {
+          throw new ForbiddenException('No se puede eliminar una donación con estado diferente a pendiente');
         }
       }
 
       await this.donationRepo.delete(id);
-      return { message: 'Donación eliminada correctamente' };
+      return { message: 'Donación eliminada correctamente', status: 200 };
     } catch (error) {
       throw error;
     }
   }
 
-  async deleteAdminDonation(id: number): Promise<{ message: string }> {
+  async deleteAdminDonation(id: number): Promise<{ message: string, status:number }> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
 
-      const donation = await this.donationRepo.findOne({ where: { id } });
+      const donation = await this.donationRepo.findOne({ 
+        where: { id } ,
+        relations:{
+          statusDonation:true
+        }
+      });
       if (!donation) throw new NotFoundException('Donación no encontrada');
+      
+      const statusPendiente = await this.statusDonationService.findByname('pendiente');
+      if (donation.statusDonation && statusPendiente && donation.statusDonation.id !== statusPendiente.id) {
+        throw new ForbiddenException('Solo se pueden eliminar donaciones con estado pendiente');
+      }
 
       await this.donationRepo.delete(id);
-      return { message: 'Donación eliminada correctamente por admin' };
+      return { message: 'Donación eliminada correctamente por admin', status: 200 };
     } catch (error) {
       throw error;
     }
   }
 
-  async changeStatus(donationId: number, newStatus: number, currentUser?: any): Promise<DonationEntity> {
+  async changeStatus(donationId: number, newStatus: number, currentUser?: any, admin?:boolean): Promise<DonationEntity> {
     try {
       if (!donationId) throw new BadRequestException('El id de la donación es obligatorio');
       if (!newStatus) throw new BadRequestException('El estado es obligatorio');
 
       const donation = await this.donationRepo.findOne({
         where: { id: donationId },
-        relations: ['user', 'statusDonation'],
+        relations: {
+          user:true,
+          statusDonation:true,
+          post:{
+            user:true,
+          },
+          postDonationArticlePost:{
+            postArticle:{
+              article:true
+            }
+          }
+        },
       });
       if (!donation) throw new NotFoundException('Donación no encontrada');
 
       const statusEntity = await this.statusDonationService.findById(newStatus);
       if (!statusEntity) throw new NotFoundException('Estado no encontrado en la base de datos');
 
-      if (currentUser) {
-        const isOwner = donation.user && currentUser && donation.user.id === currentUser.id;
+      if (currentUser && !admin) {
+        const isOwner = donation.post.user && currentUser && donation.post.user.id === currentUser.id;
         if (!isOwner) throw new ForbiddenException('No tienes permiso para cambiar el estado');
       }
+      const statusDonation=await this.statusDonationService.findByname('pendiente')
 
       const oldStatus = donation.statusDonation?.status ?? null;
       donation.statusDonation = statusEntity;
       const updated = await this.donationRepo.save(donation);
-      if (updated.user) {
-        const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = updated.user as any;
-        updated.user = userWithoutSensitive;
-      }
-      return updated;
+      const formatted = this.formatDonationResponse(updated, currentUser.id);
+      return formatted;
     } catch (error) {
       throw error;
     }
