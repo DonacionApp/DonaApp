@@ -22,6 +22,26 @@ export class StatussupportidService {
         }
     }
 
+    async getStatusSupportIdByName(name:string):Promise<StatusSupportIdEntity>{
+        try {
+            if(!name || name.trim().length===0){
+                throw new BadRequestException('El nombre del estado de soporte de identificación no puede estar vacío');
+            }
+            name=name.trim().toLowerCase();
+            const status= await this.statusSupportIdRepository.findOne({
+                where:{
+                    name:name
+                }
+            });
+            if(!status){
+                throw new NotFoundException(`No se encontró el estado de soporte de identificación con nombre ${name}`);
+            }
+            return status;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async getStatusSupportIdById(id:number):Promise<StatusSupportIdEntity>{
         try {
             if(!id || id<=0 || isNaN(id) || id===undefined){
