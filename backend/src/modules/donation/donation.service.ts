@@ -550,7 +550,7 @@ export class DonationService {
       const donations = await query.getMany();
 
       // Formatear todas las donaciones usando la función reutilizable
-      const formatted = donations.map(donation => this.formatDonationResponse(donation));
+      const formatted = donations.map(donation => this.formatDonationResponse(donation, currentUser.id));
       return formatted;
     } catch (error) {
       throw error;
