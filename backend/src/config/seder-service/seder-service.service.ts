@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MailDto } from 'src/core/mail/dto/mail.dto';
 import { MailService } from 'src/core/mail/mail.service';
@@ -6,6 +6,7 @@ import { ArticleEntity } from 'src/modules/article/entity/article.entity';
 import { RolEntity } from 'src/modules/rol/entity/rol.entity';
 import { StatusPostDonationArticle } from 'src/modules/statusarticledonation/entity/status.postdonationarticle.entity';
 import { StatusDonationEntity } from 'src/modules/statusdonation/entity/status.donation.entity';
+import { StatusSupportIdEntity } from 'src/modules/statussupportid/entity/status.supportid.entity';
 import { TagsEntity } from 'src/modules/tags/entity/tags.entity';
 import { TypeDniEntity } from 'src/modules/typedni/entity/type.dni.entity';
 import { TypeMessageEntity } from 'src/modules/typemessage/entity/type.message.entity';
@@ -36,7 +37,9 @@ export class SederServiceService {
         @InjectRepository(ArticleEntity)
         private readonly articleRepository: Repository<ArticleEntity>,
         @InjectRepository(StatusPostDonationArticle)
-        private readonly statusPostDonationArticleRepository: Repository<StatusPostDonationArticle>
+        private readonly statusPostDonationArticleRepository: Repository<StatusPostDonationArticle>,
+        @InjectRepository(StatusSupportIdEntity)
+        private readonly statusSupportIdRepository: Repository<StatusSupportIdEntity>,
     ) { }
 
     async onModuleInit() {
@@ -159,6 +162,13 @@ export class SederServiceService {
             ])
         }
 
+        const countStatusSupportId = await this.statusSupportIdRepository.count();
+        if(countStatusSupportId===0){
+            await this.statusSupportIdRepository.save([
+                {name:'aceptado'},
+                {name:'rechazado'},
+            ])
+        }
 
     }
 }
