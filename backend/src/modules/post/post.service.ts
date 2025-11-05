@@ -9,6 +9,8 @@ import { isArray } from 'class-validator';
 import { TypepostService } from '../typepost/typepost.service';
 import { PostFilterDto } from './dto/filter.dto';
 import { PostlikedService } from '../postLiked/postliked.service';
+import { ArticleService } from '../article/article.service';
+import { PostarticleService } from '../postarticle/postarticle.service';
 
 @Injectable()
 export class PostService {
@@ -24,6 +26,9 @@ export class PostService {
         private readonly typePostService: TypepostService,
         @Inject(forwardRef(() => PostlikedService))
         private readonly postLikedService: PostlikedService,
+        private articleService:ArticleService,
+        @Inject(forwardRef(() => PostarticleService))
+        private readonly postArticleService: PostarticleService,
     ) { }
 
     async userLikedPost(userId: number, postId: number): Promise<boolean> {
@@ -93,7 +98,7 @@ export class PostService {
     async createPost(data: any, files?: Express.Multer.File | Express.Multer.File[]): Promise<PostEntity> {
         try {
             if (!data) throw new Error('Data es requerida para crear el post');
-            const { tags, typePost, userId, user, ...rest } = data;
+            const { tags, typePost, userId, user, articles, postArticles, ...rest } = data;
 
             if (!rest.title || !rest.message) {
                 throw new Error('title y message son obligatorios');
@@ -167,6 +172,57 @@ export class PostService {
                     } catch (err) {
                         const msg = (err && err.message) ? err.message : '';
                         if (!msg.includes('la relacion post-tag ya existe')) {
+                            throw err;
+                        }
+                    }
+                }
+            }
+
+            const rawArticlesInput = (articles ?? postArticles);
+            if (rawArticlesInput) {
+                let items: any[] = [];
+                if (Array.isArray(rawArticlesInput)) {
+                    items = rawArticlesInput;
+                } else if (typeof rawArticlesInput === 'string') {
+                    try {
+                        const parsed = JSON.parse(rawArticlesInput);
+                        if (Array.isArray(parsed)) items = parsed;
+                    } catch (_) {
+                        
+                    }
+                }
+
+                if (items.length > 0) {
+                    const ownerUserId = (user && user.id) ? Number(user.id) : (userId ? Number(userId) : undefined);
+                    for (const item of items) {
+                        try {
+                            if (!item) continue;
+                            const qty = (item.quantiy ?? item.quantity ?? 1);
+                            const quantity = String(isNaN(Number(qty)) ? 1 : Number(qty));
+
+                            if (item.idArticle && !isNaN(Number(item.idArticle)) && Number(item.idArticle) > 0) {
+                                const dto = { post: Number(postId), article: Number(item.idArticle), quantity } as any;
+                                await this.postArticleService.addPostArticle(dto, Number(ownerUserId));
+                                continue;
+                            }
+
+                            if (item.name && typeof item.name === 'string') {
+                                const name = String(item.name).trim().toLowerCase();
+                                const description = (typeof item.description === 'string' ? item.description.trim() : undefined);
+                                let articleId: number | undefined;
+                                try {
+                                    const exist = await this.articleService.getArticleByName(name);
+                                    articleId = exist?.id;
+                                } catch (err) {
+                                    const created = await this.articleService.createArticle({ name, description });
+                                    articleId = created?.id;
+                                }
+                                if (articleId && articleId > 0) {
+                                    const dto = { post: Number(postId), article: Number(articleId), quantity } as any;
+                                    await this.postArticleService.addPostArticle(dto, Number(ownerUserId));
+                                }
+                            }
+                        } catch (err) {
                             throw err;
                         }
                     }

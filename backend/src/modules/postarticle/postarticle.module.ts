@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { PostarticleController } from './postarticle.controller';
 import { PostarticleService } from './postarticle.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -8,7 +8,8 @@ import { ArticleModule } from '../article/article.module';
 import { StatusarticledonationModule } from '../statusarticledonation/statusarticledonation.module';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([PostArticleEntity]), PostModule, ArticleModule,StatusarticledonationModule],
+  imports:[TypeOrmModule.forFeature([PostArticleEntity]), 
+  forwardRef(()=>PostModule) , ArticleModule,StatusarticledonationModule],
   controllers: [PostarticleController],
   providers: [PostarticleService],
   exports: [PostarticleService],
