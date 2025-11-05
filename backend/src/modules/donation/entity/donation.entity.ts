@@ -1,8 +1,9 @@
+import { ChatEntity } from "src/modules/chat/entity/chat.entity";
 import { PostEntity } from "src/modules/post/entity/post.entity";
 import { PostArticleDonationEntity } from "src/modules/postdonationarticle/entity/post.article.donation.entity";
 import { StatusDonationEntity } from "src/modules/statusdonation/entity/status.donation.entity";
 import { UserEntity } from "src/modules/user/entity/user.entity";
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('donation')
 export class DonationEntity{
@@ -13,11 +14,7 @@ export class DonationEntity{
     @Column({type:'varchar', nullable:true})
     lugarDonacion:string | null;
     @Column({type:'json', nullable:true})
-    articles:any | null;
-    @Column({type:'json', nullable:true})
     comments:any | null;
-    @Column({type:'varchar', nullable:true})
-    comunity:string | null;
     @Column({type:'date', nullable:true})
     fechaMaximaEntrega:Date | null;
     @ManyToOne(()=>PostEntity,(post)=>post.donation, {onDelete:'CASCADE', nullable:false})
@@ -28,6 +25,8 @@ export class DonationEntity{
     statusDonation:StatusDonationEntity;
     @OneToMany(()=>PostArticleDonationEntity,(postArticleDonation)=>postArticleDonation.donation)
     postDonationArticlePost:PostArticleDonationEntity[];
+    @OneToOne(()=>ChatEntity,(chat)=>chat.donation, {onDelete:'CASCADE', nullable:true})
+    chat:ChatEntity | null;
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;

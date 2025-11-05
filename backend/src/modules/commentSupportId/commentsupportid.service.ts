@@ -104,7 +104,7 @@ export class CommentsupportidService {
                 queryBuilder.andWhere('user.id = :idUser', {idUser: filter.idUser});
             }
             if(filter.search){
-                queryBuilder.andWhere('comment.comment ILIKE :search || user.username ILIKE :search', {search: `%${filter.search}%`});
+                queryBuilder.andWhere('comment.comment ILIKE :search OR user.username ILIKE :search', {search: `%${filter.search}%`});
             }
             if(filter.sortBy){
                 queryBuilder.orderBy(`comment.${filter.sortBy}`, filter.sortOrder === 'DESC' ? 'DESC' : 'ASC');
@@ -113,7 +113,12 @@ export class CommentsupportidService {
             if(comments.length===0){
                 throw new BadRequestException('No se encontraron comentarios con los filtros proporcionados');
             }
-            return comments;
+            const commentsFiltered = comments.map(({ user, ...comment }) => {
+                if (!user) return comment;
+                const { token,loginAttempts,password,lockUntil, dateSendCodigo,code, updatedAt,...userRest } = user as any;
+                return { ...comment, user: userRest };
+            });
+            return commentsFiltered as any;
         } catch (error) {
             throw error;
         }

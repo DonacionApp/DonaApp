@@ -1,6 +1,9 @@
 import { IsString, IsNotEmpty, IsOptional, IsDateString, IsArray, IsObject, IsNumber } from 'class-validator';
 
 export class CreateDonationDto {
+  @IsNotEmpty()
+  @IsNumber()
+  postId: number;
   @IsString()
   @IsNotEmpty()
   lugarRecogida: string;
@@ -11,7 +14,7 @@ export class CreateDonationDto {
 
   @IsArray()
   @IsOptional()
-  articles?: any[];
+  articles?: [{articlePostId: number, quantity: number}];
 
   @IsArray()
   @IsOptional()

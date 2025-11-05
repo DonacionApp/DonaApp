@@ -1,6 +1,7 @@
 import { ChatStatusEntity } from "src/modules/chatstatus/entity/chat.status.entity";
+import { DonationEntity } from "src/modules/donation/entity/donation.entity";
 import { PostEntity } from "src/modules/post/entity/post.entity";
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('chat')
 export class ChatEntity{
@@ -10,8 +11,9 @@ export class ChatEntity{
     chatName:string;
     @ManyToOne(()=>ChatStatusEntity,(chatStatus)=>chatStatus.chat, {onDelete:'CASCADE', nullable:false})
     chatStatus:ChatStatusEntity;
-    @OneToMany(()=>PostEntity,(post)=>post.chat)
-    post:PostEntity[];
+    @OneToOne(()=>DonationEntity,(donation)=>donation.chat, {onDelete:'CASCADE', nullable:true})
+    @JoinColumn()
+    donation:DonationEntity | null;
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;

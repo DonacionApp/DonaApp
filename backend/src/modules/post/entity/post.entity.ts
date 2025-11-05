@@ -2,7 +2,6 @@ import { ChatEntity } from "src/modules/chat/entity/chat.entity";
 import { DonationEntity } from "src/modules/donation/entity/donation.entity";
 import { ImagePostEntity } from "src/modules/imagepost/entity/image.post.entity";
 import { PostArticleEntity } from "src/modules/postarticle/entity/postarticle.entity";
-import { PostArticleDonationEntity } from "src/modules/postdonationarticle/entity/post.article.donation.entity";
 import { PostLikedEntity } from "src/modules/postLiked/entity/post.liked.entity";
 import { PostTagEntity } from "src/modules/posttags/entity/post.tags.entity";
 import { TypePostEntity } from "src/modules/typepost/entity/type.port.entity";
@@ -28,8 +27,6 @@ export class PostEntity{
     imagePost:ImagePostEntity[]
     @OneToMany(()=>PostLikedEntity,(postLiked)=>postLiked.post)
     postLiked:PostLikedEntity[];
-    @ManyToOne(()=>ChatEntity,(chat)=>chat.post, {onDelete:'CASCADE', nullable:true})
-    chat:ChatEntity;
     @OneToMany(()=>DonationEntity,(donation)=>donation.post)
     donation:DonationEntity[];
     @OneToMany(()=>PostArticleEntity,(postArticle)=>postArticle.post)

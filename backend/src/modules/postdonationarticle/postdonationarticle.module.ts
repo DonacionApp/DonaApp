@@ -10,7 +10,7 @@ import { StatusarticledonationModule } from '../statusarticledonation/statusarti
 import { PostModule } from '../post/post.module';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([PostArticleDonationEntity]),PostarticleModule, DonationModule,StatusdonationModule,
+  imports:[TypeOrmModule.forFeature([PostArticleDonationEntity]),PostarticleModule, forwardRef(()=>DonationModule),StatusdonationModule,
   forwardRef(() => StatusarticledonationModule),PostModule,
 ],
   controllers: [PostdonationarticleController],

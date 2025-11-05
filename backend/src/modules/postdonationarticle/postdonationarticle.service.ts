@@ -16,6 +16,7 @@ export class PostdonationarticleService {
     constructor(
         @InjectRepository(PostArticleDonationEntity)
         private readonly postDonationArticleRepository: Repository<PostArticleDonationEntity>,
+        @Inject(forwardRef(()=>DonationService))
         private readonly donationService: DonationService,
         private readonly postArticleService: PostarticleService,
         private readonly statusDonationService: StatusdonationService,
@@ -157,7 +158,6 @@ export class PostdonationarticleService {
                     id: donation.id,
                     lugarRecogida: donation.lugarRecogida,
                     lugarDonacion: donation.lugarDonacion,
-                    comunity: donation.comunity,
                     fechaMaximaEntrega: donation.fechaMaximaEntrega,
                     createdAt: donation.createdAt,
                     updatedAt: donation.updatedAt,

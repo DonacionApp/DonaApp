@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DonationEntity } from './entity/donation.entity';
 import { Repository } from 'typeorm';
@@ -7,6 +7,9 @@ import { UserService } from '../user/user.service';
 import { StatusdonationService } from '../statusdonation/statusdonation.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
 import { UpdateDonationDto } from './dto/update-donation.dto';
+import { PostdonationarticleService } from '../postdonationarticle/postdonationarticle.service';
+import { PostarticleService } from '../postarticle/postarticle.service';
+import { PostService } from '../post/post.service';
 
 @Injectable()
 export class DonationService {
@@ -15,6 +18,10 @@ export class DonationService {
     private readonly donationRepo: Repository<DonationEntity>,
     private readonly statusDonationService: StatusdonationService,
     private readonly userService: UserService,
+    @Inject(forwardRef(()=>PostdonationarticleService))
+    private readonly postDonationArticleService: PostdonationarticleService,
+    private readonly postArticleService: PostarticleService,
+    private readonly postService:PostService,
   ) { }
 
   async getDonationById(id: number): Promise<DonationEntity> {
