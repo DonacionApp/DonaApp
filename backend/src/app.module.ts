@@ -32,6 +32,7 @@ import { PostdonationarticleModule } from './modules/postdonationarticle/postdon
 import { PostarticleModule } from './modules/postarticle/postarticle.module';
 import { StatusarticledonationModule } from './modules/statusarticledonation/statusarticledonation.module';
 import { StatussupportidModule } from './modules/statussupportid/statussupportid.module';
+import { CommentsupportidModule } from './modules/commentsupportid/commentsupportid.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -81,6 +82,7 @@ import { StatussupportidModule } from './modules/statussupportid/statussupportid
   PostarticleModule,
   StatusarticledonationModule,
   StatussupportidModule,
+  CommentsupportidModule,
 ],
   controllers: [AppController],
   providers: [AppService],

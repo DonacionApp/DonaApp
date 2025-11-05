@@ -1,4 +1,4 @@
-import { CommentSupportIdEntity } from "src/modules/commentSupportId/entity/comment.supportid.entity";
+import { CommentSupportIdEntity } from "src/modules/commentsupportid/entity/comment.supportid.entity";
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('status_supportid')
