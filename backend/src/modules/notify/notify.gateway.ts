@@ -10,7 +10,11 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger, Inject, Optional, forwardRef } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { NotifyService } from './notify.service';
+import { UserNotifyService } from '../userNotify/usernotify.service';
+import { WsAuthHelper } from '../../shared/helpers/ws-auth.helper';
 
 interface ConnectedUser {
   userId: number;
@@ -21,7 +25,6 @@ interface ConnectedUser {
 @WebSocketGateway({
   cors: {
     origin: '*', 
-    credentials: true,
   },
   namespace: '/notifications',
 })
@@ -38,8 +41,12 @@ export class NotifyGateway
   private socketToUser: Map<string, number> = new Map();
 
   constructor(
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     @Optional() @Inject(forwardRef(() => NotifyService))
-    private readonly notifyService?: NotifyService
+    private readonly notifyService?: NotifyService,
+    @Optional() @Inject(forwardRef(() => UserNotifyService))
+    private readonly userNotifyService?: UserNotifyService,
   ) {}
 
   afterInit(server: Server) {
@@ -47,31 +54,45 @@ export class NotifyGateway
     this.logger.log(` Listening on namespace: /notifications`);
   }
 
-  handleConnection(client: Socket) {
-    this.logger.log(` Client attempting to connect: ${client.id}`);
-    
-    const userId = client.handshake.query.userId as string;
-    
-    if (!userId || isNaN(Number(userId))) {
-      this.logger.warn(` Connection rejected - Invalid userId: ${client.id}`);
-      client.disconnect();
-      return;
-    }
+  async handleConnection(client: Socket) {
+    try {
+      this.logger.log(`🔌 Client attempting to connect: ${client.id}`);
 
-    const userIdNum = Number(userId);
-  
-    this.connectedUsers.set(userIdNum, client.id);
-    this.socketToUser.set(client.id, userIdNum);
-    
-    this.logger.log(
-      `User ${userIdNum} connected with socket ${client.id} - Total users: ${this.connectedUsers.size}`,
-    );
-  
-    client.emit('connected', {
-      message: 'Conectado exitosamente al servidor de notificaciones',
-      userId: userIdNum,
-      timestamp: new Date(),
-    });
+      // Validar token y obtener userId
+      const result = await WsAuthHelper.validateConnection(
+        client,
+        this.jwtService,
+        this.configService,
+      );
+
+      if (!result.valid || !result.userId) {
+        // El helper ya manejó el error y desconectó al cliente
+        return;
+      }
+
+      const { userId, userName } = result;
+
+      // Registrar el usuario conectado
+      this.connectedUsers.set(userId, client.id);
+      this.socketToUser.set(client.id, userId);
+
+      this.logger.log(
+        `✅ User ${userId} (${userName}) connected - Total users: ${this.connectedUsers.size}`,
+      );
+
+      // Notificar al cliente que está conectado
+      client.emit('connected', {
+        message: 'Conectado exitosamente al servidor de notificaciones',
+        userId: userId,
+        userName: userName,
+        timestamp: new Date(),
+      });
+
+    } catch (error) {
+      this.logger.error(`❌ Error in handleConnection: ${error.message}`);
+      client.emit('error', { message: 'Error al conectar' });
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: Socket) {
@@ -140,6 +161,9 @@ export class NotifyGateway
     return this.connectedUsers.has(userId);
   }
 
+  /**
+   * Evento para que el cliente marque una notificación como leída
+   */
   @SubscribeMessage('markAsRead')
   async handleMarkAsRead(
     @MessageBody() data: { notificationId: number },
@@ -152,16 +176,24 @@ export class NotifyGateway
         return { success: false, error: 'Usuario no identificado' };
       }
 
+      if (!this.userNotifyService) {
+        return { success: false, error: 'Servicio no disponible' };
+      }
+
       this.logger.log(
-        `User ${userId} marking notification ${data.notificationId} as read`,
+        `📖 User ${userId} marking notification ${data.notificationId} as read`,
       );
+
+      // Llamar al servicio para marcar como leída
+      const result = await this.userNotifyService.markAsRead(userId, data.notificationId);
 
       return {
         success: true,
         notificationId: data.notificationId,
+        message: result.message,
       };
     } catch (error) {
-      this.logger.error(`Error marking notification as read: ${error.message}`);
+      this.logger.error(`❌ Error marking notification as read: ${error.message}`);
       return { success: false, error: error.message };
     }
   }
