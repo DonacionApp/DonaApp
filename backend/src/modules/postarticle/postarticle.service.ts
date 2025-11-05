@@ -79,7 +79,8 @@ export class PostarticleService {
                     post:{
                         user:true
                     },
-                    article:true
+                    article:true,
+                    status:true
                 }
             });
             if(!postArticles || postArticles.length<=0){

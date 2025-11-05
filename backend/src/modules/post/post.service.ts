@@ -56,7 +56,11 @@ export class PostService {
                         tag: true
                     },
                     user: true,
-                    postLiked: true
+                    postLiked: true,
+                    postArticle:{
+                        article:true,
+                        status:true
+                    }
                 }
             });
             userId = Number(userId);

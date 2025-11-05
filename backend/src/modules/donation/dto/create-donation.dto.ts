@@ -24,10 +24,6 @@ export class CreateDonationDto {
   @IsNumber()
   statusDonation: number;
 
-  @IsString()
-  @IsOptional()
-  comunity?: string;
-
   @IsDateString()
   @IsOptional()
   fechaMaximaEntrega?: string;
