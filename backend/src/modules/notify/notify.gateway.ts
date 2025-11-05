@@ -56,7 +56,7 @@ export class NotifyGateway
 
   async handleConnection(client: Socket) {
     try {
-      this.logger.log(`🔌 Client attempting to connect: ${client.id}`);
+      this.logger.log(` Client attempting to connect: ${client.id}`);
 
       // Validar token y obtener userId
       const result = await WsAuthHelper.validateConnection(
@@ -77,7 +77,7 @@ export class NotifyGateway
       this.socketToUser.set(client.id, userId);
 
       this.logger.log(
-        `✅ User ${userId} (${userName}) connected - Total users: ${this.connectedUsers.size}`,
+        ` User ${userId} (${userName}) connected - Total users: ${this.connectedUsers.size}`,
       );
 
       // Notificar al cliente que está conectado
@@ -89,7 +89,7 @@ export class NotifyGateway
       });
 
     } catch (error) {
-      this.logger.error(`❌ Error in handleConnection: ${error.message}`);
+      this.logger.error(` Error in handleConnection: ${error.message}`);
       client.emit('error', { message: 'Error al conectar' });
       client.disconnect();
     }
@@ -193,7 +193,7 @@ export class NotifyGateway
         message: result.message,
       };
     } catch (error) {
-      this.logger.error(`❌ Error marking notification as read: ${error.message}`);
+      this.logger.error(` Error marking notification as read: ${error.message}`);
       return { success: false, error: error.message };
     }
   }
