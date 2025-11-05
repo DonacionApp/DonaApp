@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { CommentsupportidController } from './commentsupportid.controller';
+import { CommentsupportidController } from '../commentSupportId/commentsupportid.controller';
 import { CommentsupportidService } from './commentsupportid.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommentSupportIdEntity } from './entity/comment.supportid.entity';
