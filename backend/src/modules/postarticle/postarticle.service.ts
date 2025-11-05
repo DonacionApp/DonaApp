@@ -210,4 +210,28 @@ export class PostarticleService {
             throw error;
         }
     }
+
+    async asignUnvalaiblesStatus(postArticleId:number):Promise<any>{
+        try {
+            if(!postArticleId || postArticleId<=0 || isNaN(postArticleId) || postArticleId===undefined){
+                throw new BadRequestException('post articulo invalido')
+            }
+            const postArticleExist= await this.postArticleRepository.findOne({
+                where:{
+                    id:postArticleId
+                }
+            });
+            if(!postArticleExist){
+                throw new NotFoundException('el post articulo no existe')
+            }
+            const statusUnvailable= await this.statusArticleDonationService.getStatusByName('no disponible');
+            if(!statusUnvailable){
+                throw new NotFoundException('el estado no existe')
+            }
+            postArticleExist.status=statusUnvailable;
+            return await this.postArticleRepository.save(postArticleExist);
+        } catch (error) {
+            throw error;
+        }
+    }
 }
