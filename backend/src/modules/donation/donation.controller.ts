@@ -42,12 +42,11 @@ export class DonationController {
   async getMyDonations(@Req() req: any) {
     try {
       const user = req.user;
-      return await this.donationService.getUserDonations(user.id);
+      return await this.donationService.getUserDonations(user.id, user.id);
     } catch (error) {
       throw error;
     }
   }
-
   // get /donation/users/:idUser - Obtener donaciones de un usuario específico
   @Get('users/:idUser')
   async getDonationsByUser(@Param('idUser') idUser: number) {
@@ -59,7 +58,7 @@ export class DonationController {
     }
   }
 
-  // post /donation/:id - Actualizar una donación (owner/admin)
+  // post /donation/:id - Actualizar una donación (owner)
   @UseGuards(JwtAuthGuard)
   @Post('/update/:id')
   async updateDonation(@Param('id') id: number, @Body() updateDonationDto: UpdateDonationDto, @Req() req: any) {

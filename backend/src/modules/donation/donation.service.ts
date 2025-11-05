@@ -34,19 +34,79 @@ export class DonationService {
         relations: {
           user:true,
           statusDonation:true,
-          post:true,
+          post:{
+            user:true
+          },
+          postDonationArticlePost:{
+            postArticle:{
+              article:true
+            },
+          }
         },
       });
       if (!donation) throw new NotFoundException('Donación no encontrada');
-      // Remover campos sensibles del usuario
       if (donation.user) {
         const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
         donation.user = userWithoutSensitive as any;
       }
-      return donation;
+      return this.formatDonationResponse(donation);
     } catch (error) {
       throw error;
     }
+  }
+
+  private formatDonationResponse(donation: any, userId?:number): any {
+    if (!donation) return donation;
+
+    const formatted: any = {
+      id: donation.id,
+      lugarRecogida: donation.lugarRecogida ?? null,
+      lugarDonacion: donation.lugarDonacion ?? null,
+      comments: donation.comments ?? null,
+      fechaMaximaEntrega: donation.fechaMaximaEntrega ?? null,
+      post: donation.post ? { id: donation.post.id, title: donation.post.title, message: donation.post.message } : null,
+      statusDonation: donation.statusDonation ? { id: donation.statusDonation.id, status: donation.statusDonation.status } : null,
+      createdAt: donation.createdAt,
+      updatedAt: donation.updatedAt,
+    };
+
+    if (donation.user) {
+      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = donation.user as any;
+      formatted.beneficiary = { id, username, email, profilePhoto, emailVerified, verified, createdAt };
+    } else {
+      formatted.beneficiary = null;
+    }
+
+    if (donation.post && donation.post.user) {
+      const pu = donation.post.user as any;
+      
+      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = pu;
+      formatted.donator = { id, username, email, profilePhoto, emailVerified, verified, createdAt };
+    } else {
+      formatted.donator = null;
+    }
+    if(userId && donation.post.user){
+      const owner = donation.post?.user?.id === userId;
+      (donation as any).owner = owner;
+      formatted.owner = owner;
+    }
+
+    if (donation.postDonationArticlePost && Array.isArray(donation.postDonationArticlePost)) {
+      formatted.articles = donation.postDonationArticlePost.map((pda: any) => ({
+        id: pda.id,
+        quantity: pda.quantity,
+        postArticleId: pda.postArticle?.id ?? null,
+        article: pda.postArticle && pda.postArticle.article ? {
+          id: pda.postArticle.article.id,
+          name: pda.postArticle.article.name,
+          descripcion: pda.postArticle.article.descripcion,
+        } : null,
+      }));
+    } else {
+      formatted.articles = [];
+    }
+
+    return formatted;
   }
 
   async createDonation(createDonationDto: CreateDonationDto, currentUser: any): Promise<DonationEntity> {
@@ -155,7 +215,6 @@ export class DonationService {
         );
       }
 
-      // Recargar la donación con todas las relaciones incluyendo artículos
       const donationWithArticles = await this.donationRepo.findOne({
         where: { id: savedDonation.id },
         relations:{
@@ -167,9 +226,7 @@ export class DonationService {
               article:true
             }
           }
-        }
-        // ['user', 'statusDonation', 'post', 'postDonationArticlePost', 'postDonationArticlePost.postArticle', 'postDonationArticlePost.postArticle.article'],
-      });
+        }});
 
       if (!donationWithArticles) {
         throw new BadRequestException('No se pudo recuperar la donación creada');
@@ -202,30 +259,37 @@ export class DonationService {
     }
   }
 
-  async getUserDonations(userId: number): Promise<DonationEntity[]> {
+  async getUserDonations(userId: number,currentUser?:number): Promise<DonationEntity[]> {
     try {
       if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
 
       const donations = await this.donationRepo.find({
-        where: { user: { id: userId } },
-        relations: ['user', 'statusDonation'],
-      });
-
-      // Remover campos sensibles de todos los usuarios
-      donations.forEach(donation => {
-        if (donation.user) {
-          const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
-          donation.user = userWithoutSensitive as any;
+        where: [
+          { user: { id: userId } },
+          { post: { user: { id: userId } } }
+        ],
+        relations: {
+          user:true,
+          statusDonation:true,
+          post:{
+            user:true
+          },
+          postDonationArticlePost:{
+            postArticle:{
+              article:true
+            }
+          }
         }
       });
+      const formatedDonations = donations.map(donation => this.formatDonationResponse(donation, userId));
 
-      return donations;
+      return formatedDonations;
     } catch (error) {
       throw error;
     }
   }
 
-  async getDonationsByUser(idUser: number): Promise<DonationEntity[]> {
+  async getDonationsByUser(idUser: number, currentUser?:number): Promise<DonationEntity[]> {
     try {
       return await this.getUserDonations(idUser);
     } catch (error) {
@@ -355,7 +419,12 @@ export class DonationService {
 
       let query = this.donationRepo.createQueryBuilder('d')
         .leftJoinAndSelect('d.user', 'user')
-        .leftJoinAndSelect('d.statusDonation', 'statusDonation');
+        .leftJoinAndSelect('d.statusDonation', 'statusDonation')
+        .leftJoinAndSelect('d.post', 'post')
+        .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('d.postDonationArticlePost', 'postDonationArticlePost')
+        .leftJoinAndSelect('postDonationArticlePost.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article');
 
       // Filtro por usuario
       query = query.where('d.userId = :userId', { userId });
@@ -403,15 +472,9 @@ export class DonationService {
 
       const donations = await query.getMany();
 
-      // Remover campos sensibles
-      donations.forEach(donation => {
-        if (donation.user) {
-          const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
-          donation.user = userWithoutSensitive as any;
-        }
-      });
-
-      return donations;
+      // Formatear todas las donaciones usando la función reutilizable
+      const formatted = donations.map(donation => this.formatDonationResponse(donation));
+      return formatted;
     } catch (error) {
       throw error;
     }

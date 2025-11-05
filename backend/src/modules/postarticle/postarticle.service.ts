@@ -52,7 +52,7 @@ export class PostarticleService {
                 }
             });
             if(!postArticle){
-                throw new NotFoundException('el post articulo no existe')
+                throw new NotFoundException('el post articulo no esta incluido en el post')
             }
             const postArticleWithoutUserInfo = (() => {
                 const { post, ...articleData } = postArticle;
