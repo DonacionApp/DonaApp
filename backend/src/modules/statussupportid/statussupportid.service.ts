@@ -58,4 +58,20 @@ export class StatussupportidService {
         }
     }
 
+    async deleteStatusSupportId(id:number):Promise<{message:string, status:number}>{
+        try {
+            if(!id || id<=0 || isNaN(id) || id===undefined){
+                throw new BadRequestException('El id proporcionado no es válido');
+            }
+            const status= await this.statusSupportIdRepository.findOneBy({id});
+            if(!status){
+                throw new NotFoundException(`No se encontró el estado de soporte de identificación con id ${id}`);
+            }
+            await this.statusSupportIdRepository.delete(id);
+            return {message:`El estado de soporte de identificación con id ${id} ha sido eliminado exitosamente`, status:200};
+        } catch (error) {
+            throw error;
+        }
+    }
+
 }
