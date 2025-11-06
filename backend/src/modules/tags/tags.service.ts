@@ -44,6 +44,17 @@ export class TagsService {
             throw error;
         }
     }
+    async getTabByNameList(tags: string): Promise<TagsEntity[]> {
+        try {
+            if (!tags) throw new BadRequestException('Tags necesarias');
+            tags=tags.trim().toLowerCase();
+            const tagEntity = await this.tagsRepository.createQueryBuilder('tag').where('tag.tag ILIKE :tags', { tags: `%${tags}%` });
+            if (!tagEntity) throw new BadRequestException('Tags no encontradas');
+            return tagEntity.getMany();
+        } catch (error) {
+            throw error;
+        }
+    }
 
     async getTagById(id: number): Promise<TagsEntity> {
         try {

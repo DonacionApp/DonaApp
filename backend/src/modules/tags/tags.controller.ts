@@ -36,6 +36,15 @@ export class TagsController {
             throw error;
         }
     }
+
+    @Get('name/search/:tag')
+    async getTagByNameSearch(@Param('tag') tag: string) {
+        try {
+            return await this.tagsService.getTabByNameList(tag);
+        } catch (error) {
+            throw error;
+        }
+    }
     @Post('create/')
     async createTag(@Body('tag') tag:string){
         try {
