@@ -96,8 +96,13 @@ export class UserNotifyService {
          if (!userNotifications || userNotifications.length === 0) {
             throw new NotFoundException('El usuario no tiene notificaciones');
          }
+         console.log('read values:', userNotifications.map(un => un.read));
 
-         const notifications = userNotifications.map(userNotify => userNotify.notify);
+         const notifications = userNotifications.map((userNotify) => {
+           return{
+            ...userNotify.notify, read: userNotify.read
+           };
+         });
 
          return notifications;
       } catch (error) {

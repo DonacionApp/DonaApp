@@ -42,8 +42,8 @@ export class NotifyService {
          if (notify.userNotify && notify.userNotify.length > 0) {
             notify.userNotify = notify.userNotify.map(userNotify => {
                if (userNotify.user) {
-                  const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } = userNotify.user;
-                  userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } as any;
+                  const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt, read } = userNotify.user as any;
+                  userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt, read } as any;
                }
                return userNotify;
             });
@@ -68,8 +68,8 @@ export class NotifyService {
             if (notify.userNotify && notify.userNotify.length > 0) {
                notify.userNotify = notify.userNotify.map(userNotify => {
                   if (userNotify.user) {
-                     const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } = userNotify.user;
-                     userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } as any;
+                     const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt, read } = userNotify.user as any;
+                     userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt, read } as any;
                   }
                   return userNotify;
                });
@@ -156,7 +156,7 @@ export class NotifyService {
             if (notify.userNotify && notify.userNotify.length > 0) {
                notify.userNotify = notify.userNotify.map(userNotify => {
                   if (userNotify.user) {
-                     const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } = userNotify.user as any;
+                     const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt, read } = userNotify.user as any;
                      userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt, read } as any;
                   }
                   return userNotify;
