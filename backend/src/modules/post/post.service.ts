@@ -549,6 +549,9 @@ export class PostService {
                 .leftJoinAndSelect('post.imagePost', 'imagePost')
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
+                .leftJoinAndSelect('post.postArticle', 'postArticle')
+                .leftJoinAndSelect('postArticle.article', 'article')
+                .leftJoinAndSelect('postArticle.status', 'status')
                 .leftJoinAndSelect('post.postLiked', 'postLiked')
                 .leftJoinAndSelect('post.typePost', 'typePost');
             if (filters.userName) {
