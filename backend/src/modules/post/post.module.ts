@@ -8,10 +8,14 @@ import { ImagepostModule } from '../imagepost/imagepost.module';
 import { PosttagsModule } from '../posttags/posttags.module';
 import { TypepostModule } from '../typepost/typepost.module';
 import { PostlikedModule } from '../postLiked/postliked.module';
+import { ArticleModule } from '../article/article.module';
+import { PostArticleEntity } from '../postarticle/entity/postarticle.entity';
+import { PostarticleModule } from '../postarticle/postarticle.module';
 
 @Module({
   imports:[TypeOrmModule.forFeature([PostEntity]),TagsModule,forwardRef(()=>ImagepostModule),
-   forwardRef(()=>PosttagsModule), forwardRef(()=>TypepostModule), forwardRef(()=>PostlikedModule)],
+   forwardRef(()=>PosttagsModule), forwardRef(()=>TypepostModule), forwardRef(()=>PostlikedModule),
+  ArticleModule, forwardRef(()=>PostarticleModule)],
   controllers: [PostController],
   providers: [PostService],
   exports:[PostService]

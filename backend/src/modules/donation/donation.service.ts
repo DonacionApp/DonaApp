@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DonationEntity } from './entity/donation.entity';
 import { Repository } from 'typeorm';
@@ -7,6 +7,10 @@ import { UserService } from '../user/user.service';
 import { StatusdonationService } from '../statusdonation/statusdonation.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
 import { UpdateDonationDto } from './dto/update-donation.dto';
+import { PostdonationarticleService } from '../postdonationarticle/postdonationarticle.service';
+import { PostarticleService } from '../postarticle/postarticle.service';
+import { PostService } from '../post/post.service';
+import { StatusarticledonationService } from '../statusarticledonation/statusarticledonation.service';
 
 @Injectable()
 export class DonationService {
@@ -15,102 +19,283 @@ export class DonationService {
     private readonly donationRepo: Repository<DonationEntity>,
     private readonly statusDonationService: StatusdonationService,
     private readonly userService: UserService,
+    @Inject(forwardRef(() => PostdonationarticleService))
+    private readonly postDonationArticleService: PostdonationarticleService,
+    private readonly postArticleService: PostarticleService,
+    private readonly postService: PostService,
+     private readonly statusArticleDonationService:StatusarticledonationService,
   ) { }
 
-  async getDonationById(id: number): Promise<DonationEntity> {
+  async getDonationById(id: number, format: boolean = true): Promise<DonationEntity> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
       const donation = await this.donationRepo.findOne({
         where: { id },
-        relations: ['user', 'statusDonation'],
+        relations: {
+          user:true,
+          statusDonation:true,
+          post:{
+            user:true
+          },
+          postDonationArticlePost:{
+            postArticle:{
+              article:true
+            },
+          }
+        },
       });
       if (!donation) throw new NotFoundException('Donación no encontrada');
-      // Remover campos sensibles del usuario
       if (donation.user) {
         const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
         donation.user = userWithoutSensitive as any;
       }
-      return donation;
+      return format ? this.formatDonationResponse(donation) : donation;
     } catch (error) {
       throw error;
     }
+  }
+
+  private formatDonationResponse(donation: any, userId?:number): any {
+    if (!donation) return donation;
+
+    const formatted: any = {
+      id: donation.id,
+      lugarRecogida: donation.lugarRecogida ?? null,
+      lugarDonacion: donation.lugarDonacion ?? null,
+      comments: donation.comments ?? null,
+      fechaMaximaEntrega: donation.fechaMaximaEntrega ?? null,
+      post: donation.post ? { id: donation.post.id, title: donation.post.title, message: donation.post.message } : null,
+      statusDonation: donation.statusDonation ? { id: donation.statusDonation.id, status: donation.statusDonation.status } : null,
+      createdAt: donation.createdAt,
+      updatedAt: donation.updatedAt,
+    };
+
+    if (donation.user) {
+      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = donation.user as any;
+      formatted.beneficiary = { id, username, email, profilePhoto, emailVerified, verified, createdAt };
+    } else {
+      formatted.beneficiary = null;
+    }
+
+    if (donation.post && donation.post.user) {
+      const pu = donation.post.user as any;
+      
+      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = pu;
+      formatted.donator = { id, username, email, profilePhoto, emailVerified, verified, createdAt };
+    } else {
+      formatted.donator = null;
+    }
+    if(userId && donation.post.user){
+      const owner = donation.post?.user?.id === userId;
+      (donation as any).owner = owner;
+      formatted.owner = owner;
+    }
+
+    if (donation.postDonationArticlePost && Array.isArray(donation.postDonationArticlePost)) {
+      formatted.articles = donation.postDonationArticlePost.map((pda: any) => ({
+        id: pda.id,
+        quantity: pda.quantity,
+        postArticleId: pda.postArticle?.id ?? null,
+        article: pda.postArticle && pda.postArticle.article ? {
+          id: pda.postArticle.article.id,
+          name: pda.postArticle.article.name,
+          descripcion: pda.postArticle.article.descripcion,
+        } : null,
+      }));
+    } else {
+      formatted.articles = [];
+    }
+
+    return formatted;
   }
 
   async createDonation(createDonationDto: CreateDonationDto, currentUser: any): Promise<DonationEntity> {
     try {
       if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
 
-      // Validar campos requeridos
-      if (!createDonationDto.lugarRecogida) {
+      const { postId, lugarRecogida, articles } = createDonationDto || ({} as CreateDonationDto);
+      if (!postId || isNaN(Number(postId)) || Number(postId) <= 0) {
+        throw new BadRequestException('El postId es obligatorio y debe ser válido');
+      }
+      if (!lugarRecogida || String(lugarRecogida).trim() === '') {
         throw new BadRequestException('El lugar de recogida es obligatorio');
       }
-
-      // Obtener usuario completo desde la base de datos para validar verificación
-      const user = await this.userService.findById(currentUser.sub || currentUser.id);
-      if (!user) throw new NotFoundException('Usuario no encontrado');
-      let idDonationStatus= createDonationDto.statusDonation;
-      if(!idDonationStatus || idDonationStatus<=0 || isNaN(idDonationStatus)){
-        throw new BadRequestException('El estado de donación es obligatorio y debe ser un id válido');
-      }
-      idDonationStatus=Number(idDonationStatus);
-      const existEstatus= await this.statusDonationService.findById(idDonationStatus);
-      if(!existEstatus){
-        throw new NotFoundException('El estado de donación proporcionado no existe');
+      const articlesArr: any[] = Array.isArray(articles as any) ? (articles as any) : [];
+      if (articlesArr.length === 0) {
+        throw new BadRequestException('Debe proporcionar al menos un artículo para la donación');
       }
 
-      // Validar que el usuario sea una organización verificada
-      if (!user.verified) {
-        throw new ForbiddenException('Solo organizaciones verificadas pueden crear donaciones');
+      const receiver = await this.userService.findById(currentUser.sub || currentUser.id);
+      if (!receiver) throw new NotFoundException('Usuario no encontrado');
+      if (!receiver.verified) {
+        throw new ForbiddenException('Solo usuarios verificados pueden recibir donaciones');
       }
 
-      const donationData: any = { ...createDonationDto };
-      // Reemplazar el campo statusDonation (viene como id) por la entidad encontrada
-      donationData.statusDonation = existEstatus;
-      donationData.user = user;
-      const donation = this.donationRepo.create(donationData);
+      const post = await this.postService.getPostById(Number(postId));
+      if (!post) throw new NotFoundException('Post no encontrado');
+      if (post.user && receiver.id === post.user.id) {
+        throw new ForbiddenException('No puedes crear una donación para tu propio post');
+      }
 
-      // TypeORM save can sometimes return an array (depending on input/overloads), normalize to a single entity
+      const statusPendiente = await this.statusDonationService.findByname('pendiente');
+
+      const postArticles = await this.postArticleService.findByPost(Number(postId));
+    
+      const statusAvalaibleArticleDonation = await this.statusArticleDonationService.getStatusByName('disponible');
+      
+      const postArticleMap = new Map<number, { quantity: number; statusId: number; articleName: string }>();
+      for (const pa of postArticles as any[]) {
+        const paId = Number(pa.id);
+        const paQty = Number(pa.quantity);
+        const paStatusId: number = pa.status?.id ?? null;
+        const articleName = pa.article?.name ?? 'Desconocido';
+        
+        postArticleMap.set(paId, { quantity: paQty, statusId: paStatusId, articleName });
+      }
+
+      const requestedByPostArticle = new Map<number, number>();
+      for (const item of articlesArr) {
+        const articlePostId = Number((item as any).articlePostId);
+        const qty = Number((item as any).quantity);
+        
+        if (!articlePostId || isNaN(articlePostId) || articlePostId <= 0) {
+          throw new BadRequestException('Cada artículo debe tener un articlePostId válido');
+        }
+        if (!qty || isNaN(qty) || qty <= 0) {
+          throw new BadRequestException('Cada artículo debe tener una cantidad válida (> 0)');
+        }
+
+        if (!postArticleMap.has(articlePostId)) {
+          throw new BadRequestException(`El artículo solicitado (${articlePostId}) no pertenece al post indicado`);
+        }
+
+        const articleData = postArticleMap.get(articlePostId)!;
+
+        const newQuantity = Number(articleData.quantity) - qty;
+        if (newQuantity < 0) {
+          throw new BadRequestException(`La cantidad solicitada para el artículo del post (${articlePostId}) excede la disponible (${articleData.quantity})`);
+        }
+
+        if (!articleData.statusId || articleData.statusId !== statusAvalaibleArticleDonation.id) {
+          throw new BadRequestException(
+            `El artículo del post (${articlePostId}) no está disponible para donación. Artículo: ${articleData.articleName}`
+          );
+        }
+        
+        const current = requestedByPostArticle.get(articlePostId) || 0;
+        requestedByPostArticle.set(articlePostId, current + qty);
+      }
+
+      for (const [paId, totalRequested] of requestedByPostArticle.entries()) {
+        const availableData = postArticleMap.get(paId);
+        if (!availableData) {
+          throw new BadRequestException(`El artículo del post (${paId}) no fue encontrado`);
+        }
+        const available = availableData.quantity;
+        if (totalRequested > available) {
+          throw new BadRequestException(`La cantidad solicitada para el artículo del post (${paId}) excede la disponible (${available})`);
+        }
+      }
+      const donationPayload: any = {
+        lugarRecogida: createDonationDto.lugarRecogida,
+        lugarDonacion: createDonationDto.lugarDonacion ?? null,
+        comments: createDonationDto.comments ?? null,
+        fechaMaximaEntrega: createDonationDto.fechaMaximaEntrega ? new Date(createDonationDto.fechaMaximaEntrega) : null,
+        statusDonation: statusPendiente,
+        user: receiver,
+        post: { id: post.id },
+      };
+
+      const donation = this.donationRepo.create(donationPayload);
       const savedRaw = await this.donationRepo.save(donation);
-      const saved = Array.isArray(savedRaw) ? savedRaw[0] : savedRaw;
-      if(!saved){
+      const savedDonation = Array.isArray(savedRaw) ? savedRaw[0] : savedRaw;
+      if (!savedDonation) {
         throw new BadRequestException('No se pudo crear la donación');
       }
-      // Remover campos sensibles
-      if (saved.user) {
-        const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = saved.user as any;
-        saved.user = userWithoutSensitive as any;
+
+      for (const [postArticleId, totalQty] of requestedByPostArticle.entries()) {
+        await this.postDonationArticleService.addArticleToDonationFromPost(
+          { postArticleId, donationId: savedDonation.id, quantity: totalQty },
+          receiver.id,
+          false,
+        );
       }
 
-      return saved;
+      const donationWithArticles = await this.donationRepo.findOne({
+        where: { id: savedDonation.id },
+        relations:{
+          user:true,
+          statusDonation:true,
+          post:true,
+          postDonationArticlePost:{
+            postArticle:{
+              article:true
+            }
+          }
+        }});
+
+      if (!donationWithArticles) {
+        throw new BadRequestException('No se pudo recuperar la donación creada');
+      }
+
+      // Sanitizar respuesta: formato limpio del usuario
+      if (donationWithArticles.user) {
+        const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = donationWithArticles.user as any;
+        (donationWithArticles as any).user = { id, username, email, profilePhoto, emailVerified, verified, createdAt };
+      }
+
+      // Formatear artículos para respuesta limpia
+      if (donationWithArticles.postDonationArticlePost && donationWithArticles.postDonationArticlePost.length > 0) {
+        (donationWithArticles as any).articles = donationWithArticles.postDonationArticlePost.map((pda: any) => ({
+          id: pda.id,
+          quantity: pda.quantity,
+          article: pda.postArticle?.article ? {
+            id: pda.postArticle.article.id,
+            name: pda.postArticle.article.name,
+            descripcion: pda.postArticle.article.descripcion,
+          } : null,
+        }));
+        // Eliminar la relación compleja de la respuesta
+        delete (donationWithArticles as any).postDonationArticlePost;
+      }
+
+      return donationWithArticles;
     } catch (error) {
       throw error;
     }
   }
 
-  async getUserDonations(userId: number): Promise<DonationEntity[]> {
+  async getUserDonations(userId: number,currentUser?:number): Promise<DonationEntity[]> {
     try {
       if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
 
       const donations = await this.donationRepo.find({
-        where: { user: { id: userId } },
-        relations: ['user', 'statusDonation'],
-      });
-
-      // Remover campos sensibles de todos los usuarios
-      donations.forEach(donation => {
-        if (donation.user) {
-          const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
-          donation.user = userWithoutSensitive as any;
+        where: [
+          { user: { id: userId } },
+          { post: { user: { id: userId } } }
+        ],
+        relations: {
+          user:true,
+          statusDonation:true,
+          post:{
+            user:true
+          },
+          postDonationArticlePost:{
+            postArticle:{
+              article:true
+            }
+          }
         }
       });
+      const formatedDonations = donations.map(donation => this.formatDonationResponse(donation, userId));
 
-      return donations;
+      return formatedDonations;
     } catch (error) {
       throw error;
     }
   }
 
-  async getDonationsByUser(idUser: number): Promise<DonationEntity[]> {
+  async getDonationsByUser(idUser: number, currentUser?:number): Promise<DonationEntity[]> {
     try {
       return await this.getUserDonations(idUser);
     } catch (error) {
@@ -118,40 +303,53 @@ export class DonationService {
     }
   }
 
-  async updateDonation(id: number, updateDonationDto: UpdateDonationDto, currentUser?: any): Promise<DonationEntity> {
+  async updateDonation(id: number, updateDonationDto: UpdateDonationDto, currentUser?: any, admin?:boolean): Promise<DonationEntity> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
-        const donation = await this.donationRepo.findOne({
+      const donation = await this.donationRepo.findOne({
         where: { id },
-        relations: ['user', 'statusDonation'],
+        relations: {
+          user:true,
+          statusDonation:true,
+          post:{
+            user:true,
+          },
+          postDonationArticlePost:{
+            postArticle:{
+              article:true
+            }
+          }
+        },
       });
 
-      if (currentUser) {
-        const isOwner = donation?.user.id === currentUser.id;
+      if (currentUser && !admin) {
+        const isOwner = donation?.user.id === currentUser.id || donation?.post.user.id === currentUser.id;
 
         if (!isOwner) {
           throw new ForbiddenException('No tienes permiso para actualizar esta donación');
         }
       }
       if (!donation) throw new NotFoundException('Donación no encontrada');
+      
+      const statusPendiente = await this.statusDonationService.findByname('pendiente');
+      if (donation.statusDonation && statusPendiente && donation.statusDonation.id !== statusPendiente.id) {
+        throw new ForbiddenException('Solo se pueden actualizar donaciones con estado pendiente');
+      }
 
       // Actualizar campos
       Object.assign(donation, updateDonationDto);
       const updated = await this.donationRepo.save(donation);
 
       // Remover campos sensibles
-      if (updated.user) {
-        const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = updated.user as any;
-        updated.user = userWithoutSensitive as any;
-      }
+      const formatted = this.formatDonationResponse(updated, currentUser.id);
 
-      return updated;
+      return formatted;
     } catch (error) {
       throw error;
     }
   }
 
-  async deleteDonation(id: number, currentUser: any): Promise<{ message: string }> {
+  async deleteDonation(id: number, currentUser: any): Promise<{ message: string, status:number }> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
       if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
@@ -172,61 +370,119 @@ export class DonationService {
 
       // Validar estado: si no es propietario pero es admin, puede eliminar sin restricción
       if (isOwner) {
-        const completedStatus = await this.statusDonationService.findByname('completado')
+        const pendingStatus = await this.statusDonationService.findByname('pendiente')
 
-        if (donation.statusDonation && completedStatus && donation.statusDonation.id === completedStatus.id) {
-          throw new ForbiddenException('No se puede eliminar una donación con estado completado');
+        if (donation.statusDonation && pendingStatus && donation.statusDonation.id !== pendingStatus.id) {
+          throw new ForbiddenException('No se puede eliminar una donación con estado diferente a pendiente');
         }
       }
 
       await this.donationRepo.delete(id);
-      return { message: 'Donación eliminada correctamente' };
+      return { message: 'Donación eliminada correctamente', status: 200 };
     } catch (error) {
       throw error;
     }
   }
 
-  async deleteAdminDonation(id: number): Promise<{ message: string }> {
+  async deleteAdminDonation(id: number): Promise<{ message: string, status:number }> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
 
-      const donation = await this.donationRepo.findOne({ where: { id } });
+      const donation = await this.donationRepo.findOne({ 
+        where: { id } ,
+        relations:{
+          statusDonation:true
+        }
+      });
       if (!donation) throw new NotFoundException('Donación no encontrada');
+      
+      const statusPendiente = await this.statusDonationService.findByname('pendiente');
+      if (donation.statusDonation && statusPendiente && donation.statusDonation.id !== statusPendiente.id) {
+        throw new ForbiddenException('Solo se pueden eliminar donaciones con estado pendiente');
+      }
 
       await this.donationRepo.delete(id);
-      return { message: 'Donación eliminada correctamente por admin' };
+      return { message: 'Donación eliminada correctamente por admin', status: 200 };
     } catch (error) {
       throw error;
     }
   }
 
-  async changeStatus(donationId: number, newStatus: number, currentUser?: any): Promise<DonationEntity> {
+  async changeStatus(donationId: number, newStatus: number, currentUser?: any, admin?:boolean): Promise<DonationEntity> {
     try {
       if (!donationId) throw new BadRequestException('El id de la donación es obligatorio');
       if (!newStatus) throw new BadRequestException('El estado es obligatorio');
 
       const donation = await this.donationRepo.findOne({
         where: { id: donationId },
-        relations: ['user', 'statusDonation'],
+        relations: {
+          user:true,
+          statusDonation:true,
+          post:{
+            user:true,
+          },
+          postDonationArticlePost:{
+            postArticle:{
+              article:true
+            }
+          }
+        },
       });
       if (!donation) throw new NotFoundException('Donación no encontrada');
 
       const statusEntity = await this.statusDonationService.findById(newStatus);
       if (!statusEntity) throw new NotFoundException('Estado no encontrado en la base de datos');
 
-      if (currentUser) {
-        const isOwner = donation.user && currentUser && donation.user.id === currentUser.id;
+      if (currentUser && !admin) {
+        const isOwner = donation.post.user && currentUser && donation.post.user.id === currentUser.id;
         if (!isOwner) throw new ForbiddenException('No tienes permiso para cambiar el estado');
+      }
+      const statusDeclined = await this.statusDonationService.findByname('rechazada');
+      const statusPending = await this.statusDonationService.findByname('pendiente');
+      const statusCanceled = await this.statusDonationService.findByname('cancelada');
+      
+      if (donation.statusDonation.id === statusDeclined.id || donation.statusDonation.id === statusCanceled.id) {
+        throw new BadRequestException('No se puede cambiar el estado de una donación que ya ha sido rechazada o cancelada.');
+      }
+      
+      if (donation.statusDonation.id === statusPending.id && statusEntity.id === statusPending.id) {
+        throw new BadRequestException('La donación ya se encuentra en estado pendiente.');
+      }
+      
+      if (donation.statusDonation.id !== statusPending.id && statusEntity.id === statusPending.id) {
+        throw new BadRequestException('No se puede cambiar una donación de vuelta a estado pendiente.');
+      }
+      
+      if (donation.statusDonation.id === statusPending.id && 
+          statusEntity.id !== statusDeclined.id && 
+          statusEntity.id !== statusCanceled.id) {
+        for (const pda of donation.postDonationArticlePost as any[]) {
+          const postArticleId = pda.postArticle?.id;
+          if (!postArticleId) continue;
+          
+          const cantidadActual = Number(pda.postArticle.quantity);
+          const cantidadDonada = Number(pda.quantity);
+          const nuevaCantidad = cantidadActual - cantidadDonada;
+          
+          console.log('Cantidad actual:', cantidadActual, 'Cantidad donada:', cantidadDonada, 'Nueva cantidad:', nuevaCantidad);
+          
+          if (nuevaCantidad < 0) {
+            throw new BadRequestException('Error: no se puede actualizar el estado de la donación porque la cantidad donada excede la cantidad actual del artículo.');
+          }
+          
+          await this.postArticleService.asignNewQuantity(postArticleId, nuevaCantidad);
+          
+          if (nuevaCantidad <= 0) {
+            await this.postArticleService.asignUnvalaiblesStatus(postArticleId);
+          }
+        }
       }
 
       const oldStatus = donation.statusDonation?.status ?? null;
       donation.statusDonation = statusEntity;
       const updated = await this.donationRepo.save(donation);
-      if (updated.user) {
-        const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = updated.user as any;
-        updated.user = userWithoutSensitive;
-      }
-      return updated;
+      const formatted = this.formatDonationResponse(updated, currentUser.id);
+      return formatted;
     } catch (error) {
       throw error;
     }
@@ -236,11 +492,16 @@ export class DonationService {
     try {
       if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
 
-      const userId =filters.userId ? filters.userId : currentUser.id;
+      const userId = filters.userId ? filters.userId : currentUser.id;
 
       let query = this.donationRepo.createQueryBuilder('d')
         .leftJoinAndSelect('d.user', 'user')
-        .leftJoinAndSelect('d.statusDonation', 'statusDonation');
+        .leftJoinAndSelect('d.statusDonation', 'statusDonation')
+        .leftJoinAndSelect('d.post', 'post')
+        .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('d.postDonationArticlePost', 'postDonationArticlePost')
+        .leftJoinAndSelect('postDonationArticlePost.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article');
 
       // Filtro por usuario
       query = query.where('d.userId = :userId', { userId });
@@ -288,15 +549,9 @@ export class DonationService {
 
       const donations = await query.getMany();
 
-      // Remover campos sensibles
-      donations.forEach(donation => {
-        if (donation.user) {
-          const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
-          donation.user = userWithoutSensitive as any;
-        }
-      });
-
-      return donations;
+      // Formatear todas las donaciones usando la función reutilizable
+      const formatted = donations.map(donation => this.formatDonationResponse(donation, currentUser.id));
+      return formatted;
     } catch (error) {
       throw error;
     }

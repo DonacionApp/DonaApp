@@ -42,12 +42,11 @@ export class DonationController {
   async getMyDonations(@Req() req: any) {
     try {
       const user = req.user;
-      return await this.donationService.getUserDonations(user.id);
+      return await this.donationService.getUserDonations(user.id, user.id);
     } catch (error) {
       throw error;
     }
   }
-
   // get /donation/users/:idUser - Obtener donaciones de un usuario específico
   @Get('users/:idUser')
   async getDonationsByUser(@Param('idUser') idUser: number) {
@@ -59,7 +58,7 @@ export class DonationController {
     }
   }
 
-  // post /donation/:id - Actualizar una donación (owner/admin)
+  // post /donation/:id - Actualizar una donación (owner)
   @UseGuards(JwtAuthGuard)
   @Post('/update/:id')
   async updateDonation(@Param('id') id: number, @Body() updateDonationDto: UpdateDonationDto, @Req() req: any) {
@@ -75,9 +74,10 @@ export class DonationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post('admin/update/:id')
-  async adminUpdateDonation(@Param('id') id:number, @Body() updateDonationDto:UpdateDonationDto):Promise<any>{
+  async adminUpdateDonation(@Param('id') id:number,@Req() req: any, @Body() updateDonationDto:UpdateDonationDto):Promise<any>{
     try {
-      return await this.donationService.updateDonation(id, updateDonationDto);
+      const user = req.user;
+      return await this.donationService.updateDonation(id, updateDonationDto, user, true);
     } catch (error) {
       throw error;
     }
@@ -126,10 +126,11 @@ export class DonationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post(':id/status/admin')
-  async updateStatusAdmin(@Param('id') id: number, @Body() body: UpdateStatusDto) {
+  async updateStatusAdmin(@Param('id') id: number,@Req() req: any, @Body() body: UpdateStatusDto) {
     try {
+      const user = req.user;
       const donationId = Number(id);
-      return await this.donationService.changeStatus(donationId, body.status);
+      return await this.donationService.changeStatus(donationId, body.status, user, true);
     } catch (error) {
       throw error;
     }

@@ -7,8 +7,9 @@ export class NotifyEntity{
     @PrimaryGeneratedColumn()
     id:number;
     @Column({type:'varchar', nullable:false})
+    title:string;
+    @Column({type:'varchar', nullable:false})
     message:string;
-    
     @ManyToOne(()=>TypeNotifyEntity,(type)=>type.notify, {onDelete:'CASCADE', nullable:false})
     type:TypeNotifyEntity;
     @OneToMany(()=>UserNotifyEntity,(userNotify)=>userNotify.notify)

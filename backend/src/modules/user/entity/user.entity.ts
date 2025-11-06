@@ -1,11 +1,12 @@
 import { AuditEntity } from "src/modules/audit/entity/audit.entity";
+import { CommentSupportIdEntity } from "src/modules/commentSupportId/entity/comment.supportid.entity";
 import { DonationEntity } from "src/modules/donation/entity/donation.entity";
 import { PeopleEntity } from "src/modules/people/entity/people.entity";
 import { PostEntity } from "src/modules/post/entity/post.entity";
 import { PostLikedEntity } from "src/modules/postLiked/entity/post.liked.entity";
 import { ReportEntity } from "src/modules/report/entity/report.entity";
 import { RolEntity } from "src/modules/rol/entity/rol.entity";
-import { UserChatEntity } from "src/modules/userchat/entity/user.chat.entity";
+import { UserArticleEntity } from "src/modules/userarticle/entity/useraticle.entity";
 import { UserNotifyEntity } from "src/modules/userNotify/entity/user.notify.entity";
 import { UserSystemEntity } from "src/modules/usersystem/entity/user.system.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
@@ -40,6 +41,7 @@ export class UserEntity{
     code:string | null;
     @Column({type:'boolean', default:true})
     block:boolean;
+
     @OneToOne(()=>PeopleEntity,(people)=>people.user, {onDelete:'CASCADE', nullable:false})
     @JoinColumn()
     people:PeopleEntity;
@@ -49,8 +51,6 @@ export class UserEntity{
     notifyUser:UserNotifyEntity[];
     @OneToMany(()=>PostEntity,(post)=>post.user)
     post:PostEntity[];
-    @OneToMany(()=>UserChatEntity,(userChat)=>userChat.user)
-    userChat:UserChatEntity[];
     @OneToMany(()=>DonationEntity,(donation)=>donation.user)
     donation:DonationEntity[];
     @OneToMany(()=>ReportEntity,(report)=>report.user)
@@ -61,6 +61,10 @@ export class UserEntity{
     userSystem:UserSystemEntity[];
     @OneToMany(()=>PostLikedEntity,(postLiked)=>postLiked.user)
     postLiked:PostLikedEntity[];
+    @OneToMany(()=>UserArticleEntity,(userArticle)=>userArticle.user)
+    userArticle:UserArticleEntity[];
+    @OneToMany(()=>CommentSupportIdEntity,(commentSupport)=>commentSupport.user)
+    commentSupportId: CommentSupportIdEntity[];
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;

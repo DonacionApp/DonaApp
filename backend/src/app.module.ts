@@ -26,6 +26,13 @@ import { PostlikedModule } from './modules/postLiked/postliked.module';
 import { NotifyModule } from './modules/notify/notify.module';
 import { UserNotifyModule } from './modules/userNotify/usernotify.module';
 import { IaModule } from './core/ia/ia.module';
+import { ArticleModule } from './modules/article/article.module';
+import { UserarticleModule } from './modules/userarticle/userarticle.module';
+import { PostdonationarticleModule } from './modules/postdonationarticle/postdonationarticle.module';
+import { PostarticleModule } from './modules/postarticle/postarticle.module';
+import { StatusarticledonationModule } from './modules/statusarticledonation/statusarticledonation.module';
+import { StatussupportidModule } from './modules/statussupportid/statussupportid.module';
+import { CommentsupportidModule } from './modules/commentSupportId/commentsupportid.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -69,6 +76,13 @@ import { IaModule } from './core/ia/ia.module';
   NotifyModule,
   UserNotifyModule,
   IaModule,
+  ArticleModule,
+  UserarticleModule,
+  PostdonationarticleModule,
+  PostarticleModule,
+  StatusarticledonationModule,
+  StatussupportidModule,
+  CommentsupportidModule,
 ],
   controllers: [AppController],
   providers: [AppService],

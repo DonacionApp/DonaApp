@@ -11,6 +11,8 @@ export class UserNotifyEntity{
     user:UserEntity;
     @ManyToOne(()=>NotifyEntity,(notify)=>notify.userNotify, {onDelete:'CASCADE', nullable:false})
     notify:NotifyEntity;
+    @Column({type:'boolean', default: false})
+    read:boolean;
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;
