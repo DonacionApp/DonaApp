@@ -65,7 +65,8 @@ export class PostService {
                     postArticle:{
                         article:true,
                         status:true
-                    }
+                    },
+                    typePost:true
                 }
             });
             userId = Number(userId);
@@ -251,7 +252,8 @@ export class PostService {
                 .leftJoinAndSelect('post.postLiked', 'postLiked')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
-                .leftJoinAndSelect('postArticle.status', 'status');
+                .leftJoinAndSelect('postArticle.status', 'status')
+                .leftJoinAndSelect('post.typePost', 'typePost');
 
             if (cursor && cursor > 0) {
                 query.andWhere('post.id < :cursor', { cursor });
@@ -354,7 +356,8 @@ export class PostService {
                     postArticle: {
                         article: true,
                         status: true
-                    }
+                    },
+                    typePost:true
                 }
             });
             userRequest = Number(userRequest);
@@ -546,7 +549,11 @@ export class PostService {
                 .leftJoinAndSelect('post.imagePost', 'imagePost')
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
-                .leftJoinAndSelect('post.postLiked', 'postLiked');
+                .leftJoinAndSelect('post.postArticle', 'postArticle')
+                .leftJoinAndSelect('postArticle.article', 'article')
+                .leftJoinAndSelect('postArticle.status', 'status')
+                .leftJoinAndSelect('post.postLiked', 'postLiked')
+                .leftJoinAndSelect('post.typePost', 'typePost');
             if (filters.userName) {
                 queryBuilder.andWhere('user.username ILIKE :userName', { userName: `%${filters.userName}%` });
             }

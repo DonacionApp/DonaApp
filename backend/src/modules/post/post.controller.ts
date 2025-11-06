@@ -33,7 +33,7 @@ export class PostController {
     }
 
     @UseGuards(OptionalJwtAuthGuard)
-    @Get('/all/filters')
+    @Post('/all/filters')
     async getPostsByFilters(@Body() filters: PostFilterDto, @Req() req:any): Promise<any> {
         const userFromToken = req && req.user ? req.user : null;
         const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
