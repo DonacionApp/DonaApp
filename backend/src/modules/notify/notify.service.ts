@@ -9,6 +9,7 @@ import { UserService } from "../user/user.service";
 import { UpdateNotifyDto } from "./dto/update.notify.dto";
 import { title } from "process";
 import { NotifyGateway } from "./notify.gateway";
+import { read } from "fs";
 
 @Injectable()
 export class NotifyService {
@@ -84,7 +85,7 @@ export class NotifyService {
    async createNotify(dto: CreateNotifyDto): Promise<NotifyEntity> {
       try {
          if (!dto) throw new BadRequestException('Los datos son obligatorios');
-         const { message, typeNotifyId } = dto;
+         const { message, typeNotifyId, title } = dto;
          if (!message || message.trim().length === 0) throw new BadRequestException('El mensaje es obligatorio');
          if(!title || title.trim().length ===0) throw new BadRequestException('El título es obligatorio');
          if (!typeNotifyId || typeNotifyId <= 0) throw new BadRequestException('El id de tipo de notificación es inválido');
@@ -156,7 +157,7 @@ export class NotifyService {
                notify.userNotify = notify.userNotify.map(userNotify => {
                   if (userNotify.user) {
                      const { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } = userNotify.user as any;
-                     userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt } as any;
+                     userNotify.user = { id, username, email, profilePhoto, emailVerified, verified, createdAt, updatedAt, read } as any;
                   }
                   return userNotify;
                });
