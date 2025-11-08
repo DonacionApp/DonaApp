@@ -23,7 +23,7 @@ export class RefreshTokenMiddleware implements NestMiddleware {
         this.jwtService.verify(token);
       } catch (error) {
         if (error.name === 'TokenExpiredError') {
-          console.log('🔄 Token expirado detectado - Refrescando automáticamente...');
+          console.log('Token expirado detectado - Refrescando automáticamente...');
 
           try {
             const decoded = this.jwtService.decode(token) as any;
@@ -54,9 +54,9 @@ export class RefreshTokenMiddleware implements NestMiddleware {
             req.headers['authorization'] = `Bearer ${newToken}`;
             res.setHeader('X-New-Token', newToken);
 
-            console.log('✅ Token refrescado exitosamente para usuario:', user.username);
+            console.log('Token refrescado exitosamente para usuario:', user.username);
           } catch (refreshError) {
-            console.error('❌ Error al refrescar token:', refreshError);
+            console.error(' Error al refrescar token:', refreshError);
           }
         }
       }
