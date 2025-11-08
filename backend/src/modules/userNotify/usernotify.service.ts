@@ -6,6 +6,7 @@ import { UserService } from "../user/user.service";
 import { UserEntity } from "../user/entity/user.entity";
 import { NotifyEntity } from "../notify/entity/notify.entity";
 import { NotifyService } from "../notify/notify.service";
+import { FiltersNotifyDto } from "./dto/filters.notify.dto";
 
 @Injectable()
 export class UserNotifyService {
@@ -72,43 +73,7 @@ export class UserNotifyService {
       }
    }
 
-   async getMyNotifications(userId: number): Promise<NotifyEntity[]> {
-      try {
-         if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
-            throw new BadRequestException('El id de usuario es inválido');
-         }
-         userId = Number(userId);
-
-         await this.userService.findById(userId);
-
-         const userNotifications = await this.userNotifyRepository.find({
-            where: { user: { id: userId } },
-            relations: {
-               notify: {
-                  type: true
-               }
-            },
-            order: {
-               createdAt: 'DESC'
-            }
-         });
-
-         if (!userNotifications || userNotifications.length === 0) {
-            throw new NotFoundException('El usuario no tiene notificaciones');
-         }
-         console.log('read values:', userNotifications.map(un => un.read));
-
-         const notifications = userNotifications.map((userNotify) => {
-            return {
-               ...userNotify.notify, read: userNotify.read
-            };
-         });
-
-         return notifications;
-      } catch (error) {
-         throw error;
-      }
-   }
+   
 
    async getMyNotificationById(userId: number, notifyId: number): Promise<NotifyEntity> {
       try {
@@ -239,6 +204,67 @@ export class UserNotifyService {
             status: 200,
             updated: affected
          };
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async getMyNotifications(userId:number, filters?:FiltersNotifyDto):Promise<NotifyEntity[]>{
+      try {
+         if(!userId || isNaN(Number(userId)) || Number(userId) <= 0){
+            throw new BadRequestException('El id de usuario es inválido');
+         }
+         userId=Number(userId);
+         await this.userService.findById(userId);
+         const f: FiltersNotifyDto = (filters as FiltersNotifyDto) || {} as any;
+         const queryBuilder = this.userNotifyRepository.createQueryBuilder('userNotify')
+            .leftJoinAndSelect('userNotify.notify', 'notify')
+            .leftJoinAndSelect('notify.type', 'type')
+            .leftJoinAndSelect('userNotify.user','user')
+            .where('userNotify.userId = :userId', { userId });
+         if(f.read!==undefined){
+            queryBuilder.andWhere('userNotify.read = :read', { read: f.read });
+         }
+         if(f.type!==undefined){
+            queryBuilder.andWhere('type.id = :typeId', { typeId: f.type });
+         }
+         if(f.search){
+            queryBuilder.andWhere('(notify.message ILIKE :search OR notify.title ILIKE :search)', { search: `%${f.search}%` });
+         }
+         queryBuilder.orderBy('notify.createdAt', 'DESC');
+         if( f.minDate){
+            queryBuilder.andWhere('notify.createdAt >= :minDate', { minDate: f.minDate });
+         }
+         if( f.maxDate){
+            queryBuilder.andWhere('notify.createdAt <= :maxDate', { maxDate: f.maxDate });
+         }
+         const userNotifications = await queryBuilder.getMany();
+         if (!userNotifications || userNotifications.length === 0) {
+            throw new NotFoundException('El usuario no tiene notificaciones');
+         }
+         const notifications = userNotifications.map((un) => {
+            const u:any = un.user || {};
+            const sanitizedUser = {
+               id: u.id,
+               username: u.username,
+               email: u.email,
+               profilePhoto: u.profilePhoto,
+               emailVerified: u.emailVerified,
+               verified: u.verified,
+               lastLogin: u.lastLogin,
+               createdAt: u.createdAt,
+            };
+            return {
+               id: un.notify?.id,
+               title: un.notify?.title,
+               message: un.notify?.message,
+               type: un.notify?.type ? { id: un.notify.type.id, type: un.notify.type.type } : null,
+               read: un.read,
+               user: sanitizedUser,
+               createdAt: un.notify?.createdAt,
+            } as any;
+         });
+         return notifications as any;
       } catch (error) {
          throw error;
       }
