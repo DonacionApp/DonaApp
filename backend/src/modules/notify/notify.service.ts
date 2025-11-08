@@ -10,6 +10,8 @@ import { UpdateNotifyDto } from "./dto/update.notify.dto";
 import { title } from "process";
 import { NotifyGateway } from "./notify.gateway";
 import { read } from "fs";
+import { UserNotifyEntity } from "src/modules/userNotify/entity/user.notify.entity";
+import { UserEntity } from "src/modules/user/entity/user.entity";
 
 @Injectable()
 export class NotifyService {
@@ -100,10 +102,12 @@ export class NotifyService {
          if (uniqueUserIds.length === 0) throw new BadRequestException('La lista de usuarios es inválida');
          const validUsers = await this.userNotifyService.validateUsersExist(uniqueUserIds);
          if (validUsers.length === 0) throw new NotFoundException('Ninguno de los usuarios especificados existe');
+         const cleanLink = dto.link?.trim();
          const notify = this.notifyRepository.create({
-            title: title,
-            message: message,
+            title: title.trim(),
+            message: message.trim(),
             type: typeNotify,
+            ...(cleanLink ? { link: cleanLink } : {}),
          });
          const savedNotify = await this.notifyRepository.save(notify);
          await this.userNotifyService.assignToUsers(savedNotify.id, uniqueUserIds);
@@ -115,6 +119,7 @@ export class NotifyService {
             message: findNotify.message,
             type: findNotify.type,
             createdAt: findNotify.createdAt,
+            link: findNotify.link || null,
             data: {
                notificationId: findNotify.id,
                typeId: findNotify.type.id,
@@ -284,6 +289,72 @@ export class NotifyService {
          return {
             message: 'Notificación eliminada exitosamente'
          };
+      } catch (error) {
+         throw error;
+      }
+   }
+
+   async createNotifyForAllUsers(dto: CreateNotifyDto): Promise<NotifyEntity> {
+      try {
+             if (!dto) throw new BadRequestException('Los datos son obligatorios');
+             const { message, typeNotifyId, title } = dto;
+             if (!message || message.trim().length === 0) throw new BadRequestException('El mensaje es obligatorio');
+             if (!title || title.trim().length === 0) throw new BadRequestException('El título es obligatorio');
+             if (!typeNotifyId || typeNotifyId <= 0) throw new BadRequestException('El id de tipo de notificación es inválido');
+
+             const typeNotify = await this.typeNotifyService.getById(typeNotifyId);
+             if (!typeNotify) throw new NotFoundException('El tipo de notificación no existe');
+
+             const userRepo = this.notifyRepository.manager.getRepository(UserEntity);
+             const rawIds = await userRepo.createQueryBuilder('u')
+                .select('u.id', 'id')
+                .getRawMany();
+             const allUserIds: number[] = rawIds.map(r => Number(r.id)).filter(id => id > 0);
+             if (allUserIds.length === 0) throw new NotFoundException('No hay usuarios para notificar');
+
+             const savedNotify = await this.notifyRepository.manager.transaction(async (manager) => {
+                const cleanLink = dto.link?.trim();
+                const notify = manager.create(NotifyEntity, { 
+                   title: title.trim(), 
+                   message: message.trim(), 
+                   type: typeNotify, 
+                   ...(cleanLink ? { link: cleanLink } : {})
+                });
+                const persisted = await manager.save(NotifyEntity, notify);
+                const chunkSize = 1000;
+                for (let i = 0; i < allUserIds.length; i += chunkSize) {
+                   const chunk = allUserIds.slice(i, i + chunkSize);
+                   const values = chunk.map(uid => ({ user: { id: uid }, notify: { id: persisted.id }, read: false }));
+                   await manager.createQueryBuilder()
+                      .insert()
+                      .into(UserNotifyEntity)
+                      .values(values as any)
+                      .execute();
+                }
+
+                return persisted;
+             });
+
+             const payload = {
+                id: savedNotify.id,
+                title: savedNotify.title,
+                message: savedNotify.message,
+                type: typeNotify,
+                createdAt: savedNotify.createdAt,
+                link: savedNotify.link || null,
+                data: {
+                   notificationId: savedNotify.id,
+                   typeId: typeNotify.id,
+                   typeName: typeNotify.type,
+                }
+             };
+             const emitChunk = 5000;
+             for (let i = 0; i < allUserIds.length; i += emitChunk) {
+                const usersChunk = allUserIds.slice(i, i + emitChunk);
+                this.notifyGateway.sendNotificationToUsers(usersChunk, payload);
+             }
+
+             return await this.findById(savedNotify.id);
       } catch (error) {
          throw error;
       }

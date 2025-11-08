@@ -13,8 +13,6 @@ export class UserNotifyEntity{
     notify:NotifyEntity;
     @Column({type:'boolean', default: false})
     read:boolean;
-    @Column({type:'varchar', length:500, nullable:true})
-    link:string;
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;

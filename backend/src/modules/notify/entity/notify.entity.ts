@@ -10,6 +10,8 @@ export class NotifyEntity{
     title:string;
     @Column({type:'varchar', nullable:false})
     message:string;
+    @Column({type:'varchar', length:500, nullable:true})
+    link:string;
     @ManyToOne(()=>TypeNotifyEntity,(type)=>type.notify, {onDelete:'CASCADE', nullable:false})
     type:TypeNotifyEntity;
     @OneToMany(()=>UserNotifyEntity,(userNotify)=>userNotify.notify)
