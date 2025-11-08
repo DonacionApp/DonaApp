@@ -17,6 +17,8 @@ export class DonationEntity{
     comments:any | null;
     @Column({type:'date', nullable:true})
     fechaMaximaEntrega:Date | null;
+    @Column({type:'boolean', default:false})
+    incrementDate:boolean;
     @ManyToOne(()=>PostEntity,(post)=>post.donation, {onDelete:'CASCADE', nullable:false})
     post:PostEntity;
     @ManyToOne(()=>UserEntity,(user)=>user.donation, {onDelete:'CASCADE', nullable:false})

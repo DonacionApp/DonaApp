@@ -35,7 +35,8 @@ export class DonationService {
           user:true,
           statusDonation:true,
           post:{
-            user:true
+            user:true,
+            typePost:true
           },
           postDonationArticlePost:{
             postArticle:{
@@ -70,20 +71,28 @@ export class DonationService {
       updatedAt: donation.updatedAt,
     };
 
-    if (donation.user) {
-      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = donation.user as any;
-      formatted.beneficiary = { id, username, email, profilePhoto, emailVerified, verified, createdAt };
-    } else {
-      formatted.beneficiary = null;
-    }
+    // Determinar si el tipo de post invierte roles (solicitud de donacion)
+    const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+    const isSolicitudDonacion = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
 
-    if (donation.post && donation.post.user) {
-      const pu = donation.post.user as any;
-      
-      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = pu;
-      formatted.donator = { id, username, email, profilePhoto, emailVerified, verified, createdAt };
+    const rawBeneficiaryUser = donation.user as any; // usuario directamente ligado a la donación
+    const rawPostOwnerUser = donation.post?.user as any; // usuario que creó el post
+
+    // Helper para formatear usuario
+    const formatUser = (u: any) => {
+      if (!u) return null;
+      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = u;
+      return { id, username, email, profilePhoto, emailVerified, verified, createdAt };
+    };
+
+    if (isSolicitudDonacion) {
+      // En solicitudes de donación: donator = donation.user, beneficiary = post.user
+      formatted.donator = formatUser(rawBeneficiaryUser);
+      formatted.beneficiary = formatUser(rawPostOwnerUser);
     } else {
-      formatted.donator = null;
+      // Caso normal: beneficiary = donation.user, donator = post.user
+      formatted.beneficiary = formatUser(rawBeneficiaryUser);
+      formatted.donator = formatUser(rawPostOwnerUser);
     }
     if(userId && donation.post.user){
       const owner = donation.post?.user?.id === userId;
@@ -226,7 +235,10 @@ export class DonationService {
         relations:{
           user:true,
           statusDonation:true,
-          post:true,
+          post:{
+            user:true,
+            typePost:true
+          },
           postDonationArticlePost:{
             postArticle:{
               article:true
@@ -278,7 +290,8 @@ export class DonationService {
           user:true,
           statusDonation:true,
           post:{
-            user:true
+            user:true,
+            typePost:true
           },
           postDonationArticlePost:{
             postArticle:{
@@ -313,6 +326,7 @@ export class DonationService {
           statusDonation:true,
           post:{
             user:true,
+            typePost:true,
           },
           postDonationArticlePost:{
             postArticle:{
@@ -420,6 +434,7 @@ export class DonationService {
           statusDonation:true,
           post:{
             user:true,
+            typePost:true,
           },
           postDonationArticlePost:{
             postArticle:{
@@ -499,6 +514,7 @@ export class DonationService {
         .leftJoinAndSelect('d.statusDonation', 'statusDonation')
         .leftJoinAndSelect('d.post', 'post')
         .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('post.typePost', 'typePost')
         .leftJoinAndSelect('d.postDonationArticlePost', 'postDonationArticlePost')
         .leftJoinAndSelect('postDonationArticlePost.postArticle', 'postArticle')
         .leftJoinAndSelect('postArticle.article', 'article');
@@ -552,6 +568,35 @@ export class DonationService {
       // Formatear todas las donaciones usando la función reutilizable
       const formatted = donations.map(donation => this.formatDonationResponse(donation, currentUser.id));
       return formatted;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async incrementDonationDate(id:number, currentUser:number, admin?:boolean):Promise<DonationEntity>{
+    try {
+        if(!id || id<=0 || isNaN(id)|| id===undefined) throw new BadRequestException('El id de la donación es obligatorio y debe ser válido');
+        if(!currentUser || currentUser<=0 || isNaN(currentUser)|| currentUser===undefined) throw new ForbiddenException('Usuario no autenticado');
+        const donation= await this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.post','post')
+        .leftJoinAndSelect('post.user','postUser')
+        .leftJoinAndSelect('post.typePost','postTypePost')
+        .where('donation.id=:id',{id})
+        .getOne();
+        if(!donation) throw new NotFoundException('Donación no encontrada');
+        if(currentUser && !admin){
+          const isOwner = donation.post.user && currentUser && donation.post.user.id === currentUser;
+          if(!isOwner) throw new ForbiddenException('No tienes permiso para actualizar esta donación');
+        }
+        const currentDate= new Date();
+        const nuevaFehcha= new Date(donation.fechaMaximaEntrega?.getDate()!);
+        nuevaFehcha.setDate(nuevaFehcha.getDate()+10);
+        donation.fechaMaximaEntrega= nuevaFehcha;
+        (donation as any).incrementDate= true;
+        const updatedDonation= await this.donationRepo.save(donation);
+        const formatted= this.formatDonationResponse(updatedDonation, currentUser);
+        return formatted;
+        
     } catch (error) {
       throw error;
     }
