@@ -60,20 +60,19 @@ export class UserNotifyService {
          if (!notifyId || notifyId <= 0) {
             throw new BadRequestException('El id de notificación es inválido');
          }
-
-         const userNotifications = await this.userNotifyRepository.find({
-            where: { notify: { id: notifyId } }
-         });
-
+         const userNotifications = await this.userNotifyRepository.find({ where: { notify: { id: notifyId } } });
          if (userNotifications.length > 0) {
             await this.userNotifyRepository.remove(userNotifications);
+         }
+         const remaining = await this.userNotifyRepository.count({ where: { notify: { id: notifyId } } });
+         if (remaining === 0) {
+            const notifyRepo = this.userNotifyRepository.manager.getRepository(NotifyEntity);
+            await notifyRepo.delete(notifyId);
          }
       } catch (error) {
          throw error;
       }
    }
-
-   
 
    async getMyNotificationById(userId: number, notifyId: number): Promise<NotifyEntity> {
       try {
