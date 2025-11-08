@@ -99,9 +99,9 @@ export class UserNotifyService {
          console.log('read values:', userNotifications.map(un => un.read));
 
          const notifications = userNotifications.map((userNotify) => {
-           return{
-            ...userNotify.notify, read: userNotify.read
-           };
+            return {
+               ...userNotify.notify, read: userNotify.read
+            };
          });
 
          return notifications;
@@ -216,4 +216,32 @@ export class UserNotifyService {
          throw error;
       }
    }
+
+   async markAllAsRad(userId: number, admin?: boolean): Promise<{ message: string, status: number, updated: number }> {
+      try {
+         const parsedUserId = Number(userId);
+         if (!parsedUserId || isNaN(parsedUserId) || parsedUserId <= 0) {
+            throw new BadRequestException('El id de usuario es inválido');
+         }
+         await this.userService.findById(parsedUserId);
+         const updateResult = await this.userNotifyRepository.createQueryBuilder()
+            .update(UserNotifyEntity)
+            .set({ read: true })
+            .where('userId = :userId', { userId: parsedUserId })
+            .andWhere('read = :read', { read: false })
+            .execute();
+
+         const affected = updateResult.affected ?? 0;
+         return {
+            message: affected > 0
+               ? `Se marcaron ${affected} notificaciones como leídas`
+               : 'No había notificaciones pendientes por marcar',
+            status: 200,
+            updated: affected
+         };
+      } catch (error) {
+         throw error;
+      }
+   }
+
 }
