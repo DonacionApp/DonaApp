@@ -60,6 +60,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
                 .leftJoinAndSelect('postArticle.status', 'status')
@@ -86,8 +87,9 @@ export class PostService {
             }
 
             if (post.user) {
+                const roleName = (post.user as any).rol?.rol;
                 const { id: uid, username, profilePhoto, emailVerified, verified, createdAt } = post.user as any;
-                post.user = { id: uid, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                post.user = { id: uid, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
             }
 
             // mapear userHasLiked a booleano y limpiar propiedad interna
@@ -265,6 +267,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postLiked', 'postLiked')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
@@ -303,8 +306,9 @@ export class PostService {
 
             const postsWithUserInfo = posts.map(post => {
                 if (post.user) {
+                    const roleName = (post.user as any).rol?.rol;
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
-                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
                 }
 
                 if (userId && userId > 0) {
@@ -364,6 +368,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
                 .leftJoinAndSelect('postArticle.status', 'status')
@@ -389,8 +394,9 @@ export class PostService {
 
             posts = posts.map(p => {
                 if (p.user) {
+                    const roleName = (p.user as any).rol?.rol;
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = p.user as any;
-                    p.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                    p.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
                 }
                 const internalCount = (p as any)._userHasLikedCount;
                 if (internalCount !== undefined) {
