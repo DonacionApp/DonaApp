@@ -347,15 +347,19 @@ export class DonationService {
           }
         },
       });
+      if (!donation) throw new NotFoundException('Donación no encontrada');
 
+      // Permisos: dueño depende del tipo de publicación
       if (currentUser && !admin) {
-        const isOwner = donation?.user.id === currentUser.id || donation?.post.user.id === currentUser.id;
-
+        const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+        const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+        const ownerUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+        const currentId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+        const isOwner = ownerUserId && currentId && Number(ownerUserId) === Number(currentId);
         if (!isOwner) {
           throw new ForbiddenException('No tienes permiso para actualizar esta donación');
         }
       }
-      if (!donation) throw new NotFoundException('Donación no encontrada');
       
       const statusPendiente = await this.statusDonationService.findByname('pendiente');
       if (donation.statusDonation && statusPendiente && donation.statusDonation.id !== statusPendiente.id) {
@@ -382,19 +386,26 @@ export class DonationService {
 
       const donation = await this.donationRepo.findOne({
         where: { id },
-        relations: ['user', 'statusDonation'],
+        relations: {
+          user: true,
+          statusDonation: true,
+          post: { user: true, typePost: true },
+        },
       });
 
       if (!donation) throw new NotFoundException('Donación no encontrada');
 
-      // Validar permisos
-      const isOwner = donation.user.id === currentUser.id;
+  const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+  const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+  const ownerUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+  const currentId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+  const isOwner = ownerUserId && currentId && Number(ownerUserId) === Number(currentId);
 
       if (!isOwner) {
         throw new ForbiddenException('No tienes permiso para eliminar esta donación');
       }
 
-      // Validar estado: si no es propietario pero es admin, puede eliminar sin restricción
+      // Validar estado: solo si es propietario
       if (isOwner) {
         const pendingStatus = await this.statusDonationService.findByname('pendiente')
 
@@ -461,7 +472,11 @@ export class DonationService {
       if (!statusEntity) throw new NotFoundException('Estado no encontrado en la base de datos');
 
       if (currentUser && !admin) {
-        const isOwner = donation.post.user && currentUser && donation.post.user.id === currentUser.id;
+        const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+        const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+        const ownerUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+        const currentId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+        const isOwner = ownerUserId && currentId && Number(ownerUserId) === Number(currentId);
         if (!isOwner) throw new ForbiddenException('No tienes permiso para cambiar el estado');
       }
       const statusDeclined = await this.statusDonationService.findByname('rechazada');

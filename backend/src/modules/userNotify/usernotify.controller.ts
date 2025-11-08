@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards } from "@nestjs/common";
 import { UserNotifyService } from "./usernotify.service";
 import { JwtAuthGuard } from "src/shared/guards/jwt-auth.guard";
+import { filter } from "rxjs";
 
 @Controller('user-notify')
 export class UserNotifyController {
@@ -31,7 +32,7 @@ export class UserNotifyController {
          throw new BadRequestException('Usuario no identificado');
       }
 
-      return await this.userNotifyService.getMyNotifications(userId);
+      return await this.userNotifyService.getMyNotifications(userId, filters);
    }
 
    @UseGuards(JwtAuthGuard)
