@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards } from "@nestjs/common";
 import { UserNotifyService } from "./usernotify.service";
 import { JwtAuthGuard } from "src/shared/guards/jwt-auth.guard";
 
@@ -9,8 +9,21 @@ export class UserNotifyController {
    ) { }
 
    @UseGuards(JwtAuthGuard)
-   @Post('my-notifications')
+   @Get('my-notifications')
    async getMyNotifications(@Req() req: any) {
+      const userFromToken = req && req.user ? req.user : null;
+      const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
+
+      if (!userId) {
+         throw new BadRequestException('Usuario no identificado');
+      }
+
+      return await this.userNotifyService.getMyNotifications(userId);
+   }
+
+   @UseGuards(JwtAuthGuard)
+   @Post('my-notifications/filters')
+   async getMyNotificationsFilters(@Req() req: any, @Body() filters: any) {
       const userFromToken = req && req.user ? req.user : null;
       const userId = userFromToken?.sub ?? userFromToken?.id ?? null;
 
