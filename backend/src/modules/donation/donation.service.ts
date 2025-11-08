@@ -578,20 +578,30 @@ export class DonationService {
         if(!id || id<=0 || isNaN(id)|| id===undefined) throw new BadRequestException('El id de la donación es obligatorio y debe ser válido');
         if(!currentUser || currentUser<=0 || isNaN(currentUser)|| currentUser===undefined) throw new ForbiddenException('Usuario no autenticado');
         const donation= await this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.user','donationUser')
         .leftJoinAndSelect('donation.post','post')
         .leftJoinAndSelect('post.user','postUser')
         .leftJoinAndSelect('post.typePost','postTypePost')
         .where('donation.id=:id',{id})
         .getOne();
         if(!donation) throw new NotFoundException('Donación no encontrada');
+
+        if((donation as any).incrementDate) throw new BadRequestException('La donación no se puede extender más de una vez');
+
+        let userOwner: any = donation.post?.user ?? null;
+        const typePost = donation.post?.typePost?.type?.toLowerCase?.();
+        if(typePost && (typePost==='solicitud de donacion' || typePost==='solicitud_de_donacion' || typePost==='solicitud-donacion')){
+          userOwner = (donation as any).user ?? userOwner;
+        }
+
         if(currentUser && !admin){
-          const isOwner = donation.post.user && currentUser && donation.post.user.id === currentUser;
+          const isOwner = userOwner && userOwner.id === currentUser;
           if(!isOwner) throw new ForbiddenException('No tienes permiso para actualizar esta donación');
         }
-        const currentDate= new Date();
-        const nuevaFehcha= new Date(donation.fechaMaximaEntrega?.getDate()!);
-        nuevaFehcha.setDate(nuevaFehcha.getDate()+10);
-        donation.fechaMaximaEntrega= nuevaFehcha;
+
+        const baseDate = donation.fechaMaximaEntrega ? new Date(donation.fechaMaximaEntrega) : new Date();
+        baseDate.setDate(baseDate.getDate()+10);
+        donation.fechaMaximaEntrega= baseDate;
         (donation as any).incrementDate= true;
         const updatedDonation= await this.donationRepo.save(donation);
         const formatted= this.formatDonationResponse(updatedDonation, currentUser);
