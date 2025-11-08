@@ -126,6 +126,17 @@ export class DonationService {
       if (!postId || isNaN(Number(postId)) || Number(postId) <= 0) {
         throw new BadRequestException('El postId es obligatorio y debe ser válido');
       }
+      const fechaMaximaEntrega = createDonationDto.fechaMaximaEntrega ? new Date(createDonationDto.fechaMaximaEntrega) : null;
+      if(!fechaMaximaEntrega || isNaN(fechaMaximaEntrega.getTime())){
+        throw new BadRequestException('La fecha máxima de entrega es obligatoria y debe ser válida');
+      }
+      const hoy = new Date();
+      hoy.setHours(0,0,0,0);
+      const fechaComparar = new Date(fechaMaximaEntrega);
+      fechaComparar.setHours(0,0,0,0);
+      if(fechaComparar <= hoy){
+        throw new BadRequestException('La fecha máxima de entrega debe ser posterior al día de hoy');
+      }
       if (!lugarRecogida || String(lugarRecogida).trim() === '') {
         throw new BadRequestException('El lugar de recogida es obligatorio');
       }
@@ -134,7 +145,8 @@ export class DonationService {
         throw new BadRequestException('Debe proporcionar al menos un artículo para la donación');
       }
 
-      const receiver = await this.userService.findById(currentUser.sub || currentUser.id);
+      const receiver = await this.userService.findById(currentUser.sub || currentUser.id || currentUser);
+      console.log(receiver)
       if (!receiver) throw new NotFoundException('Usuario no encontrado');
       if (!receiver.verified) {
         throw new ForbiddenException('Solo usuarios verificados pueden recibir donaciones');
@@ -209,7 +221,7 @@ export class DonationService {
         lugarRecogida: createDonationDto.lugarRecogida,
         lugarDonacion: createDonationDto.lugarDonacion ?? null,
         comments: createDonationDto.comments ?? null,
-        fechaMaximaEntrega: createDonationDto.fechaMaximaEntrega ? new Date(createDonationDto.fechaMaximaEntrega) : null,
+  fechaMaximaEntrega,
         statusDonation: statusPendiente,
         user: receiver,
         post: { id: post.id },

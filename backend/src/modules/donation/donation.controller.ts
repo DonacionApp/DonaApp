@@ -41,7 +41,6 @@ export class DonationController {
   async updateDonationDate(@Param('id') id: number, @Body() updateDateDto: any, @Req() req: any) {
     try {
       const user = req.user;
-      console.log(user)
       const currentUserId:number = user.id;
       return await this.donationService.incrementDonationDate(id, currentUserId);
     } catch (error) {
@@ -54,7 +53,6 @@ export class DonationController {
   async updateDonationDateAdmin(@Param('id') id: number, @Body() updateDateDto: any, @Req() req: any) {
     try {
       const user = req.user;
-      console.log(user)
       const currentUserId:number = user.id;
       return await this.donationService.incrementDonationDate(id, currentUserId);
     } catch (error) {
