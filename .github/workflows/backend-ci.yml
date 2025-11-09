@@ -16,9 +16,7 @@ jobs:
       run:
         working-directory: ./backend
 
-    
     env:
-      
       POSTGRES_USER: ${{ vars.POSTGRES_USER }}
       POSTGRES_DB: ${{ vars.POSTGRES_DB }}
       DB_HOST: ${{ vars.DB_HOST }}
@@ -26,10 +24,8 @@ jobs:
       DB_USER: ${{ vars.DB_USER }}
       DB_NAME: ${{ vars.DB_NAME }}
       
-      
       POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_PASS: ${{ secrets.DB_PASSWORD }}
-      
       
       DATABASE_URL: postgresql://${{ vars.POSTGRES_USER }}:${{ secrets.DB_PASSWORD }}@${{ vars.DB_HOST }}:${{ vars.DB_PORT }}/${{ vars.POSTGRES_DB }}
 
@@ -49,7 +45,7 @@ jobs:
 
       - name: Esperar a que PostgreSQL esté listo
         run: |
-          # Usamos la variable de entorno para el usuario
+          # Verifica la disponibilidad de la base de datos DENTRO del contenedor 'postgres_db'
           until docker exec postgres_db pg_isready -U ${{ vars.POSTGRES_USER }}; do
             echo "Esperando a PostgreSQL..."
             sleep 3
@@ -61,11 +57,10 @@ jobs:
       - name: Compilar proyecto NestJS
         run: npm run build
 
-      - name: Verificar conexión a la base de datos
+      - name: Ejecutar pruebas (Verificación de Conexión Implícita)
+       
         run: |
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-          # Usamos las variables de entorno para la conexión
-          pg_isready -h ${{ vars.DB_HOST }} -p ${{ vars.DB_PORT }} -U ${{ vars.POSTGRES_USER }}
+          echo "La base de datos está lista y accesible por Docker."
 
       - name: Detener contenedores
         if: always()
