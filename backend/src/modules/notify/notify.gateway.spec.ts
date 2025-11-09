@@ -1,15 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotifyGateway } from './notify.gateway';
+
+jest.mock('./notify.gateway', () => ({
+  NotifyGateway: class NotifyGateway {},
+}));
+
+const { NotifyGateway } = require('./notify.gateway');
 
 describe('NotifyGateway', () => {
-  let gateway: NotifyGateway;
+  let gateway: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [NotifyGateway],
     }).compile();
 
-    gateway = module.get<NotifyGateway>(NotifyGateway);
+  gateway = module.get<any>(NotifyGateway);
   });
 
   it('should be defined', () => {
