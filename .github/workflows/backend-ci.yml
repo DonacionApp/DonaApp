@@ -57,6 +57,9 @@ jobs:
       - name: Compilar proyecto NestJS
         run: npm run build
 
+      - run: npm run test:ci || npm run test
+        continue-on-error: true
+
       - name: Ejecutar pruebas (Verificación de Conexión Implícita)
        
         run: |
