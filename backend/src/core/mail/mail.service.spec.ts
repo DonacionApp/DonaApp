@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-<<<<<<< HEAD
 
 jest.mock('./mail.service', () => ({
   MailService: class MailService {},
@@ -8,16 +7,6 @@ jest.mock('./mail.service', () => ({
 const { MailService } = require('./mail.service');
 
 describe('MailService', () =>  {
-=======
-
-jest.mock('./mail.service', () => ({
-  MailService: class MailService {},
-}));
-
-const { MailService } = require('./mail.service');
-
-describe('MailService', () => {
->>>>>>> 90647fdbb48d367c66bcfb0381329a184c7eec38
   let service: any;
 
   beforeEach(async () => {
