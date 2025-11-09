@@ -6,7 +6,7 @@ jest.mock('./mail.service', () => ({
 
 const { MailService } = require('./mail.service');
 
-describe('MailService', () => {
+describe('MailService', () =>  {
   let service: any;
 
   beforeEach(async () => {
