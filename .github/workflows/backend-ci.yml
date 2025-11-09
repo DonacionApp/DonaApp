@@ -59,7 +59,7 @@ jobs:
 
       - name: Ejecutar Pruebas Unitarias/E2E
         run: npm run test:ci || npm run test
-        continue-on-error: true
+        ##continue-on-error: true //no permitir que falle las pruebas unitarias
 
       - name: Ejecutar pruebas (Verificación de Conexión Implícita)
        
