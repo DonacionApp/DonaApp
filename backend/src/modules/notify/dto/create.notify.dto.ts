@@ -8,7 +8,7 @@ export class CreateNotifyDto {
    @IsNotEmpty()
    @IsString()
    message: string;
-   @IsNotEmpty()
+   @IsOptional()
    @IsString()
    link: string | null;
 

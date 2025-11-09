@@ -64,11 +64,6 @@ export class UserNotifyService {
          if (userNotifications.length > 0) {
             await this.userNotifyRepository.remove(userNotifications);
          }
-         const remaining = await this.userNotifyRepository.count({ where: { notify: { id: notifyId } } });
-         if (remaining === 0) {
-            const notifyRepo = this.userNotifyRepository.manager.getRepository(NotifyEntity);
-            await notifyRepo.delete(notifyId);
-         }
       } catch (error) {
          throw error;
       }
@@ -138,6 +133,13 @@ export class UserNotifyService {
          }
 
          await this.userNotifyRepository.remove(userNotification);
+         
+         const remaining = await this.userNotifyRepository.count({ where: { notify: { id: notifyId } } });
+         if (remaining === 0) {
+            const notifyRepo = this.userNotifyRepository.manager.getRepository(NotifyEntity);
+            await notifyRepo.delete(notifyId);
+         }
+         console.log(`Notificación eliminada y verificación de notificación huérfana realizada ${notifyId} con ${remaining} restantes.`);
 
          return {
             message: 'Notificación eliminada exitosamente'
