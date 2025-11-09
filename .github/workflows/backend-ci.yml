@@ -2,7 +2,7 @@ name: CI Backend (NestJS + PostgreSQL)
 
 on:
   push:
-    branches: [ "main", "configuracion-inicial-ci" ]
+    branches: [ "main", "87-backend-configuracion-ci-con-claves" ]
   pull_request:
     branches: [ "main" ]
     paths:
@@ -17,15 +17,17 @@ jobs:
         working-directory: ./backend
 
     env:
-      POSTGRES_USER: testuser
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: db_user_nest
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: testuser
-      DB_PASS: 1234
-      DB_NAME: db_user_nest
-      DATABASE_URL: postgresql://testuser:1234@postgres:5432/db_user_nest
+      POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+      DB_HOST: ${{ vars.DB_HOST }}
+      DB_PORT: ${{ vars.DB_PORT }}
+      DB_USER: ${{ vars.DB_USER }}
+      DB_NAME: ${{ vars.DB_NAME }}
+      
+      POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_PASS: ${{ secrets.DB_PASSWORD }}
+      
+      DATABASE_URL: postgresql://${{ vars.POSTGRES_USER }}:${{ secrets.DB_PASSWORD }}@${{ vars.DB_HOST }}:${{ vars.DB_PORT }}/${{ vars.POSTGRES_DB }}
 
     steps:
       - name: Checkout del código
@@ -43,7 +45,8 @@ jobs:
 
       - name: Esperar a que PostgreSQL esté listo
         run: |
-          until docker exec postgres_db pg_isready -U testuser; do
+          # Verifica la disponibilidad de la base de datos DENTRO del contenedor 'postgres_db'
+          until docker exec postgres_db pg_isready -U ${{ vars.POSTGRES_USER }}; do
             echo "Esperando a PostgreSQL..."
             sleep 3
           done
@@ -54,14 +57,18 @@ jobs:
       - name: Compilar proyecto NestJS
         run: npm run build
 
-      - name: Verificar conexión a la base de datos
+      - name: Ejecutar Pruebas Unitarias/E2E
+        run: npm run test:ci || npm run test
+        ##continue-on-error: true //no permitir que falle las pruebas unitarias
+
+      - name: Ejecutar pruebas (Verificación de Conexión Implícita)
+       
         run: |
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-          pg_isready -h localhost -p 5432 -U testuser
+          echo "La base de datos está lista y accesible por Docker."
 
       - name: Detener contenedores
         if: always()
         run: docker compose -f docker-compose-postgress.yml down -v
 
       - name: Verificación final
-        run: echo "CI Backend completado correctamente "
+        run: echo "CI Backend completado correctamente"
