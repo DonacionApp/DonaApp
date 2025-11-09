@@ -10,6 +10,7 @@ import { DonationService } from '../donation/donation.service';
 import { StatusdonationService } from '../statusdonation/statusdonation.service';
 import { ModifyQuantityPostdonationarticleService } from './dto/modify.quantity.donation.article.dto';
 import { StatusarticledonationService } from '../statusarticledonation/statusarticledonation.service';
+import { DonationEntity } from '../donation/entity/donation.entity';
 
 @Injectable()
 export class PostdonationarticleService {
@@ -97,23 +98,37 @@ export class PostdonationarticleService {
             if (!dtoAdd || !dtoAdd.postArticleId || !dtoAdd.donationId) {
                 throw new BadRequestException('Datos de entrada inválidos');
             }
+            // Cargar artículo del post
             const postArticle = await this.postArticleService.getPostArticleById(dtoAdd.postArticleId);
-            if (!postArticle) {
-                throw new BadRequestException('No existe el artículo del post indicado');
-            }
-            const donation = await this.donationService.getDonationById(dtoAdd.donationId, false);
-            const post= await this.postService.getPostById(donation.post.id)
-            if (!donation) {
-                throw new BadRequestException('No existe la donación indicada');
-            }
-            if (!admin && donation.user.id !== userId) {
+            if (!postArticle) throw new BadRequestException('No existe el artículo del post indicado');
+
+            // Donación con solo las relaciones necesarias (QueryBuilder)
+            const donationRepo = this.postDonationArticleRepository.manager.getRepository(DonationEntity);
+            const donation = await donationRepo.createQueryBuilder('d')
+                .leftJoinAndSelect('d.user', 'donationUser')
+                .leftJoinAndSelect('d.statusDonation', 'statusDonation')
+                .leftJoinAndSelect('d.post', 'post')
+                .leftJoinAndSelect('post.user', 'postUser')
+                .leftJoinAndSelect('post.typePost', 'typePost')
+                .where('d.id = :donationId', { donationId: dtoAdd.donationId })
+                .getOne();
+            if (!donation) throw new BadRequestException('No existe la donación indicada');
+
+            // Determinar dueño: si el post es solicitud de donación, el dueño es donation.user; si no, el dueño es post.user
+            const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+            const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+            const ownerUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+            const currentId = userId;
+            if (!admin && (!ownerUserId || Number(ownerUserId) !== Number(currentId))) {
                 throw new BadRequestException('No tiene permisos para agregar artículos a esta donación');
             }
+
             const statusPending = await this.statusDonationService.findByname('pendiente');
             if (donation.statusDonation.id !== statusPending.id) {
                 throw new BadRequestException('No se pueden agregar artículos a una donación que no está en estado pendiente');
             }
-            const statusPostArticle=await this.statusPostArticleService.getStatusByName('disponible');
+
+            const statusPostArticle = await this.statusPostArticleService.getStatusByName('disponible');
             if (postArticle.status.id !== statusPostArticle.id) {
                 throw new BadRequestException('El artículo del post no está disponible');
             }
@@ -207,11 +222,21 @@ export class PostdonationarticleService {
             if (!postDonationArticle) {
                 throw new BadRequestException('No existe el artículo de donación del post indicado');
             }
-            const donation = await this.donationService.getDonationById(postDonationArticle.donation.id, false);
-            if (!donation) {
-                throw new BadRequestException('No existe la donación indicada');
-            }
-            if (!admin && donation.user.id !== userId) {
+            const donationRepo = this.postDonationArticleRepository.manager.getRepository(DonationEntity);
+            const donation = await donationRepo.createQueryBuilder('d')
+                .leftJoinAndSelect('d.user', 'donationUser')
+                .leftJoinAndSelect('d.statusDonation', 'statusDonation')
+                .leftJoinAndSelect('d.post', 'post')
+                .leftJoinAndSelect('post.user', 'postUser')
+                .leftJoinAndSelect('post.typePost', 'typePost')
+                .where('d.id = :donationId', { donationId: postDonationArticle.donation.id })
+                .getOne();
+            if (!donation) throw new BadRequestException('No existe la donación indicada');
+
+            const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+            const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+            const ownerUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+            if (!admin && (!ownerUserId || Number(ownerUserId) !== Number(userId))) {
                 throw new BadRequestException('No tiene permisos para modificar la cantidad de este artículo en la donación');
             }
             const existQuantity = Number(postDonationArticle.quantity);
@@ -243,11 +268,20 @@ export class PostdonationarticleService {
             if (!postDonationArticle) {
                 throw new BadRequestException('No existe el artículo de donación del post indicado');
             }
-            const donation = await this.donationService.getDonationById(postDonationArticle.donation.id, false);
-            if (!donation) {
-                throw new BadRequestException('No existe la donación indicada');
-            }
-            if (!admin && donation.user.id !== userId) {
+            const donationRepo = this.postDonationArticleRepository.manager.getRepository(DonationEntity);
+            const donation = await donationRepo.createQueryBuilder('d')
+                .leftJoinAndSelect('d.user', 'donationUser')
+                .leftJoinAndSelect('d.statusDonation', 'statusDonation')
+                .leftJoinAndSelect('d.post', 'post')
+                .leftJoinAndSelect('post.user', 'postUser')
+                .leftJoinAndSelect('post.typePost', 'typePost')
+                .where('d.id = :donationId', { donationId: postDonationArticle.donation.id })
+                .getOne();
+            if (!donation) throw new BadRequestException('No existe la donación indicada');
+            const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+            const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+            const ownerUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+            if (!admin && (!ownerUserId || Number(ownerUserId) !== Number(userId))) {
                 throw new BadRequestException('No tiene permisos para eliminar artículos de esta donación');
             }
             const statusPending = await this.statusDonationService.findByname('pendiente');
