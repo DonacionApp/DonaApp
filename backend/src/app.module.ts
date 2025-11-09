@@ -33,6 +33,12 @@ import { PostarticleModule } from './modules/postarticle/postarticle.module';
 import { StatusarticledonationModule } from './modules/statusarticledonation/statusarticledonation.module';
 import { StatussupportidModule } from './modules/statussupportid/statussupportid.module';
 import { CommentsupportidModule } from './modules/commentSupportId/commentsupportid.module';
+import { JwtModule } from '@nestjs/jwt';
+import { UserEntity } from './modules/user/entity/user.entity';
+import { MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { RefreshTokenMiddleware } from './shared/middleware/refresh-token.middleware';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AddRefreshTokenInterceptor } from './shared/interceptors/add-refresh-token.interceptor';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -54,6 +60,16 @@ import { CommentsupportidModule } from './modules/commentSupportId/commentsuppor
     }),
     inject:[ConfigService]
   }),
+  JwtModule.registerAsync({
+    imports: [ConfigModule],
+    inject: [ConfigService],
+    useFactory: (configService: ConfigService) => ({
+      secret: configService.get('JWT_SECRET'),
+      signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN') },
+    }),
+    global: true,
+  }),
+  TypeOrmModule.forFeature([UserEntity]),
   SederServiceModule,
   TypedniModule,
   PeopleModule,
@@ -85,6 +101,18 @@ import { CommentsupportidModule } from './modules/commentSupportId/commentsuppor
   CommentsupportidModule,
 ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AddRefreshTokenInterceptor,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RefreshTokenMiddleware)
+      .forRoutes('*');
+  }
+}

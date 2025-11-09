@@ -35,7 +35,8 @@ export class DonationService {
           user:true,
           statusDonation:true,
           post:{
-            user:true
+            user:true,
+            typePost:true
           },
           postDonationArticlePost:{
             postArticle:{
@@ -70,20 +71,28 @@ export class DonationService {
       updatedAt: donation.updatedAt,
     };
 
-    if (donation.user) {
-      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = donation.user as any;
-      formatted.beneficiary = { id, username, email, profilePhoto, emailVerified, verified, createdAt };
-    } else {
-      formatted.beneficiary = null;
-    }
+    // Determinar si el tipo de post invierte roles (solicitud de donacion)
+    const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+    const isSolicitudDonacion = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
 
-    if (donation.post && donation.post.user) {
-      const pu = donation.post.user as any;
-      
-      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = pu;
-      formatted.donator = { id, username, email, profilePhoto, emailVerified, verified, createdAt };
+    const rawBeneficiaryUser = donation.user as any; // usuario directamente ligado a la donación
+    const rawPostOwnerUser = donation.post?.user as any; // usuario que creó el post
+
+    // Helper para formatear usuario
+    const formatUser = (u: any) => {
+      if (!u) return null;
+      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = u;
+      return { id, username, email, profilePhoto, emailVerified, verified, createdAt };
+    };
+
+    if (isSolicitudDonacion) {
+      // En solicitudes de donación: donator = donation.user, beneficiary = post.user
+      formatted.donator = formatUser(rawBeneficiaryUser);
+      formatted.beneficiary = formatUser(rawPostOwnerUser);
     } else {
-      formatted.donator = null;
+      // Caso normal: beneficiary = donation.user, donator = post.user
+      formatted.beneficiary = formatUser(rawBeneficiaryUser);
+      formatted.donator = formatUser(rawPostOwnerUser);
     }
     if(userId && donation.post.user){
       const owner = donation.post?.user?.id === userId;
@@ -117,6 +126,17 @@ export class DonationService {
       if (!postId || isNaN(Number(postId)) || Number(postId) <= 0) {
         throw new BadRequestException('El postId es obligatorio y debe ser válido');
       }
+      const fechaMaximaEntrega = createDonationDto.fechaMaximaEntrega ? new Date(createDonationDto.fechaMaximaEntrega) : null;
+      if(!fechaMaximaEntrega || isNaN(fechaMaximaEntrega.getTime())){
+        throw new BadRequestException('La fecha máxima de entrega es obligatoria y debe ser válida');
+      }
+      const hoy = new Date();
+      hoy.setHours(0,0,0,0);
+      const fechaComparar = new Date(fechaMaximaEntrega);
+      fechaComparar.setHours(0,0,0,0);
+      if(fechaComparar <= hoy){
+        throw new BadRequestException('La fecha máxima de entrega debe ser posterior al día de hoy');
+      }
       if (!lugarRecogida || String(lugarRecogida).trim() === '') {
         throw new BadRequestException('El lugar de recogida es obligatorio');
       }
@@ -125,7 +145,8 @@ export class DonationService {
         throw new BadRequestException('Debe proporcionar al menos un artículo para la donación');
       }
 
-      const receiver = await this.userService.findById(currentUser.sub || currentUser.id);
+      const receiver = await this.userService.findById(currentUser.sub || currentUser.id || currentUser);
+      console.log(receiver)
       if (!receiver) throw new NotFoundException('Usuario no encontrado');
       if (!receiver.verified) {
         throw new ForbiddenException('Solo usuarios verificados pueden recibir donaciones');
@@ -200,7 +221,7 @@ export class DonationService {
         lugarRecogida: createDonationDto.lugarRecogida,
         lugarDonacion: createDonationDto.lugarDonacion ?? null,
         comments: createDonationDto.comments ?? null,
-        fechaMaximaEntrega: createDonationDto.fechaMaximaEntrega ? new Date(createDonationDto.fechaMaximaEntrega) : null,
+  fechaMaximaEntrega,
         statusDonation: statusPendiente,
         user: receiver,
         post: { id: post.id },
@@ -226,7 +247,10 @@ export class DonationService {
         relations:{
           user:true,
           statusDonation:true,
-          post:true,
+          post:{
+            user:true,
+            typePost:true
+          },
           postDonationArticlePost:{
             postArticle:{
               article:true
@@ -278,7 +302,8 @@ export class DonationService {
           user:true,
           statusDonation:true,
           post:{
-            user:true
+            user:true,
+            typePost:true
           },
           postDonationArticlePost:{
             postArticle:{
@@ -313,6 +338,7 @@ export class DonationService {
           statusDonation:true,
           post:{
             user:true,
+            typePost:true,
           },
           postDonationArticlePost:{
             postArticle:{
@@ -321,15 +347,19 @@ export class DonationService {
           }
         },
       });
+      if (!donation) throw new NotFoundException('Donación no encontrada');
 
+      // Permisos: dueño depende del tipo de publicación
       if (currentUser && !admin) {
-        const isOwner = donation?.user.id === currentUser.id || donation?.post.user.id === currentUser.id;
-
+        const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+        const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+        const ownerUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+        const currentId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+        const isOwner = ownerUserId && currentId && Number(ownerUserId) === Number(currentId);
         if (!isOwner) {
           throw new ForbiddenException('No tienes permiso para actualizar esta donación');
         }
       }
-      if (!donation) throw new NotFoundException('Donación no encontrada');
       
       const statusPendiente = await this.statusDonationService.findByname('pendiente');
       if (donation.statusDonation && statusPendiente && donation.statusDonation.id !== statusPendiente.id) {
@@ -356,19 +386,26 @@ export class DonationService {
 
       const donation = await this.donationRepo.findOne({
         where: { id },
-        relations: ['user', 'statusDonation'],
+        relations: {
+          user: true,
+          statusDonation: true,
+          post: { user: true, typePost: true },
+        },
       });
 
       if (!donation) throw new NotFoundException('Donación no encontrada');
 
-      // Validar permisos
-      const isOwner = donation.user.id === currentUser.id;
+  const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+  const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+  const ownerUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+  const currentId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+  const isOwner = ownerUserId && currentId && Number(ownerUserId) === Number(currentId);
 
       if (!isOwner) {
         throw new ForbiddenException('No tienes permiso para eliminar esta donación');
       }
 
-      // Validar estado: si no es propietario pero es admin, puede eliminar sin restricción
+      // Validar estado: solo si es propietario
       if (isOwner) {
         const pendingStatus = await this.statusDonationService.findByname('pendiente')
 
@@ -420,6 +457,7 @@ export class DonationService {
           statusDonation:true,
           post:{
             user:true,
+            typePost:true,
           },
           postDonationArticlePost:{
             postArticle:{
@@ -434,7 +472,11 @@ export class DonationService {
       if (!statusEntity) throw new NotFoundException('Estado no encontrado en la base de datos');
 
       if (currentUser && !admin) {
-        const isOwner = donation.post.user && currentUser && donation.post.user.id === currentUser.id;
+        const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+        const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+        const ownerUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+        const currentId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+        const isOwner = ownerUserId && currentId && Number(ownerUserId) === Number(currentId);
         if (!isOwner) throw new ForbiddenException('No tienes permiso para cambiar el estado');
       }
       const statusDeclined = await this.statusDonationService.findByname('rechazada');
@@ -499,6 +541,7 @@ export class DonationService {
         .leftJoinAndSelect('d.statusDonation', 'statusDonation')
         .leftJoinAndSelect('d.post', 'post')
         .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('post.typePost', 'typePost')
         .leftJoinAndSelect('d.postDonationArticlePost', 'postDonationArticlePost')
         .leftJoinAndSelect('postDonationArticlePost.postArticle', 'postArticle')
         .leftJoinAndSelect('postArticle.article', 'article');
@@ -552,6 +595,45 @@ export class DonationService {
       // Formatear todas las donaciones usando la función reutilizable
       const formatted = donations.map(donation => this.formatDonationResponse(donation, currentUser.id));
       return formatted;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async incrementDonationDate(id:number, currentUser:number, admin?:boolean):Promise<DonationEntity>{
+    try {
+        if(!id || id<=0 || isNaN(id)|| id===undefined) throw new BadRequestException('El id de la donación es obligatorio y debe ser válido');
+        if(!currentUser || currentUser<=0 || isNaN(currentUser)|| currentUser===undefined) throw new ForbiddenException('Usuario no autenticado');
+        const donation= await this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.user','donationUser')
+        .leftJoinAndSelect('donation.post','post')
+        .leftJoinAndSelect('post.user','postUser')
+        .leftJoinAndSelect('post.typePost','postTypePost')
+        .where('donation.id=:id',{id})
+        .getOne();
+        if(!donation) throw new NotFoundException('Donación no encontrada');
+
+        if((donation as any).incrementDate) throw new BadRequestException('La donación no se puede extender más de una vez');
+
+        let userOwner: any = donation.post?.user ?? null;
+        const typePost = donation.post?.typePost?.type?.toLowerCase?.();
+        if(typePost && (typePost==='solicitud de donacion' || typePost==='solicitud_de_donacion' || typePost==='solicitud-donacion')){
+          userOwner = (donation as any).user ?? userOwner;
+        }
+
+        if(currentUser && !admin){
+          const isOwner = userOwner && userOwner.id === currentUser;
+          if(!isOwner) throw new ForbiddenException('No tienes permiso para actualizar esta donación');
+        }
+
+        const baseDate = donation.fechaMaximaEntrega ? new Date(donation.fechaMaximaEntrega) : new Date();
+        baseDate.setDate(baseDate.getDate()+10);
+        donation.fechaMaximaEntrega= baseDate;
+        (donation as any).incrementDate= true;
+        const updatedDonation= await this.donationRepo.save(donation);
+        const formatted= this.formatDonationResponse(updatedDonation, currentUser);
+        return formatted;
+        
     } catch (error) {
       throw error;
     }

@@ -53,41 +53,59 @@ export class PostService {
             if (id <= 0 || id === undefined || id === null || isNaN(id) || !id) {
                 throw new Error('El id del post es invalido');
             }
-            let post = await this.postRepository.findOne({
-                where: { id },
-                relations: {
-                    imagePost: true,
-                    tags: {
-                        tag: true
-                    },
-                    user: true,
-                    postLiked: true,
-                    postArticle:{
-                        article:true,
-                        status:true
-                    },
-                    typePost:true
-                }
-            });
-            userId = Number(userId);
+
+            const qb = this.postRepository
+                .createQueryBuilder('post')
+                .leftJoinAndSelect('post.imagePost', 'imagePost')
+                .leftJoinAndSelect('post.tags', 'postTags')
+                .leftJoinAndSelect('postTags.tag', 'tag')
+                .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.rol', 'userRol')
+                .leftJoinAndSelect('post.postArticle', 'postArticle')
+                .leftJoinAndSelect('postArticle.article', 'article')
+                .leftJoinAndSelect('postArticle.status', 'status')
+                .leftJoinAndSelect('post.typePost', 'typePost')
+                .where('post.id = :id', { id })
+                // contar likes sin traer la relación completa
+                .loadRelationCountAndMap('post.likesCount', 'post.postLiked');
+
+            const numericUserId = Number(userId);
+            if (numericUserId && numericUserId > 0) {
+                // contar si el usuario ha dado like (0/1)
+                qb.loadRelationCountAndMap(
+                    'post._userHasLikedCount',
+                    'post.postLiked',
+                    'liked',
+                    (subQb) => subQb.andWhere('liked.user.id = :userId', { userId: numericUserId }),
+                );
+            }
+
+            let post = await qb.getOne();
 
             if (!post) {
                 throw new NotFoundException('post no encontrado');
             }
+
             if (post.user) {
-                const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
-                post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                const roleName = (post.user as any).rol?.rol;
+                const { id: uid, username, profilePhoto, emailVerified, verified, createdAt } = post.user as any;
+                post.user = { id: uid, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
             }
-            if (post.postLiked) {
-                (post as any).likesCount = post.postLiked.length;
-            }
-            if (userId && userId > 0) {
-                const liked = await this.postLikedService.userLikedPost(userId, id);
-                (post as any).userHasLiked = liked;
-            }
-            if (post.postLiked) {
-                const { postLiked, ...rest } = post;
-                post = rest as PostEntity;
+
+            // mapear userHasLiked a booleano y limpiar propiedad interna
+            const internalCount = (post as any)._userHasLikedCount;
+            if (internalCount !== undefined) {
+                (post as any).userHasLiked = Number(internalCount) > 0;
+                delete (post as any)._userHasLikedCount;
+            } else if (numericUserId && numericUserId > 0) {
+                // Fallback seguro en caso de que no se haya mapeado (no carga toda la relación)
+                const liked = await this.postRepository
+                    .createQueryBuilder('p')
+                    .innerJoin('p.postLiked', 'liked')
+                    .where('p.id = :pid', { pid: id })
+                    .andWhere('liked.user.id = :userId', { userId: numericUserId })
+                    .getCount();
+                (post as any).userHasLiked = liked > 0;
             }
 
             return post;
@@ -249,6 +267,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postLiked', 'postLiked')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
@@ -287,8 +306,9 @@ export class PostService {
 
             const postsWithUserInfo = posts.map(post => {
                 if (post.user) {
+                    const roleName = (post.user as any).rol?.rol;
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
-                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
                 }
 
                 if (userId && userId > 0) {
@@ -340,50 +360,56 @@ export class PostService {
             if (!userId || userId <= 0 || userId === null || userId === undefined) {
                 throw new BadRequestException('ID de usuario inválido');
             }
-            const postUser = await this.postRepository.find({
-                where: {
-                    user: {
-                        id: userId
-                    }
-                },
-                relations: {
-                    imagePost: true,
-                    tags: {
-                        tag: true
-                    },
-                    user: true,
-                    postLiked: true,
-                    postArticle: {
-                        article: true,
-                        status: true
-                    },
-                    typePost:true
-                }
-            });
-            userRequest = Number(userRequest);
-            if (!postUser || postUser.length === 0) {
+            const numericUserRequest = Number(userRequest);
+
+            const qb = this.postRepository
+                .createQueryBuilder('post')
+                .leftJoinAndSelect('post.imagePost', 'imagePost')
+                .leftJoinAndSelect('post.tags', 'postTags')
+                .leftJoinAndSelect('postTags.tag', 'tag')
+                .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.rol', 'userRol')
+                .leftJoinAndSelect('post.postArticle', 'postArticle')
+                .leftJoinAndSelect('postArticle.article', 'article')
+                .leftJoinAndSelect('postArticle.status', 'status')
+                .leftJoinAndSelect('post.typePost', 'typePost')
+                .where('user.id = :userId', { userId })
+                // contar likes sin traer la relación completa
+                .loadRelationCountAndMap('post.likesCount', 'post.postLiked');
+
+            if (numericUserRequest && numericUserRequest > 0) {
+                qb.loadRelationCountAndMap(
+                    'post._userHasLikedCount',
+                    'post.postLiked',
+                    'liked',
+                    (subQb) => subQb.andWhere('liked.user.id = :userRequest', { userRequest: numericUserRequest }),
+                );
+            }
+
+            let posts = await qb.getMany();
+
+            if (!posts || posts.length === 0) {
                 throw new NotFoundException('El usuario no tiene posts');
             }
-            const countPosts = postUser.length;
-            const postsWithUserInfo = await Promise.all(postUser.map(async post => {
-                if (post.user) {
-                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
-                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+
+            posts = posts.map(p => {
+                if (p.user) {
+                    const roleName = (p.user as any).rol?.rol;
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = p.user as any;
+                    p.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
                 }
-                if (userRequest && userRequest > 0) {
-                    const liked = await this.postLikedService.userLikedPost(userRequest, post.id);
-                    (post as any).userHasLiked = liked;
+                const internalCount = (p as any)._userHasLikedCount;
+                if (internalCount !== undefined) {
+                    (p as any).userHasLiked = Number(internalCount) > 0;
+                    delete (p as any)._userHasLikedCount;
+                } else if (numericUserRequest && numericUserRequest > 0) {
+                    // fallback ligero (no trae toda la relación) solo si faltó el mapeo
+                    (p as any).userHasLiked = false;
                 }
-                if (post.postLiked) {
-                    (post as any).likesCount = post.postLiked.length;
-                }
-                if (post.postLiked) {
-                    const { postLiked, ...rest } = post;
-                    post = rest as PostEntity;
-                }
-                return post;
-            }));
-            return postsWithUserInfo;
+                return p;
+            });
+
+            return posts;
         } catch (error) {
             throw error;
         }

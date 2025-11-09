@@ -30,7 +30,31 @@ export class DonationController {
   async createDonation(@Body() createDonationDto: CreateDonationDto, @Req() req: any) {
     try {
       const user = req.user;
-      return await this.donationService.createDonation(createDonationDto, user);
+      return await this.donationService.createDonation(createDonationDto, user.id);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('update-date/:id')
+  async updateDonationDate(@Param('id') id: number, @Body() updateDateDto: any, @Req() req: any) {
+    try {
+      const user = req.user;
+      const currentUserId:number = user.id;
+      return await this.donationService.incrementDonationDate(id, currentUserId);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+    @UseGuards(JwtAuthGuard)
+  @Put('admin/update-date/:id')
+  async updateDonationDateAdmin(@Param('id') id: number, @Body() updateDateDto: any, @Req() req: any) {
+    try {
+      const user = req.user;
+      const currentUserId:number = user.id;
+      return await this.donationService.incrementDonationDate(id, currentUserId);
     } catch (error) {
       throw error;
     }
