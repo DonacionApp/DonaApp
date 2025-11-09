@@ -239,10 +239,13 @@ export class PostdonationarticleService {
             if (!admin && (!ownerUserId || Number(ownerUserId) !== Number(userId))) {
                 throw new BadRequestException('No tiene permisos para modificar la cantidad de este artículo en la donación');
             }
-            const existQuantity = Number(postDonationArticle.quantity);
-            if (existQuantity < newQuantity) {
-                throw new BadRequestException('La nueva cantidad excede la cantidad existente en el artículo de donación del post');
+            
+            // La nueva cantidad no puede exceder la cantidad disponible en el postArticle
+            const availableInPost = Number(postDonationArticle.postArticle.quantity);
+            if (newQuantity > availableInPost) {
+                throw new BadRequestException(`La cantidad solicitada (${newQuantity}) excede la cantidad disponible en el artículo del post (${availableInPost})`);
             }
+            
             postDonationArticle.quantity = newQuantity.toString();
             const saved = await this.postDonationArticleRepository.save(postDonationArticle);
             return saved;
