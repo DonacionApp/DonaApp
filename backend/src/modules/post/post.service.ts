@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject, forwardRef, BadRequestException, HttpException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, BadRequestException, HttpException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entity/post.entity';
 import { Repository } from 'typeorm';
@@ -11,6 +11,7 @@ import { PostFilterDto } from './dto/filter.dto';
 import { PostlikedService } from '../postLiked/postliked.service';
 import { ArticleService } from '../article/article.service';
 import { PostarticleService } from '../postarticle/postarticle.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class PostService {
@@ -29,6 +30,7 @@ export class PostService {
         private articleService:ArticleService,
         @Inject(forwardRef(() => PostarticleService))
         private readonly postArticleService: PostarticleService,
+        private readonly userService: UserService,
     ) { }
 
     async userLikedPost(userId: number, postId: number): Promise<boolean> {
@@ -60,6 +62,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.people', 'people')
                 .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
@@ -88,8 +91,17 @@ export class PostService {
 
             if (post.user) {
                 const roleName = (post.user as any).rol?.rol;
+                const people = (post.user as any).people;
+                const residencia = people?.residencia ?? null;
+                let municipio: any = null;
+                if (people?.municipio) {
+                    try {
+                        const { countryExist, stateExist, citiExist } = await this.userService.normalizeMunicipio(people.municipio as any);
+                        municipio = { country: countryExist, state: stateExist, city: citiExist };
+                    } catch (_) {}
+                }
                 const { id: uid, username, profilePhoto, emailVerified, verified, createdAt } = post.user as any;
-                post.user = { id: uid, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
+                post.user = { id: uid, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName, residencia, municipio } as any;
             }
 
             // mapear userHasLiked a booleano y limpiar propiedad interna
@@ -129,6 +141,19 @@ export class PostService {
             if (!typePostNormali) throw new BadRequestException('El tipo de post es invalido');
             const existTypePost = await this.typePostService.findById(typePostNormali.id);
             if (!existTypePost) throw new NotFoundException('El tipo de post no existe');
+            
+            if (existTypePost && existTypePost.type && existTypePost.type.toLowerCase() === 'solicitud de donacion') {
+                const userIdToCheck = (user && user.id) ? user.id : userId;
+                if (!userIdToCheck) throw new BadRequestException('No se puede identificar el usuario');
+                
+                const userEntity = await this.userService.findById(userIdToCheck);
+                if (!userEntity) throw new NotFoundException('Usuario no encontrado');
+                
+                const userRol = (userEntity as any).rol?.rol?.toLowerCase();
+                if (userRol !== 'organizacion') {
+                    throw new ForbiddenException('Solo los usuarios con rol "organizacion" pueden crear publicaciones de tipo "solicitud de donacion"');
+                }
+            }
 
             const postPayload: any = {
                 title: rest.title,
@@ -267,6 +292,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.people', 'people')
                 .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postLiked', 'postLiked')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
@@ -305,10 +331,24 @@ export class PostService {
             }
 
             const postsWithUserInfo = posts.map(post => {
+                // replaced below with async normalization logic; placeholder
+                return post;
+            });
+
+            const enrichedPosts = await Promise.all(postsWithUserInfo.map(async post => {
                 if (post.user) {
                     const roleName = (post.user as any).rol?.rol;
-                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
-                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
+                    const people = (post.user as any).people;
+                    const residencia = people?.residencia ?? null;
+                    let municipio: any = null;
+                    if (people?.municipio) {
+                        try {
+                            const { countryExist, stateExist, citiExist } = await this.userService.normalizeMunicipio(people.municipio as any);
+                            municipio = { country: countryExist, state: stateExist, city: citiExist };
+                        } catch (_) {}
+                    }
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user as any;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName, residencia, municipio } as any;
                 }
 
                 if (userId && userId > 0) {
@@ -321,9 +361,9 @@ export class PostService {
                 }
 
                 return post;
-            });
+            }));
 
-            return postsWithUserInfo;
+            return enrichedPosts;
         } catch (error) {
             throw error;
         }
@@ -368,6 +408,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.people', 'people')
                 .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
@@ -391,23 +432,6 @@ export class PostService {
             if (!posts || posts.length === 0) {
                 throw new NotFoundException('El usuario no tiene posts');
             }
-
-            posts = posts.map(p => {
-                if (p.user) {
-                    const roleName = (p.user as any).rol?.rol;
-                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = p.user as any;
-                    p.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
-                }
-                const internalCount = (p as any)._userHasLikedCount;
-                if (internalCount !== undefined) {
-                    (p as any).userHasLiked = Number(internalCount) > 0;
-                    delete (p as any)._userHasLikedCount;
-                } else if (numericUserRequest && numericUserRequest > 0) {
-                    // fallback ligero (no trae toda la relación) solo si faltó el mapeo
-                    (p as any).userHasLiked = false;
-                }
-                return p;
-            });
 
             return posts;
         } catch (error) {
@@ -572,6 +596,7 @@ export class PostService {
         try {
             const queryBuilder = this.postRepository.createQueryBuilder('post')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.people', 'people')
                 .leftJoinAndSelect('post.imagePost', 'imagePost')
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
@@ -599,8 +624,17 @@ export class PostService {
             }
             const postsWithUserInfo = await Promise.all(posts.map(async post => {
                 if (post.user) {
-                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
-                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                    const people = (post.user as any).people;
+                    const residencia = people?.residencia ?? null;
+                    let municipio: any = null;
+                    if (people?.municipio) {
+                        try {
+                            const { countryExist, stateExist, citiExist } = await this.userService.normalizeMunicipio(people.municipio as any);
+                            municipio = { country: countryExist, state: stateExist, city: citiExist };
+                        } catch (_) {}
+                    }
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user as any;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, residencia, municipio } as any;
                 }
                 if (userId && userId > 0) {
                     const liked = await this.postLikedService.userLikedPost(userId, post.id);

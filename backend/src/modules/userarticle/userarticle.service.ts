@@ -63,6 +63,8 @@ export class UserarticleService {
             if(!user){
                 throw new NotFoundException('El usuario no existe')
             };
+            
+            // Buscar si ya existe el artículo con el mismo estado de necesidad
             const userarticleExist = await this.userArticleRepository.findOne({
                 where:{
                     user:{
@@ -72,11 +74,28 @@ export class UserarticleService {
                         id:articleId
                     },
                     needed:dto.needed
+                },
+                relations: {
+                    user: true,
+                    article: true
                 }
             });
+            
+            // Si existe, actualizar la cantidad sumando la nueva
             if(userarticleExist){
-                throw new BadRequestException('El usuario ya tiene este articulo registrado con ese estado')
-            };
+                const newQuantity = Number(userarticleExist.cant) + Number(dto.cant);
+                userarticleExist.cant = newQuantity;
+                const updated = await this.userArticleRepository.save(userarticleExist);
+                
+                // Sanitizar respuesta solo si user existe
+                if (updated.user) {
+                    const { user: { password, email, token, loginAttempts, lockUntil, block, dateSendCodigo, ...userRest }, ...userArticleRest } = updated;
+                    return userArticleRest as any;
+                }
+                return updated;
+            }
+            
+            // Si no existe, crear nuevo
             const userArticle = this.userArticleRepository.create({
                 cant:dto.cant,
                 needed:dto.needed,
