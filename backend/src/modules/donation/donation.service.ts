@@ -235,10 +235,8 @@ export class DonationService {
       }
 
       for (const [postArticleId, totalQty] of requestedByPostArticle.entries()) {
-        await this.postDonationArticleService.addArticleToDonationFromPost(
-          { postArticleId, donationId: savedDonation.id, quantity: totalQty },
-          receiver.id,
-          false,
+        await this.postDonationArticleService.addArticleToDonation(
+          { postArticleId, donationId: savedDonation.id, quantity: totalQty }
         );
       }
 

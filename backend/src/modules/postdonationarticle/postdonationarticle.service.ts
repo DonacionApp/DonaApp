@@ -183,6 +183,92 @@ export class PostdonationarticleService {
         }
     }
 
+    async addArticleToDonation(dtoAdd: AddArticleToDonationFromPost, admin?: boolean): Promise<any> {
+        try {
+            if (!dtoAdd || !dtoAdd.postArticleId || !dtoAdd.donationId) {
+                throw new BadRequestException('Datos de entrada inválidos');
+            }
+            
+            // Cargar artículo del post
+            const postArticle = await this.postArticleService.getPostArticleById(dtoAdd.postArticleId);
+            if (!postArticle) throw new BadRequestException('No existe el artículo del post indicado');
+
+            // Donación con solo las relaciones necesarias (QueryBuilder)
+            const donationRepo = this.postDonationArticleRepository.manager.getRepository(DonationEntity);
+            const donation = await donationRepo.createQueryBuilder('d')
+                .leftJoinAndSelect('d.statusDonation', 'statusDonation')
+                .where('d.id = :donationId', { donationId: dtoAdd.donationId })
+                .getOne();
+            if (!donation) throw new BadRequestException('No existe la donación indicada');
+
+            // Validar estado pendiente
+            const statusPending = await this.statusDonationService.findByname('pendiente');
+            if (donation.statusDonation.id !== statusPending.id) {
+                throw new BadRequestException('No se pueden agregar artículos a una donación que no está en estado pendiente');
+            }
+
+            // Validar que el artículo esté disponible
+            const statusPostArticle = await this.statusPostArticleService.getStatusByName('disponible');
+            if (postArticle.status.id !== statusPostArticle.id) {
+                throw new BadRequestException('El artículo del post no está disponible');
+            }
+            
+            // Verificar si el artículo ya existe en la donación
+            const existArticleInDonation = await this.postDonationArticleRepository.findOne({
+                where: {
+                    donation: { id: donation.id },
+                    postArticle: { id: postArticle.id }
+                }
+            }); 
+            if (existArticleInDonation) {
+                throw new BadRequestException('El artículo del post ya ha sido agregado a la donación');
+            }
+            
+            // Validar cantidad disponible
+            const existQuantity = Number(postArticle.quantity);
+            const requestedQuantity = Number(dtoAdd.quantity);
+            if (existQuantity < requestedQuantity) {
+                throw new BadRequestException('La cantidad solicitada excede la cantidad disponible en el artículo del post');
+            }
+            
+            // Crear y guardar el artículo de donación
+            const newPostDonationArticle = this.postDonationArticleRepository.create({
+                quantity: requestedQuantity.toString(),
+                donation: donation,
+                postArticle: postArticle,
+            });
+            const saved = await this.postDonationArticleRepository.save(newPostDonationArticle);
+            
+            // Return sanitized response without sensitive user data
+            return {
+                id: saved.id,
+                quantity: saved.quantity,
+                postArticleId: postArticle.id,
+                article: {
+                    id: postArticle.article.id,
+                    name: postArticle.article.name,
+                    descripcion: postArticle.article.descripcion,
+                    createdAt: postArticle.article.createdAt,
+                    updatedAt: postArticle.article.updatedAt,
+                },
+                status: {
+                    id: postArticle.status.id,
+                    status: postArticle.status.status,
+                },
+                donation: {
+                    id: donation.id,
+                    lugarRecogida: donation.lugarRecogida,
+                    lugarDonacion: donation.lugarDonacion,
+                    fechaMaximaEntrega: donation.fechaMaximaEntrega,
+                    createdAt: donation.createdAt,
+                    updatedAt: donation.updatedAt,
+                },
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async getPostDonationArticleById(id: number): Promise<PostArticleDonationEntity> {
         try {
             if(!id || id <=0 || isNaN(id) || id === undefined){
@@ -239,10 +325,13 @@ export class PostdonationarticleService {
             if (!admin && (!ownerUserId || Number(ownerUserId) !== Number(userId))) {
                 throw new BadRequestException('No tiene permisos para modificar la cantidad de este artículo en la donación');
             }
-            const existQuantity = Number(postDonationArticle.quantity);
-            if (existQuantity < newQuantity) {
-                throw new BadRequestException('La nueva cantidad excede la cantidad existente en el artículo de donación del post');
+            
+            // La nueva cantidad no puede exceder la cantidad disponible en el postArticle
+            const availableInPost = Number(postDonationArticle.postArticle.quantity);
+            if (newQuantity > availableInPost) {
+                throw new BadRequestException(`La cantidad solicitada (${newQuantity}) excede la cantidad disponible en el artículo del post (${availableInPost})`);
             }
+            
             postDonationArticle.quantity = newQuantity.toString();
             const saved = await this.postDonationArticleRepository.save(postDonationArticle);
             return saved;
