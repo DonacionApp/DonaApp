@@ -12,6 +12,10 @@ import { PostarticleService } from '../postarticle/postarticle.service';
 import { PostService } from '../post/post.service';
 import { StatusarticledonationService } from '../statusarticledonation/statusarticledonation.service';
 import { UserarticleService } from '../userarticle/userarticle.service';
+import { NotifyService } from '../notify/notify.service';
+import { ConfigService } from '@nestjs/config';
+import { URL_FRONTEND } from 'src/config/constants';
+import { TypeNotifyService } from '../typenotify/typenotify.service';
 
 @Injectable()
 export class DonationService {
@@ -26,6 +30,9 @@ export class DonationService {
     private readonly postService: PostService,
     private readonly statusArticleDonationService: StatusarticledonationService,
     private readonly userArticleService: UserarticleService,
+    private readonly notifyService: NotifyService,
+    private readonly configService: ConfigService,
+    private readonly typeNotifyService: TypeNotifyService,
   ) { }
 
   async getDonationById(id: number, format: boolean = true): Promise<DonationEntity> {
@@ -147,17 +154,37 @@ export class DonationService {
         throw new BadRequestException('Debe proporcionar al menos un artículo para la donación');
       }
 
-      const receiver = await this.userService.findById(currentUser.sub || currentUser.id || currentUser);
-      console.log(receiver)
-      if (!receiver) throw new NotFoundException('Usuario no encontrado');
-      if (!receiver.verified) {
-        throw new ForbiddenException('Solo usuarios verificados pueden recibir donaciones');
+      const currentUserId = currentUser.sub || currentUser.id || currentUser;
+      const currentUserEntity = await this.userService.findById(currentUserId);
+      if (!currentUserEntity) throw new NotFoundException('Usuario no encontrado');
+      if (!currentUserEntity.verified) {
+        throw new ForbiddenException('Solo usuarios verificados pueden crear donaciones');
       }
 
       const post = await this.postService.getPostById(Number(postId));
       if (!post) throw new NotFoundException('Post no encontrado');
-      if (post.user && receiver.id === post.user.id) {
-        throw new ForbiddenException('No puedes crear una donación para tu propio post');
+
+      const typePostName = post.typePost?.type?.toLowerCase?.() || null;
+      const isSolicitudDonacion = typePostName === 'solicitud de donacion' || 
+                                  typePostName === 'solicitud_de_donacion' || 
+                                  typePostName === 'solicitud-donacion';
+
+      let receiver: any;
+      if (isSolicitudDonacion) {
+        receiver = post.user;
+        if (currentUserEntity.id === post.user.id) {
+          throw new ForbiddenException('No puedes donar a tu propia solicitud de donación');
+        }
+      } else {
+        receiver = currentUserEntity;
+        if (currentUserEntity.id === post.user.id) {
+          throw new ForbiddenException('No puedes crear una donación para tu propio post');
+        }
+      }
+
+      const receiverRol = (receiver as any).rol?.rol?.toLowerCase();
+      if (receiverRol !== 'organizacion') {
+        throw new ForbiddenException('Solo los usuarios con rol "organizacion" pueden recibir donaciones');
       }
 
       const statusPendiente = await this.statusDonationService.findByname('pendiente');
@@ -282,6 +309,24 @@ export class DonationService {
         }));
         // Eliminar la relación compleja de la respuesta
         delete (donationWithArticles as any).postDonationArticlePost;
+      }
+      
+      const urlFront = this.configService.get<string>(URL_FRONTEND);
+      const notifyMessage = `Nueva donación creada para tu post "${post.title}". Revisa los detalles de la donación.`;
+      const link = `${urlFront}/organization/donations/${savedDonation.id}`;
+      
+      const postOwnerUserId = post.user?.id;
+      if (postOwnerUserId) {
+        const typeNotifyDonation = await this.typeNotifyService.getByType('informaacion');
+        const typeNotifyId = typeNotifyDonation?.id || 1;
+        
+        await this.notifyService.createNotify({
+          title: 'Nueva Donación',
+          message: notifyMessage,
+          link: link,
+          typeNotifyId: typeNotifyId,
+          usersIds: [postOwnerUserId]
+        });
       }
 
       return donationWithArticles;
@@ -563,6 +608,65 @@ export class DonationService {
 
       donation.statusDonation = statusEntity;
       const updated = await this.donationRepo.save(donation);
+
+      const urlFront = this.configService.get<string>(URL_FRONTEND);
+      const link = `${urlFront}/organization/donations/${donationId}`;
+      
+      const typePostName = donation.post?.typePost?.type?.toLowerCase?.() || null;
+      const isSolicitud = typePostName === 'solicitud de donacion' || typePostName === 'solicitud_de_donacion' || typePostName === 'solicitud-donacion';
+      const receiverUserId = isSolicitud ? donation.post?.user?.id : donation.user?.id;
+      const donorUserId = isSolicitud ? donation.user?.id : donation.post?.user?.id;
+      
+      const typeNotifyDonation = await this.typeNotifyService.getByType('informaacion');
+      const typeNotifyId = typeNotifyDonation?.id || 1;
+      
+      if (statusEntity.id === statusDeclined?.id && receiverUserId) {
+        await this.notifyService.createNotify({
+          title: 'Donación Rechazada',
+          message: `Tu donación ha sido rechazada.`,
+          link: link,
+          typeNotifyId: typeNotifyId,
+          usersIds: [receiverUserId]
+        });
+      }else
+      
+      if (statusEntity.id === statusCanceled?.id && donorUserId) {
+        await this.notifyService.createNotify({
+          title: 'Donación Cancelada',
+          message: `La donación ha sido cancelada.`,
+          link: link,
+          typeNotifyId: typeNotifyId,
+          usersIds: [donorUserId]
+        });
+      }else
+      
+      if (statusEntity.id === statusCompleted?.id || statusEntity.id === statusDelivered?.id) {
+        const notifyUserIds: number[] = [];
+        if (receiverUserId) notifyUserIds.push(receiverUserId);
+        if (donorUserId) notifyUserIds.push(donorUserId);
+        
+        if (notifyUserIds.length > 0) {
+          await this.notifyService.createNotify({
+            title: statusEntity.id === statusCompleted?.id ? 'Donación Completada' : 'Donación Entregada',
+            message: `La donación ha sido ${statusEntity.id === statusCompleted?.id ? 'completada' : 'entregada'}.`,
+            link: link,
+            typeNotifyId: typeNotifyId,
+            usersIds: notifyUserIds
+          });
+        }
+      }else{
+        // Otros estados: notificar al receptor
+        if (receiverUserId) {
+          await this.notifyService.createNotify({
+            title: 'Actualización de Donación',
+            message: `El estado de tu donación ha sido actualizado a "${statusEntity.status}".`,
+            link: link,
+            typeNotifyId: typeNotifyId,
+            usersIds: [receiverUserId]
+          });
+        }
+      }
+
       const formatted = this.formatDonationResponse(updated, currentUser.id);
       return formatted;
     } catch (error) {
