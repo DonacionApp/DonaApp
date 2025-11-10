@@ -332,14 +332,37 @@ export class PostdonationarticleService {
                 throw new BadRequestException('No tiene permisos para modificar la cantidad de este artículo en la donación');
             }
             
-            // La nueva cantidad no puede exceder la cantidad disponible en el postArticle
-            const availableInPost = Number(postDonationArticle.postArticle.quantity);
-            if (newQuantity > availableInPost) {
-                throw new BadRequestException(`La cantidad solicitada (${newQuantity}) excede la cantidad disponible en el artículo del post (${availableInPost})`);
+            const oldQuantity = Number(postDonationArticle.quantity);
+            const currentPostArticleQuantity = Number(postDonationArticle.postArticle.quantity);
+            
+            const difference = newQuantity - oldQuantity;
+            const newPostArticleQuantity = currentPostArticleQuantity - difference;
+            
+            if (newPostArticleQuantity < 0) {
+                throw new BadRequestException(`La cantidad solicitada (${newQuantity}) excede la cantidad disponible. Disponible: ${currentPostArticleQuantity + oldQuantity}`);
             }
             
             postDonationArticle.quantity = newQuantity.toString();
             const saved = await this.postDonationArticleRepository.save(postDonationArticle);
+            
+            await this.postArticleService.asignNewQuantity(postDonationArticle.postArticle.id, newPostArticleQuantity);
+            
+            if (newPostArticleQuantity <= 0) {
+                await this.postArticleService.asignUnvalaiblesStatus(postDonationArticle.postArticle.id);
+            } else {
+                const statusAvailable = await this.statusPostArticleService.getStatusByName('disponible');
+                const postArticleRepo = this.postDonationArticleRepository.manager.getRepository('PostArticleEntity');
+                const currentArticle = await postArticleRepo.findOne({ 
+                    where: { id: postDonationArticle.postArticle.id },
+                    relations: ['status'] 
+                });
+                
+                if (currentArticle && currentArticle.status?.id !== statusAvailable.id) {
+                    currentArticle.status = statusAvailable;
+                    await postArticleRepo.save(currentArticle);
+                }
+            }
+            
             return saved;
         } catch (error) {
             throw error;
