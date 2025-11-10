@@ -4,6 +4,10 @@ import { PostLikedEntity } from './entity/post.liked.entity';
 import { Repository } from 'typeorm';
 import { PostService } from '../post/post.service';
 import { UserService } from '../user/user.service';
+import { NotifyService } from '../notify/notify.service';
+import { TypeNotifyService } from '../typenotify/typenotify.service';
+import { ConfigService } from '@nestjs/config';
+import { URL_FRONTEND } from 'src/config/constants';
 
 @Injectable()
 export class PostlikedService {
@@ -13,6 +17,10 @@ export class PostlikedService {
         @Inject(forwardRef(() => PostService))
         private readonly postService: PostService,
         private readonly userService: UserService,
+        private readonly notifyService: NotifyService,
+        @Inject(forwardRef(()=>TypeNotifyService))
+        private readonly typeNotifyService: TypeNotifyService,
+        private readonly configService:ConfigService,
     ) { }
 
     async addLikeToPost(userId: number, postId: number): Promise<{message:string, status:number} > {
@@ -50,7 +58,19 @@ export class PostlikedService {
                 post: post,
                 user: user
             });
+            const linkNotify=this.configService.get<string>(URL_FRONTEND);
+            const linkSanead=linkNotify+'/posts/'+post.id;
              await this.postLikedRepository.save(postliked);
+             const typeNotify=await this.typeNotifyService.getByType('informaacion')
+                if(typeNotify){
+                    await this.notifyService.createNotify({
+                        title:'Nuevo Like en tu Publicación',
+                        typeNotifyId:typeNotify.id,
+                        usersIds:[post.user.id],
+                        message:`El usuario ${user.username} le ha dado me gusta a tu publicación.`,
+                        link:linkSanead
+                    });
+                }
             return { message: 'Like agregado correctamente', status: 201 };
         } catch (error) {
             throw error;
