@@ -16,6 +16,7 @@ import { PostdonationarticleModule } from '../postdonationarticle/postdonationar
 import { PostarticleModule } from '../postarticle/postarticle.module';
 import { PostModule } from '../post/post.module';
 import { StatusarticledonationModule } from '../statusarticledonation/statusarticledonation.module';
+import { UserarticleModule } from '../userarticle/userarticle.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { StatusarticledonationModule } from '../statusarticledonation/statusarti
     PostarticleModule,
     PostModule,
     StatusarticledonationModule,
+    UserarticleModule
   ],
   controllers: [DonationController],
   providers: [DonationService],
