@@ -459,6 +459,7 @@ export class DonationService {
         .leftJoinAndSelect('post.typePost', 'typePost')
         .leftJoinAndSelect('d.postDonationArticlePost', 'pda')
         .leftJoinAndSelect('pda.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article')
         .where('d.id = :donationId', { donationId })
         .getOne();
       

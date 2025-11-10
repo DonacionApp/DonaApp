@@ -239,7 +239,13 @@ export class PostdonationarticleService {
             });
             const saved = await this.postDonationArticleRepository.save(newPostDonationArticle);
             
-            // Return sanitized response without sensitive user data
+            const newQuantity = existQuantity - requestedQuantity;
+            await this.postArticleService.asignNewQuantity(postArticle.id, newQuantity);
+            
+            if (newQuantity <= 0) {
+                await this.postArticleService.asignUnvalaiblesStatus(postArticle.id);
+            }
+            
             return {
                 id: saved.id,
                 quantity: saved.quantity,
