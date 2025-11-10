@@ -433,31 +433,6 @@ export class PostService {
                 throw new NotFoundException('El usuario no tiene posts');
             }
 
-            posts = await Promise.all(posts.map(async p => {
-                if (p.user) {
-                    const roleName = (p.user as any).rol?.rol;
-                    const people = (p.user as any).people;
-                    const residencia = people?.residencia ?? null;
-                    let municipio: any = null;
-                    if (people?.municipio) {
-                        try {
-                            const { countryExist, stateExist, citiExist } = await this.userService.normalizeMunicipio(people.municipio as any);
-                            municipio = { country: countryExist, state: stateExist, city: citiExist };
-                        } catch (_) {}
-                    }
-                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = p.user as any;
-                    p.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName, residencia, municipio } as any;
-                }
-                const internalCount = (p as any)._userHasLikedCount;
-                if (internalCount !== undefined) {
-                    (p as any).userHasLiked = Number(internalCount) > 0;
-                    delete (p as any)._userHasLikedCount;
-                } else if (numericUserRequest && numericUserRequest > 0) {
-                    (p as any).userHasLiked = false;
-                }
-                return p;
-            }));
-
             return posts;
         } catch (error) {
             throw error;
