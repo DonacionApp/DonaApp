@@ -13,6 +13,10 @@ export class UserController {
 
   ) { }
 
+  @Get('minimal/:id')
+  async getUserInfoMinimal(@Param('id') id: number) {
+    return await this.userService.getUserInfoMinimal(Number(id));
+  }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
