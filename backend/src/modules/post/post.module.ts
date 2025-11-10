@@ -11,11 +11,12 @@ import { PostlikedModule } from '../postLiked/postliked.module';
 import { ArticleModule } from '../article/article.module';
 import { PostArticleEntity } from '../postarticle/entity/postarticle.entity';
 import { PostarticleModule } from '../postarticle/postarticle.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports:[TypeOrmModule.forFeature([PostEntity]),TagsModule,forwardRef(()=>ImagepostModule),
    forwardRef(()=>PosttagsModule), forwardRef(()=>TypepostModule), forwardRef(()=>PostlikedModule),
-  ArticleModule, forwardRef(()=>PostarticleModule)],
+  ArticleModule, forwardRef(()=>PostarticleModule), UserModule],
   controllers: [PostController],
   providers: [PostService],
   exports:[PostService]

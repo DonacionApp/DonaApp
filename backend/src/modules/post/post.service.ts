@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject, forwardRef, BadRequestException, HttpException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, BadRequestException, HttpException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entity/post.entity';
 import { Repository } from 'typeorm';
@@ -11,6 +11,7 @@ import { PostFilterDto } from './dto/filter.dto';
 import { PostlikedService } from '../postLiked/postliked.service';
 import { ArticleService } from '../article/article.service';
 import { PostarticleService } from '../postarticle/postarticle.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class PostService {
@@ -29,6 +30,7 @@ export class PostService {
         private articleService:ArticleService,
         @Inject(forwardRef(() => PostarticleService))
         private readonly postArticleService: PostarticleService,
+        private readonly userService: UserService,
     ) { }
 
     async userLikedPost(userId: number, postId: number): Promise<boolean> {
@@ -129,6 +131,19 @@ export class PostService {
             if (!typePostNormali) throw new BadRequestException('El tipo de post es invalido');
             const existTypePost = await this.typePostService.findById(typePostNormali.id);
             if (!existTypePost) throw new NotFoundException('El tipo de post no existe');
+            
+            if (existTypePost && existTypePost.type && existTypePost.type.toLowerCase() === 'solicitud de donacion') {
+                const userIdToCheck = (user && user.id) ? user.id : userId;
+                if (!userIdToCheck) throw new BadRequestException('No se puede identificar el usuario');
+                
+                const userEntity = await this.userService.findById(userIdToCheck);
+                if (!userEntity) throw new NotFoundException('Usuario no encontrado');
+                
+                const userRol = (userEntity as any).rol?.rol?.toLowerCase();
+                if (userRol !== 'organizacion') {
+                    throw new ForbiddenException('Solo los usuarios con rol "organizacion" pueden crear publicaciones de tipo "solicitud de donacion"');
+                }
+            }
 
             const postPayload: any = {
                 title: rest.title,
