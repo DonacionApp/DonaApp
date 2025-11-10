@@ -468,4 +468,51 @@ export class UserService {
     }
   }
 
+  async getUserInfoMinimal(userId: number): Promise<Partial<UserEntity>> {
+    try {
+      if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
+      
+      const user = await this.userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.rol', 'rol')
+        .leftJoinAndSelect('user.people', 'people')
+        .loadRelationCountAndMap('user.countPosts', 'user.post')
+        .loadRelationCountAndMap('user.countDonations', 'user.donation')
+        .where('user.id = :userId', { userId })
+        .getOne();
+      
+      if (!user) throw new NotFoundException('Usuario no encontrado');
+      
+      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = user;
+      const roleName = user.rol?.rol ?? null;
+      const residencia = user.people?.residencia ?? null;
+      const countPosts = (user as any).countPosts ?? 0;
+      const countDonations = (user as any).countDonations ?? 0;
+      
+      let municipio: any = null;
+      if (user.people?.municipio) {
+        try {
+          const { countryExist, stateExist, citiExist } = await this.normalizeMunicipio(user.people.municipio as any);
+          municipio = { country: countryExist, state: stateExist, city: citiExist };
+        } catch (_) {}
+      }
+      
+      return {
+        id,
+        username,
+        email,
+        profilePhoto,
+        emailVerified,
+        verified,
+        createdAt,
+        rol: roleName,
+        residencia,
+        municipio,
+        countPosts,
+        countDonations
+      } as any;
+    } catch (error) {
+      throw error;
+    }
+  }
 }

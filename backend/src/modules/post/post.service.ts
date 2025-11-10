@@ -62,6 +62,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.people', 'people')
                 .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
@@ -90,8 +91,17 @@ export class PostService {
 
             if (post.user) {
                 const roleName = (post.user as any).rol?.rol;
+                const people = (post.user as any).people;
+                const residencia = people?.residencia ?? null;
+                let municipio: any = null;
+                if (people?.municipio) {
+                    try {
+                        const { countryExist, stateExist, citiExist } = await this.userService.normalizeMunicipio(people.municipio as any);
+                        municipio = { country: countryExist, state: stateExist, city: citiExist };
+                    } catch (_) {}
+                }
                 const { id: uid, username, profilePhoto, emailVerified, verified, createdAt } = post.user as any;
-                post.user = { id: uid, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
+                post.user = { id: uid, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName, residencia, municipio } as any;
             }
 
             // mapear userHasLiked a booleano y limpiar propiedad interna
@@ -282,6 +292,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.people', 'people')
                 .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postLiked', 'postLiked')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
@@ -320,10 +331,24 @@ export class PostService {
             }
 
             const postsWithUserInfo = posts.map(post => {
+                // replaced below with async normalization logic; placeholder
+                return post;
+            });
+
+            const enrichedPosts = await Promise.all(postsWithUserInfo.map(async post => {
                 if (post.user) {
                     const roleName = (post.user as any).rol?.rol;
-                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
-                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
+                    const people = (post.user as any).people;
+                    const residencia = people?.residencia ?? null;
+                    let municipio: any = null;
+                    if (people?.municipio) {
+                        try {
+                            const { countryExist, stateExist, citiExist } = await this.userService.normalizeMunicipio(people.municipio as any);
+                            municipio = { country: countryExist, state: stateExist, city: citiExist };
+                        } catch (_) {}
+                    }
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user as any;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName, residencia, municipio } as any;
                 }
 
                 if (userId && userId > 0) {
@@ -336,9 +361,9 @@ export class PostService {
                 }
 
                 return post;
-            });
+            }));
 
-            return postsWithUserInfo;
+            return enrichedPosts;
         } catch (error) {
             throw error;
         }
@@ -383,6 +408,7 @@ export class PostService {
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.people', 'people')
                 .leftJoinAndSelect('user.rol', 'userRol')
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
@@ -407,22 +433,30 @@ export class PostService {
                 throw new NotFoundException('El usuario no tiene posts');
             }
 
-            posts = posts.map(p => {
+            posts = await Promise.all(posts.map(async p => {
                 if (p.user) {
                     const roleName = (p.user as any).rol?.rol;
+                    const people = (p.user as any).people;
+                    const residencia = people?.residencia ?? null;
+                    let municipio: any = null;
+                    if (people?.municipio) {
+                        try {
+                            const { countryExist, stateExist, citiExist } = await this.userService.normalizeMunicipio(people.municipio as any);
+                            municipio = { country: countryExist, state: stateExist, city: citiExist };
+                        } catch (_) {}
+                    }
                     const { id, username, profilePhoto, emailVerified, verified, createdAt } = p.user as any;
-                    p.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName } as any;
+                    p.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName, residencia, municipio } as any;
                 }
                 const internalCount = (p as any)._userHasLikedCount;
                 if (internalCount !== undefined) {
                     (p as any).userHasLiked = Number(internalCount) > 0;
                     delete (p as any)._userHasLikedCount;
                 } else if (numericUserRequest && numericUserRequest > 0) {
-                    // fallback ligero (no trae toda la relación) solo si faltó el mapeo
                     (p as any).userHasLiked = false;
                 }
                 return p;
-            });
+            }));
 
             return posts;
         } catch (error) {
@@ -587,6 +621,7 @@ export class PostService {
         try {
             const queryBuilder = this.postRepository.createQueryBuilder('post')
                 .leftJoinAndSelect('post.user', 'user')
+                .leftJoinAndSelect('user.people', 'people')
                 .leftJoinAndSelect('post.imagePost', 'imagePost')
                 .leftJoinAndSelect('post.tags', 'postTags')
                 .leftJoinAndSelect('postTags.tag', 'tag')
@@ -614,8 +649,17 @@ export class PostService {
             }
             const postsWithUserInfo = await Promise.all(posts.map(async post => {
                 if (post.user) {
-                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user;
-                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt } as any;
+                    const people = (post.user as any).people;
+                    const residencia = people?.residencia ?? null;
+                    let municipio: any = null;
+                    if (people?.municipio) {
+                        try {
+                            const { countryExist, stateExist, citiExist } = await this.userService.normalizeMunicipio(people.municipio as any);
+                            municipio = { country: countryExist, state: stateExist, city: citiExist };
+                        } catch (_) {}
+                    }
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user as any;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, residencia, municipio } as any;
                 }
                 if (userId && userId > 0) {
                     const liked = await this.postLikedService.userLikedPost(userId, post.id);
