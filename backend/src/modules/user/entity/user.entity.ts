@@ -42,6 +42,8 @@ export class UserEntity{
     code:string | null;
     @Column({type:'boolean', default:true})
     block:boolean;
+    @Column({type:'varchar', nullable:true})
+    location:string | null;
 
     @OneToOne(()=>PeopleEntity,(people)=>people.user, {onDelete:'CASCADE', nullable:false})
     @JoinColumn()
