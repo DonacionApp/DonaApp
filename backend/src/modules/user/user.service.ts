@@ -483,7 +483,7 @@ export class UserService {
       
       if (!user) throw new NotFoundException('Usuario no encontrado');
       
-      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = user;
+     const { id, username, email, profilePhoto, emailVerified, verified, location, createdAt } = user;
       const roleName = user.rol?.rol ?? null;
       const residencia = user.people?.residencia ?? null;
       const countPosts = (user as any).countPosts ?? 0;
