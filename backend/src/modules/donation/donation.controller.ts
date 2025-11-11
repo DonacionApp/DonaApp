@@ -10,7 +10,7 @@ import { FilterDonationDto } from './dto/filter-donation.dto';
 
 @Controller('donation')
 export class DonationController {
-  constructor(private readonly donationService: DonationService) {}
+  constructor(private readonly donationService: DonationService) { }
 
   // get /donation/:id - Obtener una donación por ID
   @UseGuards(JwtAuthGuard)
@@ -41,19 +41,19 @@ export class DonationController {
   async updateDonationDate(@Param('id') id: number, @Body() updateDateDto: any, @Req() req: any) {
     try {
       const user = req.user;
-      const currentUserId:number = user.id;
+      const currentUserId: number = user.id;
       return await this.donationService.incrementDonationDate(id, currentUserId);
     } catch (error) {
       throw error;
     }
   }
 
-    @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Put('admin/update-date/:id')
   async updateDonationDateAdmin(@Param('id') id: number, @Body() updateDateDto: any, @Req() req: any) {
     try {
       const user = req.user;
-      const currentUserId:number = user.id;
+      const currentUserId: number = user.id;
       return await this.donationService.incrementDonationDate(id, currentUserId);
     } catch (error) {
       throw error;
@@ -71,12 +71,60 @@ export class DonationController {
       throw error;
     }
   }
-  // get /donation/users/:idUser - Obtener donaciones de un usuario específico
-  @Get('users/:idUser')
-  async getDonationsByUser(@Param('idUser') idUser: number) {
+  @UseGuards(JwtAuthGuard)
+  @Get('me/made')
+  async getMyDonationsMade(@Req() req: any, @Query('limit') limit?: string, @Query('offset') offset?: string, @Query('page') page?: string) {
     try {
-      const userId = Number(idUser);
-      return await this.donationService.getDonationsByUser(userId);
+      const user = req.user;
+      const opts: any = {};
+      if (limit) opts.limit = Number(limit);
+      if (offset) opts.offset = Number(offset);
+      if (page) opts.page = Number(page);
+      return await this.donationService.getDonationsMadeByUser(user.id, opts);
+    } catch (error) {
+      throw error;
+    }
+  }
+  @Get('users/:idUser')
+  async getDonationsByUser(
+    @Param('idUser') idUser: number,
+    @Req() req: any,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
+    @Query('role') role?: string, // 'donador' | 'beneficiario' | undefined
+    @Query('statusId') statusId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('searchParam') searchParam?: string,
+    @Query('typeSearch') typeSearch?: string,
+    @Query('orderBy') orderBy?: string,
+  ) {
+    try {
+      const targetUserId = Number(idUser);
+      const currentUser = req?.user;
+      const opts: any = {};
+      if (limit) opts.limit = Number(limit);
+      if (offset) opts.offset = Number(offset);
+      if (page) opts.page = Number(page);
+      if (cursor) opts.cursor = cursor;
+      if (role) opts.role = String(role).toLowerCase();
+      if (statusId) opts.statusId = Number(statusId);
+      if (startDate) opts.startDate = startDate;
+      if (endDate) opts.endDate = endDate;
+      if (searchParam) opts.searchParam = searchParam;
+      if (typeSearch) {
+        try {
+          opts.typeSearch = JSON.parse(typeSearch);
+        } catch (e) {
+          // allow comma separated
+          opts.typeSearch = String(typeSearch).split(',').map(s => s.trim());
+        }
+      }
+      if (orderBy) opts.orderBy = orderBy;
+
+      return await this.donationService.getDonationsByUser(targetUserId, currentUser?.id, opts);
     } catch (error) {
       throw error;
     }
@@ -98,7 +146,7 @@ export class DonationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post('admin/update/:id')
-  async adminUpdateDonation(@Param('id') id:number,@Req() req: any, @Body() updateDonationDto:UpdateDonationDto):Promise<any>{
+  async adminUpdateDonation(@Param('id') id: number, @Req() req: any, @Body() updateDonationDto: UpdateDonationDto): Promise<any> {
     try {
       const user = req.user;
       return await this.donationService.updateDonation(id, updateDonationDto, user, true);
@@ -150,7 +198,7 @@ export class DonationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post(':id/status/admin')
-  async updateStatusAdmin(@Param('id') id: number,@Req() req: any, @Body() body: UpdateStatusDto) {
+  async updateStatusAdmin(@Param('id') id: number, @Req() req: any, @Body() body: UpdateStatusDto) {
     try {
       const user = req.user;
       const donationId = Number(id);

@@ -1,4 +1,5 @@
 import { ChatEntity } from "src/modules/chat/entity/chat.entity";
+import { DonationReviewEntity } from "src/modules/donationreview/entity/donation.review.entity";
 import { PostEntity } from "src/modules/post/entity/post.entity";
 import { PostArticleDonationEntity } from "src/modules/postdonationarticle/entity/post.article.donation.entity";
 import { StatusDonationEntity } from "src/modules/statusdonation/entity/status.donation.entity";
@@ -29,6 +30,8 @@ export class DonationEntity{
     postDonationArticlePost:PostArticleDonationEntity[];
     @OneToOne(()=>ChatEntity,(chat)=>chat.donation, {onDelete:'CASCADE', nullable:true})
     chat:ChatEntity | null;
+    @OneToMany(()=>DonationReviewEntity,(donationrevieww)=>donationrevieww.donation)
+    reviewwDonation:DonationReviewEntity[];
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;

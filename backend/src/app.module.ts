@@ -39,6 +39,8 @@ import { MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { RefreshTokenMiddleware } from './shared/middleware/refresh-token.middleware';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AddRefreshTokenInterceptor } from './shared/interceptors/add-refresh-token.interceptor';
+import { DonationreviewModule } from './modules/donationreview/donationreview.module';
+import { SentimentServiceModule } from './core/sentiment-service/sentiment-service.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -99,6 +101,8 @@ import { AddRefreshTokenInterceptor } from './shared/interceptors/add-refresh-to
   StatusarticledonationModule,
   StatussupportidModule,
   CommentsupportidModule,
+  DonationreviewModule,
+  SentimentServiceModule,
 ],
   controllers: [AppController],
   providers: [

@@ -483,7 +483,7 @@ export class UserService {
       
       if (!user) throw new NotFoundException('Usuario no encontrado');
       
-      const { id, username, email, profilePhoto, emailVerified, verified, createdAt } = user;
+     const { id, username, email, profilePhoto, emailVerified, verified, location, createdAt } = user;
       const roleName = user.rol?.rol ?? null;
       const residencia = user.people?.residencia ?? null;
       const countPosts = (user as any).countPosts ?? 0;
@@ -504,6 +504,7 @@ export class UserService {
         profilePhoto,
         emailVerified,
         verified,
+        location,
         createdAt,
         rol: roleName,
         residencia,
@@ -515,4 +516,26 @@ export class UserService {
       throw error;
     }
   }
+
+  async getOrganzationUsers():Promise<UserEntity[]>{
+    try {
+      const queryBuilder = this.userRepository.createQueryBuilder('user')
+      .leftJoinAndSelect('user.rol', 'rol')
+      .leftJoinAndSelect('user.people', 'people')
+      .where('rol.rol = :roleName', { roleName: 'organizacion' });
+      const result= await queryBuilder.getMany();
+      if(!result || result.length===0){
+        return {message:'No hay usuarios con rol de organización', status:400} as any;
+      }
+      const usersWithMinimalInfo= result.map(user=>{
+        const {id, username, email, profilePhoto, emailVerified, verified, createdAt, location, rol}= user;
+        const residencia= user.people?.residencia ?? null;
+        return {id, username, email, profilePhoto, emailVerified, verified, createdAt, residencia, location, rol: rol.rol};
+      });
+      return usersWithMinimalInfo as any;
+    } catch (error) {
+      throw error;
+    }
+  }
+  
 }

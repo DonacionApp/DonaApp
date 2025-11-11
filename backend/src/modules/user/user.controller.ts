@@ -18,6 +18,11 @@ export class UserController {
     return await this.userService.getUserInfoMinimal(Number(id));
   }
 
+  @Get('/minimal/all/organizations')
+  async getAllOrganizationsMinimal() {
+    return await this.userService.getOrganzationUsers();
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Get()

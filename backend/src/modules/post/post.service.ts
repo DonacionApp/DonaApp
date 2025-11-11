@@ -603,13 +603,14 @@ export class PostService {
                 .leftJoinAndSelect('post.postArticle', 'postArticle')
                 .leftJoinAndSelect('postArticle.article', 'article')
                 .leftJoinAndSelect('postArticle.status', 'status')
-                .leftJoinAndSelect('post.postLiked', 'postLiked')
+                // load only likes count to avoid fetching full postLiked relation
+                .loadRelationCountAndMap('post.likesCount', 'post.postLiked')
                 .leftJoinAndSelect('post.typePost', 'typePost');
             if (filters.userName) {
                 queryBuilder.andWhere('user.username ILIKE :userName', { userName: `%${filters.userName}%` });
             }
             if (filters.search) {
-                queryBuilder.andWhere('(post.title ILIKE :search OR post.message ILIKE :search)', { search: `%${filters.search}%` });
+                queryBuilder.andWhere('(post.title ILIKE :search OR post.message ILIKE :search OR user.username ILIKE :search)', { search: `%${filters.search}%` });
             }
             if (filters.tags && filters.tags.length > 0) {
                 queryBuilder.andWhere('tag.tag IN (:...tags)', { tags: filters.tags });
@@ -622,6 +623,23 @@ export class PostService {
             if(!posts || posts.length===0){
                 throw new NotFoundException('No se encontraron posts con los filtros proporcionados');
             }
+            // compute which posts the user has liked in one query to avoid N queries
+            let userLikedPostIds: Set<number> = new Set();
+            if (userId && userId > 0) {
+                const postIds = posts.map(p => p.id);
+                if (postIds.length > 0) {
+                    const likedRows: Array<{ id: number }> = await this.postRepository
+                        .createQueryBuilder('post')
+                        .innerJoin('post.postLiked', 'liked')
+                        .where('post.id IN (:...postIds)', { postIds })
+                        .andWhere('liked.user.id = :userId', { userId })
+                        .select('post.id', 'id')
+                        .getRawMany();
+
+                    userLikedPostIds = new Set(likedRows.map(r => Number(r.id)));
+                }
+            }
+
             const postsWithUserInfo = await Promise.all(posts.map(async post => {
                 if (post.user) {
                     const people = (post.user as any).people;
@@ -637,16 +655,11 @@ export class PostService {
                     post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, residencia, municipio } as any;
                 }
                 if (userId && userId > 0) {
-                    const liked = await this.postLikedService.userLikedPost(userId, post.id);
-                    (post as any).userHasLiked = liked;
+                    (post as any).userHasLiked = userLikedPostIds.has(post.id);
                 }
-                if (post.postLiked) {
-                    (post as any).likesCount = post.postLiked.length;
-                }
-                if (post.postLiked) {
-                    const { postLiked, ...rest } = post;
-                    post = rest as PostEntity;
-                }
+
+                // ensure likesCount exists in the shaped response (from loadRelationCountAndMap)
+                (post as any).likesCount = Number((post as any).likesCount ?? 0);
                 return post;
             }));
             return postsWithUserInfo;
