@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DonationEntity } from './entity/donation.entity';
-import { Repository } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { StatusDonationEntity } from '../statusdonation/entity/status.donation.entity';
 import { UserService } from '../user/user.service';
 import { StatusdonationService } from '../statusdonation/statusdonation.service';
@@ -366,9 +366,130 @@ export class DonationService {
     }
   }
 
-  async getDonationsByUser(idUser: number, currentUser?: number): Promise<DonationEntity[]> {
+  async getDonationsByUser(idUser: number, currentUser?: number, options?: any): Promise<any[]> {
     try {
-      return await this.getUserDonations(idUser);
+      if (!idUser) throw new BadRequestException('El id del usuario es obligatorio');
+
+      const limit = Math.min(Math.max(Number(options?.limit) || 20, 1), 100);
+      let offset = Number(options?.offset) || 0;
+      if (options?.page && Number(options.page) > 0) {
+        offset = (Number(options.page) - 1) * limit;
+      }
+
+      const cursor = options?.cursor ? new Date(String(options.cursor)) : null;
+      const role = options?.role ? String(options.role).toLowerCase() : null; // donador | beneficiario
+
+      const qb = this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.post', 'post')
+        .leftJoinAndSelect('post.typePost', 'typePost')
+        .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('donation.user', 'donationUser')
+        .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
+        .leftJoinAndSelect('donation.postDonationArticlePost', 'pda')
+        .leftJoinAndSelect('pda.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article');
+
+      const solicitud = 'solicitud de donacion';
+
+      if (role === 'donador') {
+        // donator: if type is solicitud -> donation.user; else -> post.user
+        qb.where(new Brackets(b => {
+          b.where('LOWER(typePost.type) = :sol AND donation.userId = :userId', { sol: solicitud, userId: idUser })
+           .orWhere('LOWER(typePost.type) != :sol AND post.userId = :userId', { sol: solicitud, userId: idUser });
+        }));
+      } else if (role === 'beneficiario') {
+        // beneficiary: if type is solicitud -> post.user; else -> donation.user
+        qb.where(new Brackets(b => {
+          b.where('LOWER(typePost.type) = :sol AND post.userId = :userId', { sol: solicitud, userId: idUser })
+           .orWhere('LOWER(typePost.type) != :sol AND donation.userId = :userId', { sol: solicitud, userId: idUser });
+        }));
+      } else {
+        // default: any donation related to user (either donation.user or post.user)
+        qb.where(new Brackets(b => {
+          b.where('donation.userId = :userId', { userId: idUser })
+           .orWhere('post.userId = :userId', { userId: idUser });
+        }));
+      }
+
+      // status filter
+      if (options?.statusId) {
+        qb.andWhere('statusDonation.id = :statusId', { statusId: Number(options.statusId) });
+      }
+
+      // date filters
+      if (options?.startDate) {
+        qb.andWhere('donation.createdAt >= :startDate', { startDate: new Date(options.startDate) });
+      }
+      if (options?.endDate) {
+        const end = new Date(options.endDate);
+        end.setHours(23, 59, 59, 999);
+        qb.andWhere('donation.createdAt <= :endDate', { endDate: end });
+      }
+
+      // search filters (lugar, articulos.content) - similar behaviour to getDonationHistory
+      if (options?.searchParam && options?.typeSearch && Array.isArray(options.typeSearch) && options.typeSearch.length > 0) {
+        const searchTerm = `%${options.searchParam}%`;
+        const conditions: string[] = [];
+        for (const field of options.typeSearch) {
+          if (field === 'lugar') {
+            conditions.push('(donation.lugarRecogida ILIKE :searchTerm OR donation.lugarDonacion ILIKE :searchTerm)');
+          } else if (field === 'articulos.content') {
+            // search by article name or description
+            conditions.push('(article.name ILIKE :searchTerm OR article.descripcion ILIKE :searchTerm)');
+          }
+        }
+        if (conditions.length > 0) {
+          qb.andWhere(`(${conditions.join(' OR ')})`).setParameter('searchTerm', searchTerm);
+        }
+      }
+
+      // cursor (infinite scroll)
+      if (cursor && !isNaN(cursor.getTime())) {
+        qb.andWhere('donation.createdAt < :cursor', { cursor: cursor.toISOString() });
+      }
+
+      // ordering
+      const orderField = options?.orderBy === 'updatedAt' ? 'donation.updatedAt' : 'donation.createdAt';
+      qb.orderBy(orderField, 'DESC')
+        .skip(offset)
+        .take(limit);
+
+      const donations = await qb.getMany();
+      return donations.map(d => this.formatDonationResponse(d, currentUser));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDonationsMadeByUser(userId: number, options?: { limit?: number; offset?: number; page?: number; }): Promise<any[]> {
+    try {
+      if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
+
+      const limit = Math.min(Math.max(Number(options?.limit) || 20, 1), 100);
+      let offset = Number(options?.offset) || 0;
+      if (options?.page && Number(options.page) > 0) {
+        offset = (Number(options.page) - 1) * limit;
+      }
+
+      const qb = this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.post', 'post')
+        .leftJoinAndSelect('post.typePost', 'typePost')
+        .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('donation.user', 'donationUser')
+        .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
+        .leftJoinAndSelect('donation.postDonationArticlePost', 'pda')
+        .leftJoinAndSelect('pda.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article')
+        .where(new Brackets(qbWhere => {
+          qbWhere.where("LOWER(typePost.type) = :solicitud AND donation.userId = :userId", { solicitud: 'solicitud de donacion', userId })
+            .orWhere("LOWER(typePost.type) != :solicitud AND post.userId = :userId", { solicitud: 'solicitud de donacion', userId });
+        }))
+        .orderBy('donation.createdAt', 'DESC')
+        .skip(offset)
+        .take(limit);
+
+      const donations = await qb.getMany();
+      return donations.map(d => this.formatDonationResponse(d, userId));
     } catch (error) {
       throw error;
     }
