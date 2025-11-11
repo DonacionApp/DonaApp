@@ -7,6 +7,7 @@ import { RolEntity } from 'src/modules/rol/entity/rol.entity';
 import { StatusPostDonationArticle } from 'src/modules/statusarticledonation/entity/status.postdonationarticle.entity';
 import { StatusDonationEntity } from 'src/modules/statusdonation/entity/status.donation.entity';
 import { StatusSupportIdEntity } from 'src/modules/statussupportid/entity/status.supportid.entity';
+import { systemEntity } from 'src/modules/system/entity/system.entity';
 import { TagsEntity } from 'src/modules/tags/entity/tags.entity';
 import { TypeDniEntity } from 'src/modules/typedni/entity/type.dni.entity';
 import { TypeMessageEntity } from 'src/modules/typemessage/entity/type.message.entity';
@@ -40,9 +41,21 @@ export class SederServiceService {
         private readonly statusPostDonationArticleRepository: Repository<StatusPostDonationArticle>,
         @InjectRepository(StatusSupportIdEntity)
         private readonly statusSupportIdRepository: Repository<StatusSupportIdEntity>,
+        @InjectRepository(systemEntity)        
+        private readonly systemRepository: Repository<systemEntity>
     ) { }
 
     async onModuleInit() {
+        const countSystem = await this.systemRepository.count();
+        if (countSystem === 0) {
+            const system = this.systemRepository.create({
+                privacyPolicy: 'Política de privacidad inicial',
+                termsAndConditions: 'Términos y condiciones iniciales',
+                aboutUs: 'Acerca de nosotros inicial'
+            });
+            await this.systemRepository.save(system);
+            console.log('System inicial creado');
+        }
         const countRol = await this.rolRepository.count();
         const rol = [
             { rol: 'admin' },
@@ -139,7 +152,7 @@ export class SederServiceService {
 
         const countTypeNotify = await this.typeNotifyRepository.count();
         const typenotify = [
-            { type: 'informacion' },
+            { type: 'informaacion' },
             { type: 'alerta' },
             { type: 'recordatorio' },
         ]
