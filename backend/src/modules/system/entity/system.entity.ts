@@ -9,6 +9,8 @@ export class systemEntity{
     termsAndConditions:string;
     @Column({type:'text', nullable:false})
     privacyPolicy:string;
+    @Column({type:'text', nullable:false})
+    aboutUs:string;
     @OneToMany(()=>UserSystemEntity,(userSystem)=>userSystem.system)
     userSystem:UserSystemEntity[];
 
