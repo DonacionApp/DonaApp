@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { UserEntity } from './entity/user.entity';
@@ -231,7 +232,12 @@ export class UserService {
       }
 
       if (dto.password) {
-        user.password = dto.password;
+        // only allow password change when resetPass is true (admin or reset flow)
+        if (!resetPass) {
+          throw new BadRequestException('No está permitido actualizar la contraseña desde este endpoint');
+        }
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(dto.password, salt);
       }
       if (dto.token) {
         user.token = dto.token;

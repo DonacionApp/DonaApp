@@ -15,6 +15,18 @@ export class PeopleService {
         private readonly countriesService: CountriesService
     ) { }
 
+    private calculateAgeFromString(dateString: string | Date): number {
+        const birth = new Date(dateString as any);
+        if (isNaN(birth.getTime())) return -1;
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    }
+
     async findAll(): Promise<PeopleEntity[]> {
         try {
             const people = await this.peopleRepository.find({
@@ -50,6 +62,10 @@ export class PeopleService {
             if (!dto || !dto.name || !dto.birdthDate || !dto.dni || !dto.tipodDni || !dto.telefono || !dto.residencia) {
                 throw new BadRequestException('Los datos de la persona son obligatorios')
             }
+            // validar edad >= 18
+            const age = this.calculateAgeFromString(dto.birdthDate as any);
+            if (age < 0) throw new BadRequestException('Fecha de nacimiento inválida');
+            if (age < 18) throw new BadRequestException('El usuario debe ser mayor de edad');
             const dniExists = await this.peopleRepository.findOne({
                 where: { dni: dto.dni }
             })
@@ -120,6 +136,9 @@ export class PeopleService {
                 person.lastName = dto.lastName;
             }
             if (dto.birdthDate) {
+                const age = this.calculateAgeFromString(dto.birdthDate as any);
+                if (age < 0) throw new BadRequestException('Fecha de nacimiento inválida');
+                if (age < 18) throw new BadRequestException('El usuario debe ser mayor de edad');
                 person.birdthDate = dto.birdthDate;
             }
             if (dto.residencia) {
