@@ -20,7 +20,9 @@ export class NotifyService {
       private readonly notifyRepository: Repository<NotifyEntity>,
       private readonly typeNotifyService: TypeNotifyService,
       @Inject(forwardRef(() => UserNotifyService))
+      @Inject(forwardRef(() => UserNotifyService))
       private readonly userNotifyService: UserNotifyService,
+      @Inject(forwardRef(() => UserService))
       private readonly userService: UserService,
       @Inject(forwardRef(() => NotifyGateway))
       private readonly notifyGateway: NotifyGateway,
@@ -360,7 +362,7 @@ export class NotifyService {
       }
    }
 
-   async createNotifyForAdmins(dto:any):Promise<NotifyEntity>{
+   async createNotifyForAdmins(dto:{title: string; message: string; link?: string | null; typeNotifyId: number; }):Promise<NotifyEntity>{
       try {
          if (!dto) throw new BadRequestException('Los datos son obligatorios');
          const { message, typeNotifyId, title } = dto;

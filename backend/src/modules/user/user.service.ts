@@ -14,6 +14,8 @@ import { MailService } from 'src/core/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { CLOUDINARY_DOCS_FOLDER, CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLDER } from 'src/config/constants';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
+import { NotifyService } from '../notify/notify.service';
+import { TypeNotifyService } from '../typenotify/typenotify.service';
 
 @Injectable()
 export class UserService {
@@ -29,6 +31,9 @@ export class UserService {
     private readonly countriesService: CountriesService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => NotifyService))
+    private readonly notifyService: NotifyService,
+    private readonly typeNotifyService: TypeNotifyService,
   ) { }
 
   async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
@@ -473,6 +478,18 @@ export class UserService {
         const userNew = new UpdateUserDto();
         userNew.people = { supportId: urlNewDocument } as any;
         const updatedUser = await this.update(userId, userNew);
+        try {
+          const typeNotify = await this.typeNotifyService.getByType('informaacion');
+          await this.notifyService.createNotifyForAdmins({
+            title: 'Nuevo documento de soporte',
+            message: `El usuario ${user.username} ha subido un nuevo documento de soporte para verificación.`,
+            typeNotifyId: typeNotify.id,
+            link: null,
+          });
+        } catch (err) {
+          // no bloquear el flujo si falla la notificación
+          console.error('Error enviando notificación a admins:', err);
+        }
         return { status: 'success', supportId: urlNewDocument, statusCode: 200, message: 'Documento de soporte actualizado correctamente' };
       }
       return { status: 'info', statusCode: 200, message: 'El usuario ya está verificado, no se puede actualizar el documento de soporte' };

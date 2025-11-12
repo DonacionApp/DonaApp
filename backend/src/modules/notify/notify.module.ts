@@ -14,8 +14,8 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
    imports: [
       TypeOrmModule.forFeature([NotifyEntity]),
       TypeNotifyModule,
-      forwardRef(() => UserNotifyModule),
-      UserModule,
+   forwardRef(() => UserNotifyModule),
+   forwardRef(() => UserModule),
       JwtModule.registerAsync({
          imports: [ConfigModule],
          useFactory: async (configService: ConfigService) => ({
