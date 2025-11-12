@@ -45,6 +45,27 @@ export class UserController {
     return await this.userService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Get('upload-support')
+  async usersUploadIdSupport(
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+    @Query('search') search?: string,
+    @Query('orderBy') orderBy?: 'created' | 'updated',
+    @Query('order') order?: 'ASC' | 'DESC',
+    @Query('hasSupport') hasSupport?: string,
+  ) {
+    const opts: any = {};
+    if (limit) opts.limit = Number(limit);
+    if (cursor) opts.cursor = cursor;
+    if (search) opts.search = String(search);
+    if (orderBy) opts.orderBy = orderBy;
+    if (order) opts.order = order;
+    if (hasSupport) opts.hasSupport = hasSupport === 'true';
+    return await this.userService.usersUploadIdSupport(opts);
+  }
+
   @Get(':id')
   async findById(@Param('id') id: number) {
     return await this.userService.findById(Number(id));
@@ -89,6 +110,8 @@ export class UserController {
   async changeBlockStatus(@Param('id') id: number, @Body('block') block: boolean) {
     return await this.userService.changeBlockStatus(Number(id), block);
   }
+
+
 
 
 }

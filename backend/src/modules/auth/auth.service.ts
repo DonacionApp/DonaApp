@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
+import { forwardRef, Inject, Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
 import { UserService } from "../user/user.service";
 import { CreateUserDto } from "../user/dto/create.user.dto";
 import * as bcrypt from 'bcryptjs';
@@ -14,6 +14,7 @@ import { domainToASCII } from "url";
 import { ConfigService } from "@nestjs/config";
 import * as optpGenerator from 'otp-generator';
 import { UpdateUserDto } from "../user/dto/update.user.dto";
+import { UsersystemService } from "../usersystem/usersystem.service";
 
 @Injectable()
 export class AuthService {
@@ -24,6 +25,8 @@ export class AuthService {
       private readonly jwtService: JwtService,
       private readonly mailService: MailService,
       private readonly configService: ConfigService,
+   @Inject(forwardRef(() => UsersystemService))
+   private readonly userSystemService: UsersystemService,
    ) { }
 
    async generateToken(user: any): Promise<{ access_token: string }> {
@@ -83,6 +86,7 @@ export class AuthService {
          dto.password = hashedPassword;
          const user=await this.userService.create(dto);
          await this.sendEmailVerification(user.email, user.username, user.id)
+         await this.userSystemService.addUserToSystem(user.id);
          return {
             message: 'Usuario registrado exitosamente.',
             statussCode: 200

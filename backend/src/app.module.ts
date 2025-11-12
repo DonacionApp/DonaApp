@@ -42,6 +42,7 @@ import { AddRefreshTokenInterceptor } from './shared/interceptors/add-refresh-to
 import { DonationreviewModule } from './modules/donationreview/donationreview.module';
 import { SentimentServiceModule } from './core/sentiment-service/sentiment-service.module';
 import { SystemModule } from './modules/system/system.module';
+import { UsersystemModule } from './modules/usersystem/usersystem.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -105,6 +106,7 @@ import { SystemModule } from './modules/system/system.module';
   DonationreviewModule,
   SentimentServiceModule,
   SystemModule,
+  UsersystemModule,
 ],
   controllers: [AppController],
   providers: [

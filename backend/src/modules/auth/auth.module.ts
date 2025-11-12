@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
@@ -10,6 +10,8 @@ import { AuthController } from "./auth.controller";
 import { UserModule } from "../user/user.module";
 import { MailModule } from "src/core/mail/mail.module";
 import { RefreshTokenMiddleware } from "src/shared/middleware/refresh-token.middleware";
+import { UsersystemModule } from "../usersystem/usersystem.module";
+import { SystemModule } from "../system/system.module";
 
 @Module({
    imports: [
@@ -26,6 +28,8 @@ import { RefreshTokenMiddleware } from "src/shared/middleware/refresh-token.midd
       TypeOrmModule.forFeature([UserEntity]),
       UserModule,
       MailModule,
+   forwardRef(() => UsersystemModule),
+      
    ],
    providers: [
       AuthService,

@@ -15,6 +15,19 @@ export class SystemService {
         private readonly notifyService: NotifyService,
         private readonly typeNotifyService: TypeNotifyService
     ) { }
+    
+    async getTermsAndPolicies(): Promise<systemEntity> {
+        try {
+            const system = await this.systemRepository.findOneBy({id:1});
+            if(!system){
+                const newSystem= this.systemRepository.create({});
+                return await this.systemRepository.save(newSystem);
+            }
+            return system;
+        } catch (error) {
+            throw error;
+        }
+    }
 
     async getSystemPolicies(): Promise<systemEntity[]> {
         try {
