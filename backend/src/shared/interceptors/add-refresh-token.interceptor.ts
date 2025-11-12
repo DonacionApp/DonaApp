@@ -17,15 +17,11 @@ export class AddRefreshTokenInterceptor implements NestInterceptor {
       map((data) => {
         if (newToken) {
           if (typeof data === 'object' && data !== null) {
-            return {
-              ...data,
-              refreshToken: newToken,
-            };
-          }
-          return {
-            data,
-            refreshToken: newToken,
-          };
+            
+            console.log(' nuevo token generado y agregado al cuerpo de la respuesta +');
+          } 
+          console.log(` nuevo token generado pero no se pudo agregar al cuerpo de la respuesta +`);
+          return data;
         }
         return data;
       }),
