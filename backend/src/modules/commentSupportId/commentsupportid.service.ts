@@ -174,4 +174,46 @@ export class CommentsupportidService {
             throw error;
         }
     }
+
+    async acceptCommentSupportId(idComment:number, adminId:number):Promise<{message:string,status:number}>{
+        try{
+            if(!idComment || isNaN(idComment) || idComment<=0){
+                throw new BadRequestException('comentario inválido');
+            }
+            const comment = await this.commentSupportIdRepository.findOne({where:{id:idComment}, relations:{user:true, status:true}});
+            if(!comment) throw new NotFoundException('El comentario con ID proporcionado no existe');
+            const acceptStatus = await this.statusSupportIdService.getStatusSupportIdByName('aceptado');
+            comment.status = acceptStatus;
+            comment.processedBy = adminId;
+            comment.processedAt = new Date();
+            await this.commentSupportIdRepository.save(comment);
+            // mark user as verified
+            try{
+                await this.userService.update(comment.user.id, { verified: true } as any);
+            }catch(_){ /* ignore user update failures to avoid breaking the flow */ }
+            return { message: 'Soporte aceptado correctamente', status:200 };
+        }catch(error){
+            throw error;
+        }
+    }
+
+    async rejectCommentSupportId(idComment:number, adminId:number, reason:string):Promise<{message:string,status:number}>{
+        try{
+            if(!idComment || isNaN(idComment) || idComment<=0){
+                throw new BadRequestException('comentario inválido');
+            }
+            if(!reason || reason.trim().length===0) throw new BadRequestException('El motivo de rechazo es obligatorio');
+            const comment = await this.commentSupportIdRepository.findOne({where:{id:idComment}, relations:{user:true, status:true}});
+            if(!comment) throw new NotFoundException('El comentario con ID proporcionado no existe');
+            const rejectStatus = await this.statusSupportIdService.getStatusSupportIdByName('rechazado');
+            comment.status = rejectStatus;
+            comment.processedBy = adminId;
+            comment.processedAt = new Date();
+            comment.rejectReason = reason;
+            await this.commentSupportIdRepository.save(comment);
+            return { message: 'Soporte rechazado correctamente', status:200 };
+        }catch(error){
+            throw error;
+        }
+    }
 }

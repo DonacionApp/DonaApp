@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, Brackets } from 'typeorm';
 import { UserEntity } from './entity/user.entity';

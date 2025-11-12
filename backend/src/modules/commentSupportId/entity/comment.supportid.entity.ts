@@ -14,6 +14,15 @@ export class CommentSupportIdEntity{
     @ManyToOne(()=> StatusSupportIdEntity, (status)=>status.comment)
     status:StatusSupportIdEntity;
 
+    @Column({ type: 'int', nullable: true })
+    processedBy?: number;
+
+    @Column({ type: 'timestamp', nullable: true })
+    processedAt?: Date;
+
+    @Column({ type: 'text', nullable: true })
+    rejectReason?: string;
+
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP'})
