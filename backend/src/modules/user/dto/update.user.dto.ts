@@ -8,6 +8,12 @@ export class UpdateUserDto {
   username: string;
 
   @IsOptional()
+  location:{
+        lat:number,
+        lng:number
+    } | null;
+
+  @IsOptional()
   @IsEmail()
   email: string;
 

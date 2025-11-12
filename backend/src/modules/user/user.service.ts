@@ -103,6 +103,10 @@ export class UserService {
         throw new BadRequestException('Usuario no encontrado');
       }
       const { password, ...userWithoutPassword } = user as any;
+      if(user.location){
+        const locationJson= JSON.parse(user.location as any);
+        userWithoutPassword.location=locationJson;
+      }
 
       if (user.people.municipio) {
         const { countryExist, stateExist, citiExist, municipioJson } = await this.normalizeMunicipio(user.people.municipio as any);
@@ -204,6 +208,12 @@ export class UserService {
         throw new BadRequestException('Usuario no encontrado');
       }
 
+      
+      if(dto.location!=undefined && dto.location!==null){
+          const locateString=JSON.stringify(dto.location) as any;
+          user.location=locateString
+      }
+
       const targetUsername = dto.username?.trim();
       const targetEmail = dto.email?.trim().toLowerCase();
 
@@ -292,13 +302,17 @@ export class UserService {
 
       const usuario = await this.userRepository.save(user);
 
-      const { password, ...userWithoutPassword } = usuario as any;
+      const { password,loginAttempts,token, lockUntil,dateSendCodigo,code, ...userWithoutPassword } = usuario as any;
       if (usuario.people.municipio) {
         const municipio = usuario.people.municipio;
         const { countryExist, stateExist, citiExist, municipioJson } = await this.normalizeMunicipio(municipio as any);
         userWithoutPassword.people.municipio = {
           country: countryExist, state: stateExist, city: citiExist
         }
+      }
+      if(userWithoutPassword.location){
+        const locationJson= JSON.parse(userWithoutPassword.location as any);
+        userWithoutPassword.location=locationJson;
       }
 
       return userWithoutPassword;
@@ -490,6 +504,10 @@ export class UserService {
       const countDonations = (user as any).countDonations ?? 0;
       
       let municipio: any = null;
+      if(user.location){
+        const locationJson=JSON.parse(user.location as any)
+        user.location=locationJson
+      }
       if (user.people?.municipio) {
         try {
           const { countryExist, stateExist, citiExist } = await this.normalizeMunicipio(user.people.municipio as any);
@@ -504,7 +522,7 @@ export class UserService {
         profilePhoto,
         emailVerified,
         verified,
-        location,
+        location:user.location,
         createdAt,
         rol: roleName,
         residencia,
@@ -517,21 +535,46 @@ export class UserService {
     }
   }
 
-  async getOrganzationUsers():Promise<UserEntity[]>{
+  async getOrganzationUsers(options?: any):Promise<any[]>{
     try {
-      const queryBuilder = this.userRepository.createQueryBuilder('user')
-      .leftJoinAndSelect('user.rol', 'rol')
-      .leftJoinAndSelect('user.people', 'people')
-      .where('rol.rol = :roleName', { roleName: 'organizacion' });
-      const result= await queryBuilder.getMany();
-      if(!result || result.length===0){
-        return {message:'No hay usuarios con rol de organización', status:400} as any;
+      const limit = Math.min(Math.max(Number(options?.limit) || 20, 1), 100);
+      let offset = Number(options?.offset) || 0;
+      if (options?.page && Number(options.page) > 0) {
+        offset = (Number(options.page) - 1) * limit;
       }
-      const usersWithMinimalInfo= result.map(user=>{
-        const {id, username, email, profilePhoto, emailVerified, verified, createdAt, location, rol}= user;
-        const residencia= user.people?.residencia ?? null;
-        return {id, username, email, profilePhoto, emailVerified, verified, createdAt, residencia, location, rol: rol.rol};
+      const cursor = options?.cursor ? new Date(String(options.cursor)) : null;
+      const searchParam = options?.searchParam ? String(options.searchParam).trim() : null;
+
+      const qb = this.userRepository.createQueryBuilder('user')
+        .leftJoinAndSelect('user.rol', 'rol')
+        .leftJoinAndSelect('user.people', 'people')
+        .where('rol.rol = :roleName', { roleName: 'organizacion' });
+
+      if (searchParam) {
+        const s = `%${searchParam}%`;
+        qb.andWhere('(user.username ILIKE :s OR user.email ILIKE :s OR people.residencia ILIKE :s OR people.name ILIKE :s)', { s });
+      }
+
+      if (cursor && !isNaN(cursor.getTime())) {
+        qb.andWhere('user.createdAt < :cursor', { cursor: cursor.toISOString() });
+      }
+
+      const orderField = options?.orderBy === 'updatedAt' ? 'user.updatedAt' : 'user.createdAt';
+      qb.orderBy(orderField, 'DESC')
+        .skip(offset)
+        .take(limit);
+
+      const result = await qb.getMany();
+
+      if (!result || result.length === 0) return [];
+
+      const usersWithMinimalInfo = result.map(user => {
+        const { id, username, email, profilePhoto, emailVerified, verified, createdAt, location, rol } = user as any;
+        const residencia = user.people?.residencia ?? null;
+        const locationJson = location ? (() => { try { return JSON.parse(location as any); } catch { return null; } })() : null;
+        return { id, username, email, profilePhoto, emailVerified, verified, createdAt, residencia, location: locationJson, rol: rol?.rol };
       });
+
       return usersWithMinimalInfo as any;
     } catch (error) {
       throw error;
