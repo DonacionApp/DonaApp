@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards, Req, UnauthorizedException, Put, Head, Header, Headers } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards, Req, UnauthorizedException, Put, Head, Header, Headers, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create.user.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
@@ -19,8 +19,23 @@ export class UserController {
   }
 
   @Get('/minimal/all/organizations')
-  async getAllOrganizationsMinimal() {
-    return await this.userService.getOrganzationUsers();
+  async getAllOrganizationsMinimal(
+    @Req() req: any,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
+    @Query('searchParam') searchParam?: string,
+    @Query('orderBy') orderBy?: string,
+  ) {
+    const opts: any = {};
+    if (limit) opts.limit = Number(limit);
+    if (offset) opts.offset = Number(offset);
+    if (page) opts.page = Number(page);
+    if (cursor) opts.cursor = cursor;
+    if (searchParam) opts.searchParam = String(searchParam);
+    if (orderBy) opts.orderBy = String(orderBy);
+    return await this.userService.getOrganzationUsers(opts);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
