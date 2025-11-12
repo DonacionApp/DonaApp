@@ -103,6 +103,10 @@ export class UserService {
         throw new BadRequestException('Usuario no encontrado');
       }
       const { password, ...userWithoutPassword } = user as any;
+      if(user.location){
+        const locationJson= JSON.parse(user.location as any);
+        userWithoutPassword.location=locationJson;
+      }
 
       if (user.people.municipio) {
         const { countryExist, stateExist, citiExist, municipioJson } = await this.normalizeMunicipio(user.people.municipio as any);
@@ -204,6 +208,12 @@ export class UserService {
         throw new BadRequestException('Usuario no encontrado');
       }
 
+      
+      if(dto.location!=undefined && dto.location!==null){
+          const locateString=JSON.stringify(dto.location) as any;
+          user.location=locateString
+      }
+
       const targetUsername = dto.username?.trim();
       const targetEmail = dto.email?.trim().toLowerCase();
 
@@ -292,13 +302,17 @@ export class UserService {
 
       const usuario = await this.userRepository.save(user);
 
-      const { password, ...userWithoutPassword } = usuario as any;
+      const { password,loginAttempts,token, lockUntil,dateSendCodigo,code, ...userWithoutPassword } = usuario as any;
       if (usuario.people.municipio) {
         const municipio = usuario.people.municipio;
         const { countryExist, stateExist, citiExist, municipioJson } = await this.normalizeMunicipio(municipio as any);
         userWithoutPassword.people.municipio = {
           country: countryExist, state: stateExist, city: citiExist
         }
+      }
+      if(userWithoutPassword.location){
+        const locationJson= JSON.parse(userWithoutPassword.location as any);
+        userWithoutPassword.location=locationJson;
       }
 
       return userWithoutPassword;
@@ -490,6 +504,10 @@ export class UserService {
       const countDonations = (user as any).countDonations ?? 0;
       
       let municipio: any = null;
+      if(user.location){
+        const locationJson=JSON.parse(user.location as any)
+        user.location=locationJson
+      }
       if (user.people?.municipio) {
         try {
           const { countryExist, stateExist, citiExist } = await this.normalizeMunicipio(user.people.municipio as any);
@@ -504,7 +522,7 @@ export class UserService {
         profilePhoto,
         emailVerified,
         verified,
-        location,
+        location:user.location,
         createdAt,
         rol: roleName,
         residencia,
@@ -530,7 +548,8 @@ export class UserService {
       const usersWithMinimalInfo= result.map(user=>{
         const {id, username, email, profilePhoto, emailVerified, verified, createdAt, location, rol}= user;
         const residencia= user.people?.residencia ?? null;
-        return {id, username, email, profilePhoto, emailVerified, verified, createdAt, residencia, location, rol: rol.rol};
+        const locationJson= user.location ? JSON.parse(user.location as any) : null;
+        return {id, username, email, profilePhoto, emailVerified, verified, createdAt, residencia, locationJson, rol: rol.rol};
       });
       return usersWithMinimalInfo as any;
     } catch (error) {
