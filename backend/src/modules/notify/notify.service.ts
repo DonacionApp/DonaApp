@@ -359,4 +359,74 @@ export class NotifyService {
          throw error;
       }
    }
+
+   async createNotifyForAdmins(dto:any):Promise<NotifyEntity>{
+      try {
+         if (!dto) throw new BadRequestException('Los datos son obligatorios');
+         const { message, typeNotifyId, title } = dto;
+         if (!message || message.trim().length === 0) throw new BadRequestException('El mensaje es obligatorio');
+         if (!title || title.trim().length === 0) throw new BadRequestException('El título es obligatorio');
+         if (!typeNotifyId || typeNotifyId <= 0) throw new BadRequestException('El id de tipo de notificación es inválido');
+
+         const typeNotify = await this.typeNotifyService.getById(typeNotifyId);
+         if (!typeNotify) throw new NotFoundException('El tipo de notificación no existe');
+
+         const userRepo = this.notifyRepository.manager.getRepository(UserEntity);
+         const rawIds = await userRepo.createQueryBuilder('u')
+            .leftJoin('u.rol', 'rol')
+            .select('u.id', 'id')
+            .where('rol.rol = :role', { role: 'admin' })
+            .getRawMany();
+         const adminUserIds: number[] = rawIds.map(r => Number(r.id)).filter(id => id > 0);
+         if (adminUserIds.length === 0) throw new NotFoundException('No hay administradores para notificar');
+
+         const savedNotify = await this.notifyRepository.manager.transaction(async (manager) => {
+            const cleanLink = dto.link?.trim();
+            const notify = manager.create(NotifyEntity, {
+               title: title.trim(),
+               message: message.trim(),
+               type: typeNotify,
+               ...(cleanLink ? { link: cleanLink } : {}),
+            });
+            const persisted = await manager.save(NotifyEntity, notify);
+
+            const chunkSize = 1000;
+            for (let i = 0; i < adminUserIds.length; i += chunkSize) {
+               const chunk = adminUserIds.slice(i, i + chunkSize);
+               const values = chunk.map(uid => ({ user: { id: uid }, notify: { id: persisted.id }, read: false }));
+               await manager.createQueryBuilder()
+                  .insert()
+                  .into(UserNotifyEntity)
+                  .values(values as any)
+                  .execute();
+            }
+
+            return persisted;
+         });
+
+         const payload = {
+            id: savedNotify.id,
+            title: savedNotify.title,
+            message: savedNotify.message,
+            type: typeNotify,
+            createdAt: savedNotify.createdAt,
+            link: savedNotify.link || null,
+            data: {
+               notificationId: savedNotify.id,
+               typeId: typeNotify.id,
+               typeName: typeNotify.type,
+            }
+         };
+
+         const emitChunk = 5000;
+         for (let i = 0; i < adminUserIds.length; i += emitChunk) {
+            const usersChunk = adminUserIds.slice(i, i + emitChunk);
+            this.notifyGateway.sendNotificationToUsers(usersChunk, payload);
+         }
+
+         return await this.findById(savedNotify.id);
+      } catch (error) {
+         throw error;
+      }
+   }
 }
