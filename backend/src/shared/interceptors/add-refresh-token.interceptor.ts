@@ -18,9 +18,9 @@ export class AddRefreshTokenInterceptor implements NestInterceptor {
         if (newToken) {
           if (typeof data === 'object' && data !== null) {
             
-            console.log(' nuevo token generado y agregado al cuerpo de la respuesta +');
+           // console.log(' nuevo token generado y agregado al cuerpo de la respuesta +');
           } 
-          console.log(` nuevo token generado pero no se pudo agregar al cuerpo de la respuesta +`);
+         // console.log(` nuevo token generado pero no se pudo agregar al cuerpo de la respuesta +`);
           return data;
         }
         return data;

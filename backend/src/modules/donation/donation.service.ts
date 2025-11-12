@@ -38,27 +38,30 @@ export class DonationService {
   async getDonationById(id: number, format: boolean = true): Promise<DonationEntity> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
-      const donation = await this.donationRepo.findOne({
-        where: { id },
-        relations: {
-          user: true,
-          statusDonation: true,
-          post: {
-            user: true,
-            typePost: true
-          },
-          postDonationArticlePost: {
-            postArticle: {
-              article: true
-            },
-          }
-        },
-      });
+
+      // Use QueryBuilder to fetch the donation with necessary joins, including reviews and the review user
+      const donation = await this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.user', 'donationUser')
+        .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
+        .leftJoinAndSelect('donation.post', 'post')
+        .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('post.typePost', 'typePost')
+        .leftJoinAndSelect('donation.postDonationArticlePost', 'pda')
+        .leftJoinAndSelect('pda.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article')
+        .leftJoinAndSelect('donation.reviewwDonation', 'review')
+        .leftJoinAndSelect('review.user', 'reviewUser')
+        .where('donation.id = :id', { id })
+        .getOne();
+
       if (!donation) throw new NotFoundException('Donación no encontrada');
+
+      // Remove sensitive fields from the main donation user
       if (donation.user) {
         const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
         donation.user = userWithoutSensitive as any;
       }
+
       return format ? this.formatDonationResponse(donation) : donation;
     } catch (error) {
       throw error;
@@ -122,6 +125,24 @@ export class DonationService {
       }));
     } else {
       formatted.articles = [];
+    }
+
+    // Attach reviews/comments if any, with minimal user info
+    if (donation.reviewwDonation && Array.isArray(donation.reviewwDonation)) {
+      const basicUser = (u: any) => {
+        if (!u) return null;
+        const { id, username, profilePhoto, emailVerified, verified, createdAt } = u;
+        return { id, username, profilePhoto, emailVerified, verified, createdAt };
+      };
+
+      formatted.reviews = donation.reviewwDonation.map((r: any) => ({
+        id: r.id,
+        review: r.review,
+        raiting: r.raiting,
+        user: basicUser(r.user)
+      }));
+    } else {
+      formatted.reviews = [];
     }
 
     return formatted;
@@ -355,6 +376,9 @@ export class DonationService {
             postArticle: {
               article: true
             }
+          },
+          reviewwDonation:{
+            user:true,
           }
         }
       });
@@ -387,7 +411,10 @@ export class DonationService {
         .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
         .leftJoinAndSelect('donation.postDonationArticlePost', 'pda')
         .leftJoinAndSelect('pda.postArticle', 'postArticle')
-        .leftJoinAndSelect('postArticle.article', 'article');
+        .leftJoinAndSelect('postArticle.article', 'article')
+        // include reviews and the user who made each review (basic fields will be selected later by formatter)
+        .leftJoinAndSelect('donation.reviewwDonation', 'review')
+        .leftJoinAndSelect('review.user', 'reviewUser');
 
       const solicitud = 'solicitud de donacion';
 
@@ -480,6 +507,9 @@ export class DonationService {
         .leftJoinAndSelect('donation.postDonationArticlePost', 'pda')
         .leftJoinAndSelect('pda.postArticle', 'postArticle')
         .leftJoinAndSelect('postArticle.article', 'article')
+        // include reviews and the user who made each review
+        .leftJoinAndSelect('donation.reviewwDonation', 'review')
+        .leftJoinAndSelect('review.user', 'reviewUser')
         .where(new Brackets(qbWhere => {
           qbWhere.where("LOWER(typePost.type) = :solicitud AND donation.userId = :userId", { solicitud: 'solicitud de donacion', userId })
             .orWhere("LOWER(typePost.type) != :solicitud AND post.userId = :userId", { solicitud: 'solicitud de donacion', userId });
@@ -809,7 +839,10 @@ export class DonationService {
         .leftJoinAndSelect('post.typePost', 'typePost')
         .leftJoinAndSelect('d.postDonationArticlePost', 'postDonationArticlePost')
         .leftJoinAndSelect('postDonationArticlePost.postArticle', 'postArticle')
-        .leftJoinAndSelect('postArticle.article', 'article');
+        .leftJoinAndSelect('postArticle.article', 'article')
+        // include reviews and the user who made each review so formatter can attach minimal user info
+        .leftJoinAndSelect('d.reviewwDonation', 'review')
+        .leftJoinAndSelect('review.user', 'reviewUser');
 
       // Filtro por usuario
       query = query.where('d.userId = :userId', { userId });
