@@ -67,6 +67,13 @@ export class NotifyController {
       return await this.notifyService.deleteNotify(id);
    }
 
+   @UseGuards(JwtAuthGuard, RolesGuard)
+   @Roles('admin')
+   @Post('create/admins/new')
+   async createNotifyForAdmins(@Body() dto: {title: string; message: string; link?: string | null; typeNotifyId: number; }) {
+      return await this.notifyService.createNotifyForAdmins(dto);
+   }
+
    /**
     * Endpoint para enviar notificación en tiempo real a un usuario específico
     */

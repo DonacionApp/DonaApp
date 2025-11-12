@@ -8,9 +8,9 @@ import { NotifyModule } from "../notify/notify.module";
 
 @Module({
    imports: [
-      TypeOrmModule.forFeature([UserNotifyEntity]),
-      UserModule,
-      forwardRef(() => NotifyModule),
+   TypeOrmModule.forFeature([UserNotifyEntity]),
+   forwardRef(() => UserModule),
+   forwardRef(() => NotifyModule),
    ],
    providers: [UserNotifyService],
    controllers: [UserNotifyController],

@@ -13,6 +13,7 @@ export class UserNotifyService {
    constructor(
       @InjectRepository(UserNotifyEntity)
       private readonly userNotifyRepository: Repository<UserNotifyEntity>,
+      @Inject(forwardRef(() => UserService))
       private readonly userService: UserService,
       @Inject(forwardRef(() => NotifyService))
       private readonly notifyService: NotifyService,

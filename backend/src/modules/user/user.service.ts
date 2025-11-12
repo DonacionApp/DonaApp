@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { Not, Repository, Brackets } from 'typeorm';
 import { UserEntity } from './entity/user.entity';
 import { CreateUserDto } from './dto/create.user.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
@@ -14,6 +14,8 @@ import { MailService } from 'src/core/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { CLOUDINARY_DOCS_FOLDER, CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLDER } from 'src/config/constants';
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
+import { NotifyService } from '../notify/notify.service';
+import { TypeNotifyService } from '../typenotify/typenotify.service';
 
 @Injectable()
 export class UserService {
@@ -29,6 +31,9 @@ export class UserService {
     private readonly countriesService: CountriesService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => NotifyService))
+    private readonly notifyService: NotifyService,
+    private readonly typeNotifyService: TypeNotifyService,
   ) { }
 
   async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
@@ -473,6 +478,18 @@ export class UserService {
         const userNew = new UpdateUserDto();
         userNew.people = { supportId: urlNewDocument } as any;
         const updatedUser = await this.update(userId, userNew);
+        try {
+          const typeNotify = await this.typeNotifyService.getByType('informaacion');
+          await this.notifyService.createNotifyForAdmins({
+            title: 'Nuevo documento de soporte',
+            message: `El usuario ${user.username} ha subido un nuevo documento de soporte para verificación.`,
+            typeNotifyId: typeNotify.id,
+            link: null,
+          });
+        } catch (err) {
+          // no bloquear el flujo si falla la notificación
+          console.error('Error enviando notificación a admins:', err);
+        }
         return { status: 'success', supportId: urlNewDocument, statusCode: 200, message: 'Documento de soporte actualizado correctamente' };
       }
       return { status: 'info', statusCode: 200, message: 'El usuario ya está verificado, no se puede actualizar el documento de soporte' };
@@ -576,6 +593,108 @@ export class UserService {
       });
 
       return usersWithMinimalInfo as any;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async usersUploadIdSupport(options?: { limit?: number; cursor?: string; search?: string; orderBy?: 'created' | 'updated'; order?: 'ASC' | 'DESC'; hasSupport?: boolean }): Promise<any> {
+    try {
+      const limit = Math.min(Math.max(Number(options?.limit) || 20, 1), 100);
+      const take = limit + 1;
+      const orderByField = options?.orderBy === 'updated' ? 'user.updatedAt' : 'user.createdAt';
+      const orderDirection = options?.order === 'ASC' ? 'ASC' : 'DESC';
+
+      const qb = this.userRepository.createQueryBuilder('user')
+        .leftJoin('user.people', 'people')
+        .leftJoin('user.rol', 'rol')
+        .select([
+          'user.id AS user_id',
+          'user.username AS user_username',
+          'user.email AS user_email',
+          'user.profilePhoto AS user_profile_photo',
+          'user.createdAt AS user_created_at',
+          'user.updatedAt AS user_updated_at',
+          'people.id AS people_id',
+          'people.name AS people_name',
+          'people.lastName AS people_last_name',
+          'people.dni AS people_dni',
+          'people.supportId AS people_support_id',
+          'rol.id AS rol_id',
+          'rol.rol AS rol_name',
+        ])
+        .orderBy(orderByField, orderDirection)
+        .addOrderBy('user.id', orderDirection)
+        .take(take);
+
+      if (options?.search) {
+        const s = `%${String(options.search).trim()}%`;
+        const sLower = s.toLowerCase();
+        qb.andWhere(new Brackets(q => {
+          q.where('user.username ILIKE :s', { s })
+            .orWhere('user.email ILIKE :s', { s })
+            .orWhere('people.name ILIKE :s', { s })
+            .orWhere('people.lastName ILIKE :s', { s })
+            .orWhere('people.dni LIKE :s', { s });
+        }));
+      }
+
+      if (options?.cursor) {
+        const parts = String(options.cursor).split('_');
+        const cursorDate = new Date(parts[0]);
+        const cursorId = parts[1] ? Number(parts[1]) : 0;
+        const isAsc = orderDirection === 'ASC';
+
+        if (!isNaN(cursorDate.getTime())) {
+          if (isAsc) {
+            qb.andWhere(new Brackets(q => {
+              q.where(`${orderByField} > :cursorDate`, { cursorDate })
+                .orWhere(`${orderByField} = :cursorDate AND user.id > :cursorId`, { cursorDate, cursorId });
+            }));
+          } else {
+            qb.andWhere(new Brackets(q => {
+              q.where(`${orderByField} < :cursorDate`, { cursorDate })
+                .orWhere(`${orderByField} = :cursorDate AND user.id < :cursorId`, { cursorDate, cursorId });
+            }));
+          }
+        }
+      }
+
+      // Filter only users that have uploaded supportId
+      if (options?.hasSupport) {
+        qb.andWhere('people.supportId IS NOT NULL');
+      }
+
+      const raws = await qb.getRawMany();
+      let rows = raws;
+      let nextCursor: string | undefined;
+      if (raws.length > limit) {
+        const next = raws[limit];
+        const dateKey = options?.orderBy === 'updated' ? 'user_updated_at' : 'user_created_at';
+        const nextDate = new Date(next[dateKey]).toISOString();
+        const nextId = next['user_id'];
+        nextCursor = `${nextDate}_${nextId}`;
+        rows = raws.slice(0, limit);
+      }
+
+      const items = rows.map(r => ({
+        id: r['user_id'],
+        username: r['user_username'],
+        email: r['user_email'],
+        profilePhoto: r['user_profile_photo'],
+        createdAt: r['user_created_at'],
+        updatedAt: r['user_updated_at'],
+        people: r['people_id'] ? {
+          id: r['people_id'],
+          name: r['people_name'],
+          lastName: r['people_last_name'],
+          dni: r['people_dni'],
+          supportId: r['people_support_id'],
+        } : null,
+        role: r['rol_id'] ? { id: r['rol_id'], name: r['rol_name'] } : null,
+      }));
+
+      return { items, nextCursor } as any;
     } catch (error) {
       throw error;
     }
