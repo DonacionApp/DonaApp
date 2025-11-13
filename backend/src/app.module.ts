@@ -43,6 +43,9 @@ import { DonationreviewModule } from './modules/donationreview/donationreview.mo
 import { SentimentServiceModule } from './core/sentiment-service/sentiment-service.module';
 import { SystemModule } from './modules/system/system.module';
 import { UsersystemModule } from './modules/usersystem/usersystem.module';
+import { ReportModule } from './module/report/report.module';
+import { ReportModule } from './modules/report/report.module';
+import { TypereportModule } from './modules/typereport/typereport.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -107,6 +110,8 @@ import { UsersystemModule } from './modules/usersystem/usersystem.module';
   SentimentServiceModule,
   SystemModule,
   UsersystemModule,
+  ReportModule,
+  TypereportModule,
 ],
   controllers: [AppController],
   providers: [
