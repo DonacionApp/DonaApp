@@ -12,7 +12,29 @@ import { FilterDonationDto } from './dto/filter-donation.dto';
 export class DonationController {
   constructor(private readonly donationService: DonationService) { }
 
-  // get /donation/:id - Obtener una donación por ID
+  @UseGuards(JwtAuthGuard)
+  @Get('/me/beneficiary')
+  async getMyDonationsAsBeneficiary(@Req() req: any) {
+    try {
+      const user = req.user;
+      const currentUserId: number = user.id;
+      return await this.donationService.getDonationsUserBeneficiary(currentUserId);
+    } catch (error) {
+      throw error;
+    }
+  }
+    @UseGuards(JwtAuthGuard)
+  @Get('/me/donator')
+  async getMyDonationsAsDonator(@Req() req: any) {
+    try {
+      const user = req.user;
+      const currentUserId: number = user.id;
+      return await this.donationService.getDonationsUserDonator(currentUserId);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   async getDonation(@Param('id') id: number) {
@@ -226,5 +248,6 @@ export class DonationController {
     const user=req.user;
     return this.donationService.createChatdonation(donationId, user.id);
   }
+
 }
 

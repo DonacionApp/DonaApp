@@ -70,8 +70,8 @@ export class DonationService {
     } catch (error) {
       throw error;
     }
-  }
 
+  }
   private formatDonationResponse(donation: any, userId?: number): any {
     if (!donation) return donation;
 
@@ -985,6 +985,69 @@ export class DonationService {
       await this.chatService.createChatFromDonation({ donationId: Number(donationId), beneficiaryId: beneficiaryId } as any, Number(currentUserId), false);
 
       return {message: 'Chat creado exitosamente', status: 201} as any;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDonationsUserBeneficiary(userId: number): Promise<DonationEntity[]> {
+    try {
+      if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
+      const qb = this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.post', 'post')
+        .leftJoinAndSelect('post.typePost', 'typePost')
+        .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('donation.user', 'donationUser')
+        .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
+        .leftJoinAndSelect('donation.postDonationArticlePost', 'pda')
+        .leftJoinAndSelect('pda.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article')
+        .leftJoinAndSelect('donation.reviewwDonation', 'review')
+        .leftJoinAndSelect('review.user', 'reviewUser');
+
+      const solicitud = 'solicitud de donacion';
+
+      qb.where(new Brackets(b => {
+        b.where('LOWER(typePost.type) = :sol AND post.userId = :userId', { sol: solicitud, userId })
+         .orWhere('LOWER(typePost.type) != :sol AND donation.userId = :userId', { sol: solicitud, userId });
+      }));
+
+      qb.orderBy('donation.createdAt', 'DESC');
+
+      const donations = await qb.getMany();
+      return donations.map(d => this.formatDonationResponse(d, userId));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDonationsUserDonator(userId: number): Promise<DonationEntity[]> {
+    try {
+      if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
+
+      const qb = this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.post', 'post')
+        .leftJoinAndSelect('post.typePost', 'typePost')
+        .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('donation.user', 'donationUser')
+        .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
+        .leftJoinAndSelect('donation.postDonationArticlePost', 'pda')
+        .leftJoinAndSelect('pda.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article')
+        .leftJoinAndSelect('donation.reviewwDonation', 'review')
+        .leftJoinAndSelect('review.user', 'reviewUser');
+
+      const solicitud = 'solicitud de donacion';
+
+      qb.where(new Brackets(b => {
+        b.where('LOWER(typePost.type) = :sol AND donation.userId = :userId', { sol: solicitud, userId })
+         .orWhere('LOWER(typePost.type) != :sol AND post.userId = :userId', { sol: solicitud, userId });
+      }));
+
+      qb.orderBy('donation.createdAt', 'DESC');
+
+      const donations = await qb.getMany();
+      return donations.map(d => this.formatDonationResponse(d, userId));
     } catch (error) {
       throw error;
     }
