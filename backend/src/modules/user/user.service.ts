@@ -102,7 +102,10 @@ export class UserService {
           people: {
             typeDni: true
           },
-          rol: true
+          rol: true,
+          commentSupportId:{
+            status:true,
+          }
         }
       });
       if (!user) {
