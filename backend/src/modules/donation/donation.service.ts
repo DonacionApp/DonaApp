@@ -16,6 +16,7 @@ import { NotifyService } from '../notify/notify.service';
 import { ConfigService } from '@nestjs/config';
 import { URL_FRONTEND } from 'src/config/constants';
 import { TypeNotifyService } from '../typenotify/typenotify.service';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable()
 export class DonationService {
@@ -33,6 +34,8 @@ export class DonationService {
     private readonly notifyService: NotifyService,
     private readonly configService: ConfigService,
     private readonly typeNotifyService: TypeNotifyService,
+    @Inject(forwardRef(() => ChatService))
+    private readonly chatService: ChatService,
   ) { }
 
   async getDonationById(id: number, format: boolean = true): Promise<DonationEntity> {
@@ -51,12 +54,12 @@ export class DonationService {
         .leftJoinAndSelect('postArticle.article', 'article')
         .leftJoinAndSelect('donation.reviewwDonation', 'review')
         .leftJoinAndSelect('review.user', 'reviewUser')
+        .leftJoinAndSelect('donation.chat', 'chat')
         .where('donation.id = :id', { id })
         .getOne();
 
       if (!donation) throw new NotFoundException('Donación no encontrada');
 
-      // Remove sensitive fields from the main donation user
       if (donation.user) {
         const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
         donation.user = userWithoutSensitive as any;
@@ -143,6 +146,24 @@ export class DonationService {
       }));
     } else {
       formatted.reviews = [];
+    }
+
+    // Include chat info if the donation has a chat relation loaded
+    if (donation.chat) {
+      try {
+        formatted.chat = {
+          id: donation.chat.id ?? null,
+          name: donation.chat.name ?? null,
+          donationId: donation.chat.donation?.id ?? null,
+          createdAt: donation.chat.createdAt ?? null,
+          updatedAt: donation.chat.updatedAt ?? null,
+        };
+      } catch (e) {
+        // defensive: if structure unexpected, still return null to avoid throwing
+        formatted.chat = null;
+      }
+    } else {
+      formatted.chat = null;
     }
 
     return formatted;
@@ -932,6 +953,33 @@ export class DonationService {
       const formatted = this.formatDonationResponse(updatedDonation, currentUser);
       return formatted;
 
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createChatdonation(donationId: number, currentUser: any): Promise<DonationEntity> {
+    try {
+      if (!donationId) throw new BadRequestException('El id de la donación es obligatorio');
+      if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
+
+      const currentUserId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+
+      const donation = await this.getDonationById(Number(donationId));
+
+      const donator = (donation as any).donator as any;
+      const beneficiary = (donation as any).beneficiary as any;
+
+      const beneficiaryId = beneficiary?.id ?? null;
+      const donatorId = donator?.id ?? null;
+
+      if (Number(currentUserId) !== Number(donatorId) && Number(currentUserId) !== Number(beneficiaryId)) {
+        throw new ForbiddenException('El usuario no forma parte de la donación');
+      }
+
+      await this.chatService.createChatFromDonation({ donationId: Number(donationId), beneficiaryId: beneficiaryId } as any, Number(currentUserId), false);
+
+      return donation as any;
     } catch (error) {
       throw error;
     }
