@@ -17,6 +17,27 @@ export class UserchatService {
         private readonly chatService:ChatService,
     ){}
 
+    async getUsersChatByChatId(chatId:number):Promise<UserChatEntity[]>{
+        try {
+            if(!chatId || chatId <=0 || isNaN(chatId) || typeof chatId !== 'number'){
+                throw new BadRequestException('chatId es necesario');
+            }
+            const usersChat= await this.userChatRepository.createQueryBuilder('uc')
+                .leftJoinAndSelect('uc.user', 'user')
+                .where('uc.chatId = :chatId', {chatId: chatId})
+                .getMany();
+            const usersChatClean= usersChat.map(uc=>{
+                const { user,...rest}=uc;
+                const { password, token,code,loginAttempts,lockUntil,dateSendCodigo,
+                     ...userClean } = user;
+                return { ...rest, user: userClean };
+            });
+            return usersChatClean as any;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async addUserToChat(dto:AddChatToUserDto):Promise<UserChatEntity>{
         try {
             const userExist=await this.userService.findById(Number(dto.userId));
@@ -215,6 +236,21 @@ export class UserchatService {
             });
 
             return { items, nextCursor };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async verifyUserInChat(userId:number, chatId:number):Promise<boolean>{
+        try {
+            if(!userId || !chatId || userId <=0 || chatId <=0 || isNaN(userId) || isNaN(chatId) || typeof userId !== 'number' || typeof chatId !== 'number'){
+                throw new BadRequestException('userId y chatId son necesarios');
+            }
+            const userChatExist= await this.userChatRepository.createQueryBuilder('uc')
+                .where('uc.userId = :userId', {userId: userId})
+                .andWhere('uc.chatId = :chatId', {chatId: chatId})
+                .getOne();
+            return !!userChatExist;
         } catch (error) {
             throw error;
         }

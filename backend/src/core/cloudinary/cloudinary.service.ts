@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary, DeleteApiResponse, UploadApiErrorResponse, UploadApiResponse } from 'cloudinary';
 import { error } from 'console';
-import { Readable } from 'typeorm/platform/PlatformTools';
+import { Readable } from 'stream';
 
 @Injectable()
 export class CloudinaryService {
@@ -66,6 +66,13 @@ export class CloudinaryService {
                 if (file.buffer.length > MAX_PDF_BYTES) {
                     const actualKB = Math.round(file.buffer.length / 1024);
                     return { message: (`File muy grande: ${actualKB} KB. Max 1 MB`), file: file.originalname, status: 413 };
+                }
+                break;
+            case 'audio':
+                const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
+                if (file.buffer.length > MAX_AUDIO_BYTES) {
+                    const actualKB = Math.round(file.buffer.length / 1024);
+                    return { message: (`File muy grande: ${actualKB} KB. Max 5 MB`), file: file.originalname, status: 413 };
                 }
                 break;
             default:
@@ -139,6 +146,27 @@ export class CloudinaryService {
             throw error;
         }
 
+    }
+
+    async uploadAudio(folder: string, file: Express.Multer.File): Promise<UploadApiErrorResponse | UploadApiResponse> {
+        try {
+            if(!file || !folder){
+                throw new BadRequestException('No provee archivo o carpeta');
+            }
+            const MAX_AUDIO_BYTES = 5 * 1024 * 1024; // 5 MB
+            const allowedAudioTypes = [
+                'audio/mpeg',
+                'audio/wav',
+                'audio/ogg',
+                'audio/mp4',
+                'audio/aac',
+                'audio/mp3'
+            ];
+            this.validateFile(file, allowedAudioTypes, MAX_AUDIO_BYTES);
+            return this.uploadFile(folder, file, 'video');
+        } catch (error) {
+            throw error;
+        }
     }
 
     private validateFile(file: Express.Multer.File, allowedTypes: string[], maxBytes: number) {

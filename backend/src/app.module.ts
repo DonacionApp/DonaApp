@@ -49,6 +49,7 @@ import { ChatstatusModule } from './modules/chatstatus/chatstatus.module';
 import { TypemessageModule } from './modules/typemessage/typemessage.module';
 import { UserchatModule } from './modules/userchat/userchat.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { MessagechatModule } from './modules/messagechat/messagechat.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -119,6 +120,7 @@ import { ChatModule } from './modules/chat/chat.module';
   TypemessageModule,
   UserchatModule,
   ChatModule,
+  MessagechatModule,
 ],
   controllers: [AppController],
   providers: [
