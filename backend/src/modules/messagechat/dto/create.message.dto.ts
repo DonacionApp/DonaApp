@@ -6,7 +6,7 @@ export class CreateMessageDto{
     chatId:number;
     @IsOptional()
     @IsNumber()
-    typeMessageId:number;
+    typeMessageId?:number;
     @IsOptional()
     @IsString()
     messageText?:string;
