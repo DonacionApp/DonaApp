@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Req, Param } from '@nestjs/common';
 import { UserchatService } from './userchat.service';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 
@@ -19,5 +19,13 @@ export class UserchatController {
 		const userId = req.user?.id;
 		const options = { limit, cursor, search, orderBy, order };
 		return await this.userchatService.getMyChatsByUserId(Number(userId), options);
+	}
+
+	@UseGuards(JwtAuthGuard)
+	@Get('users-by-chat/:chatId')
+	async getUsersByChat(
+		@Param('chatId') chatId: string,
+	){
+		return await this.userchatService.getUsersChatByChatId(Number(chatId));
 	}
 }
