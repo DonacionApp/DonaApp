@@ -45,6 +45,7 @@ import { SystemModule } from './modules/system/system.module';
 import { UsersystemModule } from './modules/usersystem/usersystem.module';
 import { ReportModule } from './modules/report/report.module';
 import { TypereportModule } from './modules/typeReport/typereport.module';
+import { ChatstatusModule } from './modules/chatstatus/chatstatus.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -111,6 +112,7 @@ import { TypereportModule } from './modules/typeReport/typereport.module';
   UsersystemModule,
   ReportModule,
   TypereportModule,
+  ChatstatusModule,
 ],
   controllers: [AppController],
   providers: [
