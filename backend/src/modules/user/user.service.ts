@@ -17,7 +17,6 @@ import { CLOUDINARY_DOCS_FOLDER, CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLD
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { NotifyService } from '../notify/notify.service';
 import { TypeNotifyService } from '../typenotify/typenotify.service';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
