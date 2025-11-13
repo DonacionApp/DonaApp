@@ -41,6 +41,27 @@ export class ChatService {
         }
     }
 
+    async getChatFronDonationId(donationId: number, currentUser: any): Promise<ChatEntity> {
+        try {
+            if (!donationId || donationId <= 0 || isNaN(donationId) || donationId === undefined) {
+                throw new BadRequestException('El ID de la donación es inválido');
+            }
+            if (!currentUser || currentUser <= 0 || isNaN(currentUser) || currentUser === undefined) {
+                throw new BadRequestException('El ID del usuario es inválido');
+            }
+            const chat = await this.chatRepository.createQueryBuilder('chat')
+                .leftJoinAndSelect('chat.userChat', 'uc')
+                .where('chat.donationId = :donationId', { donationId })
+                .getOne();
+            if (!chat) {
+                return {messageChat: 'No existe un chat para esta donación y usuario', status:404} as any;
+            }
+            return chat;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async createChat(dto:CreateChatDto, admin?:boolean): Promise<ChatEntity>{
         try {
             let errorUsers:string[] = [];
