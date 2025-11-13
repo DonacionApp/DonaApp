@@ -35,20 +35,18 @@ export class CommentsupportidController {
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
-    @Post('/accept/:idComment')
-    async acceptCommentSupportId(@Param('idComment') idComment: number, @Req() req:any){
-        const adminId = req.user?.sub || req.user?.id || req.user?.userId || null;
-        return this.commentSupportIdService.acceptCommentSupportId(idComment, Number(adminId));
+    @Post('/accept/:userId')
+    async acceptCommentSupportId(@Body() dto:{comment:string},@Param('userId') userId:number, @Req() req:any){
+        await this.commentSupportIdService.acceptSupportId(userId, dto.comment);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
-    @Post('/reject/:idComment')
-    async rejectCommentSupportId(@Param('idComment') idComment: number, @Body() dto:{reason:string}, @Req() req:any){
-        const adminId = req.user?.sub || req.user?.id || req.user?.userId || null;
-        return this.commentSupportIdService.rejectCommentSupportId(idComment, Number(adminId), dto.reason);
+    @Post('/reject/:userId')
+    async rejectCommentSupportId(@Body() dto:{comment:string},@Param('userId') userId:number, @Req() req:any){
+        await this.commentSupportIdService.rejectSupportId(userId, dto.comment);
     }
-
+   
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @Delete('/delete/:idComment')

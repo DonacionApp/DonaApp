@@ -8,6 +8,7 @@ import { NotifyService } from '../notify/notify.service';
 import { TypeNotifyService } from '../typenotify/typenotify.service';
 import { createCommentSupportIdDto } from './dto/create.comment.dto';
 import { FilterSearchCommentSupportIdDto } from './dto/filter.search.dto';
+import { UpdateUserDto } from '../user/dto/update.user.dto';
 
 @Injectable()
 export class CommentsupportidService {
@@ -22,7 +23,7 @@ export class CommentsupportidService {
         private readonly typeNotifyService: TypeNotifyService,
     ) { }
 
-    async createCommentSupportId(dto: createCommentSupportIdDto):Promise<Omit<CommentSupportIdEntity, 'user'>> {
+    async createCommentSupportId(dto: createCommentSupportIdDto): Promise<Omit<CommentSupportIdEntity, 'user'>> {
         try {
             if (!dto.comment || !dto.idStatusSupportId || !dto.idUser) {
                 throw new BadRequestException('Faltan datos obligatorios');
@@ -35,26 +36,26 @@ export class CommentsupportidService {
             if (!user) {
                 throw new BadRequestException('El usuario con ID proporcionado no existe');
             }
-            if(user.verified===true){
+            if (user.verified === true) {
                 throw new BadRequestException('El usuario ya está verificado, no se puede agregar un comentario de soporte');
             }
-            const acceptStatus= await this.statusSupportIdService.getStatusSupportIdByName('aceptado');
-            let acceptComment= await this.commentSupportIdRepository.findOne({
-                where:{
-                    user:{
-                        id:user.id
+            const acceptStatus = await this.statusSupportIdService.getStatusSupportIdByName('aceptado');
+            let acceptComment = await this.commentSupportIdRepository.findOne({
+                where: {
+                    user: {
+                        id: user.id
                     },
                 },
-                relations:{
-                    status:true
+                relations: {
+                    status: true
                 }
             });
-            if(acceptComment && acceptComment.status.id===acceptStatus.id  ){
+            if (acceptComment && acceptComment.status.id === acceptStatus.id) {
                 throw new BadRequestException('El usuario ya ha sido aceptado, no se pueden agregar más comentarios de soporte');
             }
             if (acceptComment) {
                 acceptComment.comment = dto.comment;
-                acceptComment.status=statusSupportId;
+                acceptComment.status = statusSupportId;
             } else {
                 acceptComment = this.commentSupportIdRepository.create({
                     comment: dto.comment,
@@ -62,8 +63,8 @@ export class CommentsupportidService {
                     user: user,
                 });
             }
-            const savedComment=await this.commentSupportIdRepository.save(acceptComment);
-            const {user:_user,...commentWithoutUser}=savedComment;
+            const savedComment = await this.commentSupportIdRepository.save(acceptComment);
+            const { user: _user, ...commentWithoutUser } = savedComment;
             return commentWithoutUser;
 
         } catch (error) {
@@ -75,7 +76,7 @@ export class CommentsupportidService {
 
     async getCommentsByUserId(idUser: number): Promise<CommentSupportIdEntity[]> {
         try {
-            if(!idUser || isNaN(idUser) || idUser===undefined || idUser<=0){
+            if (!idUser || isNaN(idUser) || idUser === undefined || idUser <= 0) {
                 throw new BadRequestException('ID de usuario inválido');
             }
             const comments = await this.commentSupportIdRepository.find({
@@ -88,40 +89,40 @@ export class CommentsupportidService {
                     status: true
                 }
             });
-            if(comments.length===0){
+            if (comments.length === 0) {
                 throw new BadRequestException('No se encontraron comentarios para el ID de usuario proporcionado');
             }
             return comments;
         } catch (error) {
             throw error;
         }
-    
+
     }
 
-    async getAllCommentsSupportId(filter:FilterSearchCommentSupportIdDto):Promise<CommentSupportIdEntity[]>{
+    async getAllCommentsSupportId(filter: FilterSearchCommentSupportIdDto): Promise<CommentSupportIdEntity[]> {
         try {
             const queryBuilder = this.commentSupportIdRepository.createQueryBuilder('comment');
             queryBuilder.leftJoinAndSelect('comment.status', 'status');
             queryBuilder.leftJoinAndSelect('comment.user', 'user');
-            if(filter.idStatusSupportId){
-                queryBuilder.andWhere('status.id = :idStatusSupportId', {idStatusSupportId: filter.idStatusSupportId});
+            if (filter.idStatusSupportId) {
+                queryBuilder.andWhere('status.id = :idStatusSupportId', { idStatusSupportId: filter.idStatusSupportId });
             }
-            if(filter.idUser){
-                queryBuilder.andWhere('user.id = :idUser', {idUser: filter.idUser});
+            if (filter.idUser) {
+                queryBuilder.andWhere('user.id = :idUser', { idUser: filter.idUser });
             }
-            if(filter.search){
-                queryBuilder.andWhere('comment.comment ILIKE :search OR user.username ILIKE :search', {search: `%${filter.search}%`});
+            if (filter.search) {
+                queryBuilder.andWhere('comment.comment ILIKE :search OR user.username ILIKE :search', { search: `%${filter.search}%` });
             }
-            if(filter.sortBy){
+            if (filter.sortBy) {
                 queryBuilder.orderBy(`comment.${filter.sortBy}`, filter.sortOrder === 'DESC' ? 'DESC' : 'ASC');
             }
             const comments = await queryBuilder.getMany();
-            if(comments.length===0){
+            if (comments.length === 0) {
                 throw new BadRequestException('No se encontraron comentarios con los filtros proporcionados');
             }
             const commentsFiltered = comments.map(({ user, ...comment }) => {
                 if (!user) return comment;
-                const { token,loginAttempts,password,lockUntil, dateSendCodigo,code, updatedAt,...userRest } = user as any;
+                const { token, loginAttempts, password, lockUntil, dateSendCodigo, code, updatedAt, ...userRest } = user as any;
                 return { ...comment, user: userRest };
             });
             return commentsFiltered as any;
@@ -130,12 +131,12 @@ export class CommentsupportidService {
         }
     }
 
-    async updateCommentSupportId(idComment:number, newComment:string):Promise<{message:string, status:number, commentUp:string}>{
+    async updateCommentSupportId(idComment: number, newComment: string): Promise<{ message: string, status: number, commentUp: string }> {
         try {
-            if(!idComment || isNaN(idComment) || idComment<=0){
+            if (!idComment || isNaN(idComment) || idComment <= 0) {
                 throw new BadRequestException('comentario inválido');
             }
-            if(!newComment || newComment.trim().length===0){
+            if (!newComment || newComment.trim().length === 0) {
                 throw new BadRequestException('El nuevo comentario no puede estar vacío');
             }
             const comment = await this.commentSupportIdRepository.findOne({
@@ -143,11 +144,11 @@ export class CommentsupportidService {
                     id: idComment
                 }
             });
-            if(!comment){
+            if (!comment) {
                 throw new NotFoundException('El comentario con ID proporcionado no existe');
             }
             comment.comment = newComment;
-             await this.commentSupportIdRepository.save(comment);
+            await this.commentSupportIdRepository.save(comment);
             return {
                 message: 'Comentario actualizado exitosamente',
                 status: 200,
@@ -158,9 +159,9 @@ export class CommentsupportidService {
         }
     }
 
-    async deleteCommentSupportId(idComment:number):Promise<{message:string, status:number}>{
+    async deleteCommentSupportId(idComment: number): Promise<{ message: string, status: number }> {
         try {
-            if(!idComment || isNaN(idComment) || idComment<=0){
+            if (!idComment || isNaN(idComment) || idComment <= 0) {
                 throw new BadRequestException('comentario inválido');
             }
             const comment = await this.commentSupportIdRepository.findOne({
@@ -168,7 +169,7 @@ export class CommentsupportidService {
                     id: idComment
                 }
             });
-            if(!comment){
+            if (!comment) {
                 throw new NotFoundException('El comentario con ID proporcionado no existe');
             }
             await this.commentSupportIdRepository.remove(comment);
@@ -181,74 +182,71 @@ export class CommentsupportidService {
         }
     }
 
-    async acceptCommentSupportId(idComment:number, adminId:number):Promise<{message:string,status:number}>{
-        try{
-            if(!idComment || isNaN(idComment) || idComment<=0){
-                throw new BadRequestException('comentario inválido');
+    async acceptSupportId(userId: number, comments: string): Promise<{ message: string, status: number }> {
+        try {
+            if (!userId || isNaN(userId) || userId <= 0) {
+                throw new BadRequestException('ID de usuario inválido');
             }
-            const comment = await this.commentSupportIdRepository.findOne({where:{id:idComment}, relations:{user:true, status:true}});
-            if(!comment) throw new NotFoundException('El comentario con ID proporcionado no existe');
+            const user = await this.userService.findById(userId);
+            if (!user) {
+                throw new NotFoundException('El usuario con ID proporcionado no existe');
+            }
             const acceptStatus = await this.statusSupportIdService.getStatusSupportIdByName('aceptado');
-            comment.status = acceptStatus;
-            comment.processedBy = adminId;
-            comment.processedAt = new Date();
-            await this.commentSupportIdRepository.save(comment);
-            // mark user as verified
-            try{
-                await this.userService.update(comment.user.id, { verified: true } as any);
-            }catch(_){ /* ignore user update failures to avoid breaking the flow */ }
-
-            // create notification to user about acceptance
-            try{
-                const type = await this.typeNotifyService.getByType('informaacion').catch(()=>null);
-                if(type){
-                    await this.notifyService.createNotify({
-                        title: 'Soporte de identificación aceptado',
-                        message: `Tu documento de soporte ha sido aceptado. Comentario: ${comment.comment}`,
-                        typeNotifyId: type.id,
-                        usersIds: [comment.user.id],
-                        link: null,
-                    });
-                }
-            }catch(_){ /* ignore notification errors */ }
-
-            return { message: 'Soporte aceptado correctamente', status:200 };
-        }catch(error){
+            user.verified = true;
+            const userUpdated = new UpdateUserDto();
+            userUpdated.verified = true;
+            await this.userService.update(user.id, userUpdated, false);
+            await this.commentSupportIdRepository.save({
+                comment: comments,
+                status: acceptStatus,
+            });
+            await this.commentSupportIdRepository.save({
+                comment: comments,
+                status: acceptStatus,
+            });
+            const typeNotify = await this.typeNotifyService.getByType('informaacion')
+            if (!typeNotify) {
+                throw new NotFoundException('El tipo de notificación no existe');
+            };
+            await this.notifyService.createNotify({
+                title: 'Soporte de identificación aceptado',
+                message: 'Tu documento de soporte ha sido aceptado. Ahora estás verificado en la plataforma.',
+                typeNotifyId: typeNotify.id,
+                usersIds: [user.id],
+                link: null,
+            })
+            return { message: 'Soporte aceptado correctamente', status: 200 };
+        } catch (error) {
             throw error;
         }
     }
 
-    async rejectCommentSupportId(idComment:number, adminId:number, reason:string):Promise<{message:string,status:number}>{
-        try{
-            if(!idComment || isNaN(idComment) || idComment<=0){
-                throw new BadRequestException('comentario inválido');
+    async rejectSupportId(userId: number, comment: string): Promise<{ message: string, status: number }> {
+        try {
+            if (!userId || isNaN(userId) || userId <= 0) {
+                throw new BadRequestException('ID de usuario inválido');
             }
-            if(!reason || reason.trim().length===0) throw new BadRequestException('El motivo de rechazo es obligatorio');
-            const comment = await this.commentSupportIdRepository.findOne({where:{id:idComment}, relations:{user:true, status:true}});
-            if(!comment) throw new NotFoundException('El comentario con ID proporcionado no existe');
+            const user = await this.userService.findById(userId);
             const rejectStatus = await this.statusSupportIdService.getStatusSupportIdByName('rechazado');
-            comment.status = rejectStatus;
-            comment.processedBy = adminId;
-            comment.processedAt = new Date();
-            comment.rejectReason = reason;
-            await this.commentSupportIdRepository.save(comment);
+            const createdComment = await this.commentSupportIdRepository.create({
+                comment: comment,
+                status: rejectStatus,
+                user: user,
+            });
+            await this.commentSupportIdRepository.save(createdComment);
+            const typeNotify = await this.typeNotifyService.getByType('alerta')
+            if (typeNotify) {
+                await this.notifyService.createNotify({
+                    title: 'Soporte de identificación rechazado',
+                    message: 'Tu documento de soporte ha sido rechazado. Por favor, revisa el comentario para más detalles.',
+                    typeNotifyId: typeNotify.id,
+                    usersIds: [user.id],
+                    link: null,
+                })
+            }
 
-            // notify user about rejection
-            try{
-                const type = await this.typeNotifyService.getByType('informaacion').catch(()=>null);
-                if(type){
-                    await this.notifyService.createNotify({
-                        title: 'Soporte de identificación rechazado',
-                        message: `Tu documento de soporte ha sido rechazado. Motivo: ${reason}`,
-                        typeNotifyId: type.id,
-                        usersIds: [comment.user.id],
-                        link: null,
-                    });
-                }
-            }catch(_){ /* ignore notification errors */ }
-
-            return { message: 'Soporte rechazado correctamente', status:200 };
-        }catch(error){
+            return { message: 'Soporte rechazado correctamente', status: 200 };
+        } catch (error) {
             throw error;
         }
     }
