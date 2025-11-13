@@ -42,7 +42,7 @@ export class SederServiceService {
         @InjectRepository(StatusSupportIdEntity)
         private readonly statusSupportIdRepository: Repository<StatusSupportIdEntity>,
         @InjectRepository(systemEntity)
-        private readonly systemRepository: Repository<systemEntity>
+        private readonly systemRepository: Repository<systemEntity>,
     ) { }
 
     async onModuleInit() {
@@ -185,11 +185,8 @@ export class SederServiceService {
 
         const countTypeReport = await this.typeReportRepository.count();
         const typeReport = [
-            { type: 'solicitud' },
-            { type: 'cumplimiento' },
-            { type: 'entrega' },
-            { type: 'usuario' },
-            { type: 'publicacion' }
+            { type: 'user' },
+            { type: 'publicacion'}
         ]
         if (countTypeReport < typeReport.length) {
             for (const t of typeReport) {

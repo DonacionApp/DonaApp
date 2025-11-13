@@ -43,9 +43,8 @@ import { DonationreviewModule } from './modules/donationreview/donationreview.mo
 import { SentimentServiceModule } from './core/sentiment-service/sentiment-service.module';
 import { SystemModule } from './modules/system/system.module';
 import { UsersystemModule } from './modules/usersystem/usersystem.module';
-import { ReportModule } from './module/report/report.module';
 import { ReportModule } from './modules/report/report.module';
-import { TypereportModule } from './modules/typereport/typereport.module';
+import { TypereportModule } from './modules/typeReport/typereport.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
