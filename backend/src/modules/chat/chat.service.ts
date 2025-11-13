@@ -1,4 +1,5 @@
 import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Brackets } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatEntity } from './entity/chat.entity';
 import { Repository } from 'typeorm';
@@ -181,4 +182,158 @@ export class ChatService {
             throw error;
         }
     }
+
+    async getChatsByUserId(userId: number, options?: { searchParam?: string; cursor?: string; limit?: number; page?: number; offset?: number }): Promise<ChatEntity[]> {
+        try {
+            if (!userId || userId <= 0 || isNaN(userId) || userId === undefined) {
+                throw new BadRequestException('El ID del usuario es inválido');
+            }
+
+            const limit = Math.min(Math.max(Number(options?.limit) || 20, 1), 100);
+            let offset = Number(options?.offset) || 0;
+            if (options?.page && Number(options.page) > 0) {
+                offset = (Number(options.page) - 1) * limit;
+            }
+
+            const search = options?.searchParam ? String(options.searchParam).trim() : null;
+            const cursor = options?.cursor ? new Date(String(options.cursor)) : null;
+
+            const qb = this.chatRepository.createQueryBuilder('chat')
+                .leftJoinAndSelect('chat.userChat', 'uc')
+                .leftJoinAndSelect('uc.user', 'user')
+                .where('uc.userId = :userId', { userId });
+
+            if (search && search.length > 0) {
+                const like = `%${search}%`;
+                qb.andWhere(new Brackets(b => {
+                    b.where('chat.chatName ILIKE :like', { like })
+                     .orWhere('user.username ILIKE :like', { like });
+                }));
+            }
+
+            if (cursor && !isNaN(cursor.getTime())) {
+                // Infinite scroll: return items older than cursor
+                qb.andWhere('chat.createdAt < :cursor', { cursor: cursor.toISOString() });
+            } else {
+                // offset pagination when no cursor
+                qb.skip(offset);
+            }
+
+            qb.orderBy('chat.createdAt', 'DESC')
+              .take(limit);
+
+            const chats = await qb.getMany();
+            return chats;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async getAllChatsAdmin(
+        filters?: any,
+        options?: { limit?: number; page?: number; offset?: number; cursor?: string; orderBy?: string; order?: 'ASC'|'DESC' }
+    ): Promise<{ items: ChatEntity[]; total?: number; page?: number; limit?: number }> {
+        try {
+            const limit = Math.min(Math.max(Number(options?.limit) || 20, 1), 100);
+            let offset = Number(options?.offset) || 0;
+            if (options?.page && Number(options.page) > 0) {
+                offset = (Number(options.page) - 1) * limit;
+            }
+
+            const cursor = options?.cursor ? new Date(String(options.cursor)) : null;
+            const orderField = options?.orderBy === 'updatedAt' ? 'last_message_at' : 'last_message_at';
+            const orderDir = (options?.order || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+             const qb = this.chatRepository.createQueryBuilder('chat')
+                .leftJoinAndSelect('chat.userChat', 'uc')
+                .leftJoinAndSelect('uc.user', 'user')
+                .leftJoin('chat.messageChat', 'm')
+                .select(['chat', 'uc', 'user'])
+                .addSelect('MAX(m.createdAt)', 'last_message_at')
+                .groupBy('chat.id')
+                .addGroupBy('uc.id')
+                .addGroupBy('user.id');
+
+            if (filters) {
+                if (filters.search) {
+                    const like = `%${String(filters.search).trim()}%`;
+                    qb.andWhere(new Brackets(b => {
+                        b.where('chat.chatName ILIKE :like', { like })
+                         .orWhere('user.username ILIKE :like', { like });
+                    }));
+                }
+                if (filters.donationId) {
+                    qb.andWhere('chat.donationId = :donationId', { donationId: Number(filters.donationId) });
+                }
+                if (filters.statusId) {
+                    qb.leftJoin('chat.chatStatus', 'cs').andWhere('cs.id = :statusId', { statusId: Number(filters.statusId) });
+                }
+            }
+
+            if (cursor && !isNaN(cursor.getTime())) {
+                qb.having('MAX(m.createdAt) < :cursor', { cursor: cursor.toISOString() });
+            } else {
+                qb.offset(offset);
+            }
+
+            qb.orderBy(orderField, orderDir)
+              .limit(limit);
+
+            const items = await qb.getRawAndEntities();
+
+            const responseItems = items.entities.map((ch, idx) => {
+                const rawRow = items.raw[idx];
+                // Sanitize nested user objects to remove sensitive fields
+                if (Array.isArray((ch as any).userChat)) {
+                    (ch as any).userChat = (ch as any).userChat.map((uc: any) => {
+                        if (!uc) return uc;
+                        const user = uc.user;
+                        if (!user || typeof user !== 'object') return uc;
+                        const sanitized = {
+                            id: user.id,
+                            username: user.username,
+                            email: user.email,
+                            profilePhoto: user.profilePhoto,
+                            lastLogin: user.lastLogin,
+                            emailVerified: user.emailVerified,
+                            verified: user.verified,
+                            block: user.block,
+                            location: user.location,
+                            createdAt: user.createdAt,
+                            updatedAt: user.updatedAt,
+                        };
+                        return {
+                            ...uc,
+                            user: sanitized,
+                        };
+                    });
+                }
+                return ch;
+            });
+
+            let total: number | undefined = undefined;
+            if (!cursor) {
+                const countQb = this.chatRepository.createQueryBuilder('chat')
+                    .leftJoin('chat.userChat', 'uc')
+                    .leftJoin('uc.user', 'user');
+                if (filters?.search) {
+                    const like = `%${String(filters.search).trim()}%`;
+                    countQb.where(new Brackets(b => {
+                        b.where('chat.chatName ILIKE :like', { like })
+                         .orWhere('user.username ILIKE :like', { like });
+                    }));
+                }
+                if (filters?.donationId) {
+                    countQb.andWhere('chat.donationId = :donationId', { donationId: Number(filters.donationId) });
+                }
+                total = await countQb.getCount();
+            }
+
+            return { items: responseItems, total, page: options?.page ? Number(options.page) : undefined, limit };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+
 }
