@@ -42,7 +42,6 @@ export class DonationService {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
 
-      // Use QueryBuilder to fetch the donation with necessary joins, including reviews and the review user
       const donation = await this.donationRepo.createQueryBuilder('donation')
         .leftJoinAndSelect('donation.user', 'donationUser')
         .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
@@ -55,6 +54,8 @@ export class DonationService {
         .leftJoinAndSelect('donation.reviewwDonation', 'review')
         .leftJoinAndSelect('review.user', 'reviewUser')
         .leftJoinAndSelect('donation.chat', 'chat')
+        .leftJoinAndSelect('chat.userChat', 'chatUserChat')
+        .leftJoinAndSelect('chatUserChat.user', 'chatUserChatUser')
         .where('donation.id = :id', { id })
         .getOne();
 
@@ -148,18 +149,22 @@ export class DonationService {
       formatted.reviews = [];
     }
 
-    // Include chat info if the donation has a chat relation loaded
+    // Attach chat info (minimal) if present. Include participants when loaded.
     if (donation.chat) {
       try {
         formatted.chat = {
           id: donation.chat.id ?? null,
-          name: donation.chat.name ?? null,
-          donationId: donation.chat.donation?.id ?? null,
+          name: donation.chat.chatName ?? donation.chat.name ?? null,
+          donationId: donation.chat.donation?.id ?? donation.id ?? null,
           createdAt: donation.chat.createdAt ?? null,
           updatedAt: donation.chat.updatedAt ?? null,
+          participants: Array.isArray(donation.chat.userChat) ? donation.chat.userChat.map((uc: any) => ({
+            id: uc.id ?? null,
+            donator: uc.donator ?? false,
+            user: uc.user ? { id: uc.user.id ?? null, username: uc.user.username ?? null, profilePhoto: uc.user.profilePhoto ?? null } : null
+          })) : []
         };
       } catch (e) {
-        // defensive: if structure unexpected, still return null to avoid throwing
         formatted.chat = null;
       }
     } else {
@@ -958,7 +963,7 @@ export class DonationService {
     }
   }
 
-  async createChatdonation(donationId: number, currentUser: any): Promise<DonationEntity> {
+  async createChatdonation(donationId: number, currentUser: any): Promise<{message: string, status: number}> {
     try {
       if (!donationId) throw new BadRequestException('El id de la donación es obligatorio');
       if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
@@ -979,7 +984,7 @@ export class DonationService {
 
       await this.chatService.createChatFromDonation({ donationId: Number(donationId), beneficiaryId: beneficiaryId } as any, Number(currentUserId), false);
 
-      return donation as any;
+      return {message: 'Chat creado exitosamente', status: 201} as any;
     } catch (error) {
       throw error;
     }
