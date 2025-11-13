@@ -220,5 +220,11 @@ export class DonationController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('/chat/create-from-donation/:donationId')
+  async createChatFromDonation(@Param('donationId')donationId:number, @Req() req:any){
+    const user=req.user;
+    return this.donationService.createChatdonation(donationId, user.id);
+  }
 }
 

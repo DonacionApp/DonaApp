@@ -6,9 +6,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChatstatusModule } from '../chatstatus/chatstatus.module';
 import { UserchatModule } from '../userchat/userchat.module';
 import { DonationModule } from '../donation/donation.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ChatEntity]), ChatstatusModule, forwardRef(() => UserchatModule), forwardRef(()=>DonationModule)],
+  imports: [TypeOrmModule.forFeature([ChatEntity]), ChatstatusModule, 
+  forwardRef(() => UserchatModule), forwardRef(()=>DonationModule),
+  forwardRef((()=>UserModule))
+],
   controllers: [ChatController],
   providers: [ChatService],
   exports: [ChatService],

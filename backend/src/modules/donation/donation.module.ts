@@ -19,6 +19,7 @@ import { StatusarticledonationModule } from '../statusarticledonation/statusarti
 import { UserarticleModule } from '../userarticle/userarticle.module';
 import { NotifyModule } from '../notify/notify.module';
 import { TypeNotifyModule } from '../typenotify/typenotify.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
@@ -34,7 +35,8 @@ import { TypeNotifyModule } from '../typenotify/typenotify.module';
     StatusarticledonationModule,
     UserarticleModule,
     NotifyModule,
-    TypeNotifyModule
+    TypeNotifyModule,
+    forwardRef(()=>ChatModule),
   ],
   controllers: [DonationController],
   providers: [DonationService],
