@@ -46,6 +46,7 @@ import { UsersystemModule } from './modules/usersystem/usersystem.module';
 import { ReportModule } from './modules/report/report.module';
 import { TypereportModule } from './modules/typeReport/typereport.module';
 import { ChatstatusModule } from './modules/chatstatus/chatstatus.module';
+import { TypemessageModule } from './modules/typemessage/typemessage.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -113,6 +114,7 @@ import { ChatstatusModule } from './modules/chatstatus/chatstatus.module';
   ReportModule,
   TypereportModule,
   ChatstatusModule,
+  TypemessageModule,
 ],
   controllers: [AppController],
   providers: [

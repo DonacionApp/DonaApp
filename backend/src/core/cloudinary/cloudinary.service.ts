@@ -10,13 +10,19 @@ export class CloudinaryService {
         private readonly configService: ConfigService,
     ) { }
 
-    private async uploadFile(folder: string, file: Express.Multer.File): Promise<UploadApiResponse | UploadApiErrorResponse> {
-        console.log('subiendo imagen a la carpeta ', folder)
+    private async uploadFile(folder: string, file: Express.Multer.File, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<UploadApiResponse | UploadApiErrorResponse> {
+        console.log(`subiendo ${resourceType} a la carpeta`, folder);
         return new Promise((resolve, reject) => {
+            const uploadOptions: any = { folder: folder };
+            if (resourceType === 'video') uploadOptions.resource_type = 'video';
+            if (resourceType === 'raw') uploadOptions.resource_type = 'raw';
             const upload = cloudinary.uploader.upload_stream(
-                { folder: folder },
+                uploadOptions,
                 (error, result) => {
-                    if (error) return reject(error);
+                    if (error) {
+                        console.error('Cloudinary upload error:', error);
+                        return reject(new BadRequestException(error?.message || 'Cloudinary upload error'));
+                    }
                     resolve(result!);
                 }
             );
@@ -85,7 +91,7 @@ export class CloudinaryService {
             ];
 
             this.validateFile(file, allowedImageTypes, MAX_IMAGE_BYTES);
-            return this.uploadFile(folder, file);
+            return this.uploadFile(folder, file, 'image');
         } catch (error) {
             throw error;
         }
@@ -109,7 +115,7 @@ export class CloudinaryService {
             ];
 
             await this.validateFile(file, allowedVideoTypes, MAX_VIDEO_BYTES);
-            return this.uploadFile(folder, file);
+            return this.uploadFile(folder, file, 'video');
         } catch (error) {
             throw error;
         }
@@ -128,7 +134,7 @@ export class CloudinaryService {
             ];
 
             this.validateFile(file, allowedPdfTypes, MAX_PDF_BYTES);
-            return this.uploadFile(folder, file);
+            return this.uploadFile(folder, file, 'raw');
         } catch (error) {
             throw error;
         }
