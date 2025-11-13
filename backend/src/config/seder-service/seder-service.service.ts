@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MailDto } from 'src/core/mail/dto/mail.dto';
 import { MailService } from 'src/core/mail/mail.service';
 import { ArticleEntity } from 'src/modules/article/entity/article.entity';
+import { ChatStatusEntity } from 'src/modules/chatstatus/entity/chat.status.entity';
 import { RolEntity } from 'src/modules/rol/entity/rol.entity';
 import { StatusPostDonationArticle } from 'src/modules/statusarticledonation/entity/status.postdonationarticle.entity';
 import { StatusDonationEntity } from 'src/modules/statusdonation/entity/status.donation.entity';
@@ -43,6 +44,8 @@ export class SederServiceService {
         private readonly statusSupportIdRepository: Repository<StatusSupportIdEntity>,
         @InjectRepository(systemEntity)
         private readonly systemRepository: Repository<systemEntity>,
+        @InjectRepository(ChatStatusEntity)
+        private readonly chatStatusRepository: Repository<ChatStatusEntity>,
     ) { }
 
     async onModuleInit() {
@@ -250,5 +253,19 @@ export class SederServiceService {
             console.log('Status Support ID iniciales creados');
         }
 
+        const countChatStatus = await this.chatStatusRepository.count();
+        const chatStatuses = [
+            { status: 'open'},
+            { status: 'closed'},
+        ]
+        if (countChatStatus < chatStatuses.length) {
+            for (const status of chatStatuses) {
+                const exists = await this.chatStatusRepository.findOneBy({ status: status.status });
+                if (!exists) {
+                    await this.chatStatusRepository.save(status);
+                }
+            }
+            console.log('Chat Status iniciales creados');
+        }
     }
 }
