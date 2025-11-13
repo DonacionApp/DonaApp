@@ -1,9 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommentSupportIdEntity } from './entity/comment.supportid.entity';
 import { Repository } from 'typeorm';
 import { StatussupportidService } from '../statussupportid/statussupportid.service';
 import { UserService } from '../user/user.service';
+import { NotifyService } from '../notify/notify.service';
+import { TypeNotifyService } from '../typenotify/typenotify.service';
 import { createCommentSupportIdDto } from './dto/create.comment.dto';
 import { FilterSearchCommentSupportIdDto } from './dto/filter.search.dto';
 
@@ -14,6 +16,10 @@ export class CommentsupportidService {
         private readonly commentSupportIdRepository: Repository<CommentSupportIdEntity>,
         private readonly statusSupportIdService: StatussupportidService,
         private readonly userService: UserService,
+        @Inject(forwardRef(() => NotifyService))
+        private readonly notifyService: NotifyService,
+        @Inject(forwardRef(() => TypeNotifyService))
+        private readonly typeNotifyService: TypeNotifyService,
     ) { }
 
     async createCommentSupportId(dto: createCommentSupportIdDto):Promise<Omit<CommentSupportIdEntity, 'user'>> {
@@ -191,6 +197,21 @@ export class CommentsupportidService {
             try{
                 await this.userService.update(comment.user.id, { verified: true } as any);
             }catch(_){ /* ignore user update failures to avoid breaking the flow */ }
+
+            // create notification to user about acceptance
+            try{
+                const type = await this.typeNotifyService.getByType('informaacion').catch(()=>null);
+                if(type){
+                    await this.notifyService.createNotify({
+                        title: 'Soporte de identificación aceptado',
+                        message: `Tu documento de soporte ha sido aceptado. Comentario: ${comment.comment}`,
+                        typeNotifyId: type.id,
+                        usersIds: [comment.user.id],
+                        link: null,
+                    });
+                }
+            }catch(_){ /* ignore notification errors */ }
+
             return { message: 'Soporte aceptado correctamente', status:200 };
         }catch(error){
             throw error;
@@ -211,6 +232,21 @@ export class CommentsupportidService {
             comment.processedAt = new Date();
             comment.rejectReason = reason;
             await this.commentSupportIdRepository.save(comment);
+
+            // notify user about rejection
+            try{
+                const type = await this.typeNotifyService.getByType('informaacion').catch(()=>null);
+                if(type){
+                    await this.notifyService.createNotify({
+                        title: 'Soporte de identificación rechazado',
+                        message: `Tu documento de soporte ha sido rechazado. Motivo: ${reason}`,
+                        typeNotifyId: type.id,
+                        usersIds: [comment.user.id],
+                        link: null,
+                    });
+                }
+            }catch(_){ /* ignore notification errors */ }
+
             return { message: 'Soporte rechazado correctamente', status:200 };
         }catch(error){
             throw error;
