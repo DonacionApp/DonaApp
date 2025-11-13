@@ -37,14 +37,14 @@ export class CommentsupportidController {
     @Roles('admin')
     @Post('/accept/:userId')
     async acceptCommentSupportId(@Body() dto:{comment:string},@Param('userId') userId:number, @Req() req:any){
-        await this.commentSupportIdService.acceptSupportId(userId, dto.comment);
+       return  await this.commentSupportIdService.acceptSupportId(userId, dto.comment);
     }
 
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('admin')
     @Post('/reject/:userId')
     async rejectCommentSupportId(@Body() dto:{comment:string},@Param('userId') userId:number, @Req() req:any){
-        await this.commentSupportIdService.rejectSupportId(userId, dto.comment);
+       return  await this.commentSupportIdService.rejectSupportId(userId, dto.comment);
     }
    
     @UseGuards(JwtAuthGuard, RolesGuard)

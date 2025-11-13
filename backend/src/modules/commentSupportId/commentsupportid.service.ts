@@ -191,6 +191,9 @@ export class CommentsupportidService {
             if (!user) {
                 throw new NotFoundException('El usuario con ID proporcionado no existe');
             }
+            if(user.verified === true){
+                throw new BadRequestException('El usuario ya está verificado');
+            }
             const acceptStatus = await this.statusSupportIdService.getStatusSupportIdByName('aceptado');
             user.verified = true;
             const userUpdated = new UpdateUserDto();
@@ -227,6 +230,9 @@ export class CommentsupportidService {
                 throw new BadRequestException('ID de usuario inválido');
             }
             const user = await this.userService.findById(userId);
+            if(user.verified === true){
+                throw new BadRequestException('El usuario ya está verificado');
+            }
             const rejectStatus = await this.statusSupportIdService.getStatusSupportIdByName('rechazado');
             const createdComment = await this.commentSupportIdRepository.create({
                 comment: comment,
