@@ -16,6 +16,7 @@ import { CLOUDINARY_DOCS_FOLDER, CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLD
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { NotifyService } from '../notify/notify.service';
 import { TypeNotifyService } from '../typenotify/typenotify.service';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -246,7 +247,9 @@ export class UserService {
       }
 
       if (dto.password) {
-        user.password = dto.password;
+        const salt = await bcrypt.genSalt(10);
+        const passwordhash = await bcrypt.hash(dto.password, salt);
+        user.password = passwordhash;
       }
       if (dto.token) {
         user.token = dto.token;

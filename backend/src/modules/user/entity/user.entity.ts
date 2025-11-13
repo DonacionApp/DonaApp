@@ -2,6 +2,7 @@ import { AuditEntity } from "src/modules/audit/entity/audit.entity";
 import { CommentSupportIdEntity } from "src/modules/commentSupportId/entity/comment.supportid.entity";
 import { DonationEntity } from "src/modules/donation/entity/donation.entity";
 import { DonationReviewEntity } from "src/modules/donationreview/entity/donation.review.entity";
+import { MessageChatEntity } from "src/modules/messagechat/entity/message.chat.entity";
 import { PeopleEntity } from "src/modules/people/entity/people.entity";
 import { PostEntity } from "src/modules/post/entity/post.entity";
 import { PostLikedEntity } from "src/modules/postLiked/entity/post.liked.entity";
@@ -73,6 +74,8 @@ export class UserEntity{
     reviewwDonation:DonationReviewEntity[];
     @OneToMany(()=>UserChatEntity,(userChat)=>userChat.user)
     userChat:UserChatEntity[];
+    @OneToMany(()=>MessageChatEntity,(messageChat)=>messageChat.user)
+    messageChat:MessageChatEntity[];
 
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
     createdAt:Date;

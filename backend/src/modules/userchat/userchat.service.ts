@@ -102,8 +102,8 @@ export class UserchatService {
 
             const qb = this.userChatRepository.createQueryBuilder('uc')
                 .leftJoin('uc.chat', 'chat')
-                .leftJoin('chat.chatStatus', 'chatStatus')
-                .leftJoin('chat.donation', 'donation')
+                .leftJoinAndSelect('chat.chatStatus', 'chatStatus')
+                .leftJoinAndSelect('chat.donation', 'donation')
                 .where('uc.userId = :userId', { userId });
 
             qb.addSelect(['chat.id', 'chat.updatedAt', 'chat.chatName']);
@@ -121,6 +121,12 @@ export class UserchatService {
                     .from(UserChatEntity, 'uc2')
                     .where('uc2.chatId = chat.id');
             }, 'participantsCount');
+
+            // add lastMessageAt: either the latest message createdAt or fallback to chat.updatedAt
+            qb.addSelect(
+                `COALESCE((select MAX(m."createdAt") from message_chat m where m."chatId" = "chat"."id"), "chat"."updatedAt")`,
+                'lastMessageAt',
+            );
 
             if (cursor) {
                 if (orderBy === 'chatName') {
