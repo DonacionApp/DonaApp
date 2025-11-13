@@ -18,7 +18,7 @@ import { systemEntity } from 'src/modules/system/entity/system.entity';
 @Module({
   imports:[TypeOrmModule.forFeature([RolEntity,TypeDniEntity,TagsEntity,StatusDonationEntity,
      TypeMessageEntity, TypeNotifyEntity,TypePostEntity,TypeReportEntity, ArticleEntity, StatusPostDonationArticle, StatusSupportIdEntity,
-     systemEntity,
+     systemEntity,TypeReportEntity
     ]), MailModule],
   providers: [SederServiceService]
 })
