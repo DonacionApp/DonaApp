@@ -48,6 +48,7 @@ import { TypereportModule } from './modules/typeReport/typereport.module';
 import { ChatstatusModule } from './modules/chatstatus/chatstatus.module';
 import { TypemessageModule } from './modules/typemessage/typemessage.module';
 import { UserchatModule } from './modules/userchat/userchat.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -117,6 +118,7 @@ import { UserchatModule } from './modules/userchat/userchat.module';
   ChatstatusModule,
   TypemessageModule,
   UserchatModule,
+  ChatModule,
 ],
   controllers: [AppController],
   providers: [
