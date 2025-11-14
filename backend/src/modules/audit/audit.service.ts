@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditEntity } from './entity/audit.entity';
 import { UserEntity } from '../user/entity/user.entity';
+import { ForbiddenException } from '@nestjs/common';
+import { QueryAuditDto } from './dto/query-audit.dto';
 
 @Injectable()
 export class AuditService {
@@ -45,5 +47,47 @@ export class AuditService {
     if (filter.to) qb.andWhere('audit.createdAt <= :to', { to: filter.to });
     qb.orderBy('audit.createdAt', 'DESC');
     return qb.getMany();
+  }
+ // si usuario es admin puede ver cualquier usuario, si no solo puede ver el suyo
+  async findByUser(
+    targetUserId: number,
+    dto: QueryAuditDto,
+    currentUserId: number,
+    isAdmin = false,
+  ) {
+    if (!isAdmin && targetUserId !== currentUserId) {
+      throw new ForbiddenException('No autorizado para ver las acciones de este usuario');
+    }
+
+    const qb = this.auditRepository.createQueryBuilder('audit').leftJoinAndSelect('audit.user', 'user');
+    qb.where('user.id = :userId', { userId: targetUserId });
+
+    if (dto.action) qb.andWhere('audit.action ILIKE :action', { action: `%${dto.action}%` });
+    if (dto.username) qb.andWhere('user.username ILIKE :username', { username: `%${dto.username}%` });
+    if (dto.minDate) qb.andWhere('audit.createdAt >= :minDate', { minDate: dto.minDate });
+    if (dto.maxDate) qb.andWhere('audit.createdAt <= :maxDate', { maxDate: dto.maxDate });
+
+    const order = dto.order ? (dto.order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC') : 'DESC';
+    qb.orderBy('audit.createdAt', order as 'ASC' | 'DESC');
+
+    // paginacion 
+    let take = dto.limit ?? 20;
+    let skip = 0;
+    if (typeof dto.offset === 'number') {
+      skip = dto.offset;
+    } else if (typeof dto.page === 'number' && dto.page > 0) {
+      skip = (dto.page - 1) * take;
+    }
+    qb.take(take).skip(skip);
+
+    const [data, total] = await qb.getManyAndCount();
+    return {
+      data,
+      meta: {
+        total,
+        limit: take,
+        offset: skip,
+      },
+    };
   }
 }
