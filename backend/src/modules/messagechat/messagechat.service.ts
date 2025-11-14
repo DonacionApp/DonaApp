@@ -10,7 +10,9 @@ import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { ConfigService } from '@nestjs/config';
 import { CLOUDINARY_CHATS_FOLDER, CLOUDINARY_FOLDER_BASE } from 'src/config/constants';
 import { UserchatService } from '../userchat/userchat.service';
+import { UserChatEntity } from '../userchat/entity/user.chat.entity';
 import { read } from 'fs';
+import { MessagechatGateway } from './messagechat.gateway';
 
 @Injectable()
 export class MessagechatService {
@@ -27,7 +29,8 @@ export class MessagechatService {
         private readonly userchatService: UserchatService,
         @Inject(forwardRef(() => CloudinaryService))
         private readonly cloudinaryService: CloudinaryService,
-        private readonly configService: ConfigService
+        private readonly configService: ConfigService,
+        @Inject(forwardRef(() => MessagechatGateway)) private readonly messagechatGateway: MessagechatGateway,
     ) { }
 
     async createMessageChat(currentUser: number, dto: CreateMessageDto, files?: Express.Multer.File[], admin?:boolean): Promise<any> {
@@ -126,6 +129,15 @@ export class MessagechatService {
                 type: msg.type ? { id: msg.type.id, type: msg.type.type } : null,
                 read: msg.read,
             }));
+
+            try {
+                if (this.messagechatGateway && typeof this.messagechatGateway.notifyNewMessage === 'function') {
+                    for (const m of messageMinimalInfo) {
+                        await this.messagechatGateway.notifyNewMessage(chat.id, m);
+                    }
+                }
+            } catch (e) {
+            }
 
             return { messages: messageMinimalInfo, count: messageMinimalInfo.length };
         } catch (error) {
@@ -239,6 +251,24 @@ export class MessagechatService {
                 .andWhere('message.read = :read', { read: false })
                 .getCount();
             return count;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async countChatsWithUnread(userId: number): Promise<number> {
+        try {
+            if (!userId || userId <= 0 || isNaN(userId) || userId === undefined) {
+                throw new BadRequestException('userId es requerido y debe ser válido');
+            }
+            const raw = await this.messageChatRepository.createQueryBuilder('m')
+                .select('COUNT(DISTINCT m.chatId)', 'cnt')
+                .innerJoin(UserChatEntity, 'uc', 'uc.chatId = m.chatId AND uc.userId = :userId', { userId })
+                .where('m.userId != :userId', { userId })
+                .andWhere('m.read = :read', { read: false })
+                .getRawOne();
+            const n = raw && (raw.cnt || raw.count) ? Number(raw.cnt || raw.count) : 0;
+            return n;
         } catch (error) {
             throw error;
         }

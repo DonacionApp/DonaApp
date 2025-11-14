@@ -16,6 +16,7 @@ import { NotifyService } from '../notify/notify.service';
 import { ConfigService } from '@nestjs/config';
 import { URL_FRONTEND } from 'src/config/constants';
 import { TypeNotifyService } from '../typenotify/typenotify.service';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable()
 export class DonationService {
@@ -33,13 +34,14 @@ export class DonationService {
     private readonly notifyService: NotifyService,
     private readonly configService: ConfigService,
     private readonly typeNotifyService: TypeNotifyService,
+    @Inject(forwardRef(() => ChatService))
+    private readonly chatService: ChatService,
   ) { }
 
   async getDonationById(id: number, format: boolean = true): Promise<DonationEntity> {
     try {
       if (!id) throw new BadRequestException('El id de la donación es obligatorio');
 
-      // Use QueryBuilder to fetch the donation with necessary joins, including reviews and the review user
       const donation = await this.donationRepo.createQueryBuilder('donation')
         .leftJoinAndSelect('donation.user', 'donationUser')
         .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
@@ -51,12 +53,14 @@ export class DonationService {
         .leftJoinAndSelect('postArticle.article', 'article')
         .leftJoinAndSelect('donation.reviewwDonation', 'review')
         .leftJoinAndSelect('review.user', 'reviewUser')
+        .leftJoinAndSelect('donation.chat', 'chat')
+        .leftJoinAndSelect('chat.userChat', 'chatUserChat')
+        .leftJoinAndSelect('chatUserChat.user', 'chatUserChatUser')
         .where('donation.id = :id', { id })
         .getOne();
 
       if (!donation) throw new NotFoundException('Donación no encontrada');
 
-      // Remove sensitive fields from the main donation user
       if (donation.user) {
         const { password, block, code, dateSendCodigo, lockUntil, loginAttempts, token, ...userWithoutSensitive } = donation.user as any;
         donation.user = userWithoutSensitive as any;
@@ -66,8 +70,8 @@ export class DonationService {
     } catch (error) {
       throw error;
     }
-  }
 
+  }
   private formatDonationResponse(donation: any, userId?: number): any {
     if (!donation) return donation;
 
@@ -143,6 +147,28 @@ export class DonationService {
       }));
     } else {
       formatted.reviews = [];
+    }
+
+    // Attach chat info (minimal) if present. Include participants when loaded.
+    if (donation.chat) {
+      try {
+        formatted.chat = {
+          id: donation.chat.id ?? null,
+          name: donation.chat.chatName ?? donation.chat.name ?? null,
+          donationId: donation.chat.donation?.id ?? donation.id ?? null,
+          createdAt: donation.chat.createdAt ?? null,
+          updatedAt: donation.chat.updatedAt ?? null,
+          participants: Array.isArray(donation.chat.userChat) ? donation.chat.userChat.map((uc: any) => ({
+            id: uc.id ?? null,
+            donator: uc.donator ?? false,
+            user: uc.user ? { id: uc.user.id ?? null, username: uc.user.username ?? null, profilePhoto: uc.user.profilePhoto ?? null } : null
+          })) : []
+        };
+      } catch (e) {
+        formatted.chat = null;
+      }
+    } else {
+      formatted.chat = null;
     }
 
     return formatted;
@@ -817,6 +843,20 @@ export class DonationService {
           });
         }
       }
+      // If donation moved to completed/delivered, try to close associated chat automatically
+      try {
+        if (statusEntity.id === statusCompleted?.id || statusEntity.id === statusDelivered?.id) {
+          const currentId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+          const chatResult: any = await this.chatService.getChatFronDonationId(donationId, currentId);
+          const chatId = chatResult && chatResult.id ? chatResult.id : (chatResult && chatResult.messageChat && chatResult.messageChat.id ? chatResult.messageChat.id : null);
+          if (chatId) {
+            // pass admin flag from this operation so admin callers can close without being donator
+            await this.chatService.closeChat(Number(chatId), currentId, !!admin);
+          }
+        }
+      } catch (e) {
+        // swallow any chat-closing errors to avoid breaking donation flow
+      }
 
       const formatted = this.formatDonationResponse(updated, currentUser.id);
       return formatted;
@@ -932,6 +972,96 @@ export class DonationService {
       const formatted = this.formatDonationResponse(updatedDonation, currentUser);
       return formatted;
 
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createChatdonation(donationId: number, currentUser: any): Promise<{message: string, status: number}> {
+    try {
+      if (!donationId) throw new BadRequestException('El id de la donación es obligatorio');
+      if (!currentUser) throw new ForbiddenException('Usuario no autenticado');
+
+      const currentUserId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+
+      const donation = await this.getDonationById(Number(donationId));
+
+      const donator = (donation as any).donator as any;
+      const beneficiary = (donation as any).beneficiary as any;
+
+      const beneficiaryId = beneficiary?.id ?? null;
+      const donatorId = donator?.id ?? null;
+
+      if (Number(currentUserId) !== Number(donatorId) && Number(currentUserId) !== Number(beneficiaryId)) {
+        throw new ForbiddenException('El usuario no forma parte de la donación');
+      }
+
+      await this.chatService.createChatFromDonation({ donationId: Number(donationId), beneficiaryId: beneficiaryId } as any, Number(currentUserId), false);
+
+      return {message: 'Chat creado exitosamente', status: 201} as any;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDonationsUserBeneficiary(userId: number): Promise<DonationEntity[]> {
+    try {
+      if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
+      const qb = this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.post', 'post')
+        .leftJoinAndSelect('post.typePost', 'typePost')
+        .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('donation.user', 'donationUser')
+        .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
+        .leftJoinAndSelect('donation.postDonationArticlePost', 'pda')
+        .leftJoinAndSelect('pda.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article')
+        .leftJoinAndSelect('donation.reviewwDonation', 'review')
+        .leftJoinAndSelect('review.user', 'reviewUser');
+
+      const solicitud = 'solicitud de donacion';
+
+      qb.where(new Brackets(b => {
+        b.where('LOWER(typePost.type) = :sol AND post.userId = :userId', { sol: solicitud, userId })
+         .orWhere('LOWER(typePost.type) != :sol AND donation.userId = :userId', { sol: solicitud, userId });
+      }));
+
+      qb.orderBy('donation.createdAt', 'DESC');
+
+      const donations = await qb.getMany();
+      return donations.map(d => this.formatDonationResponse(d, userId));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDonationsUserDonator(userId: number): Promise<DonationEntity[]> {
+    try {
+      if (!userId) throw new BadRequestException('El id del usuario es obligatorio');
+
+      const qb = this.donationRepo.createQueryBuilder('donation')
+        .leftJoinAndSelect('donation.post', 'post')
+        .leftJoinAndSelect('post.typePost', 'typePost')
+        .leftJoinAndSelect('post.user', 'postUser')
+        .leftJoinAndSelect('donation.user', 'donationUser')
+        .leftJoinAndSelect('donation.statusDonation', 'statusDonation')
+        .leftJoinAndSelect('donation.postDonationArticlePost', 'pda')
+        .leftJoinAndSelect('pda.postArticle', 'postArticle')
+        .leftJoinAndSelect('postArticle.article', 'article')
+        .leftJoinAndSelect('donation.reviewwDonation', 'review')
+        .leftJoinAndSelect('review.user', 'reviewUser');
+
+      const solicitud = 'solicitud de donacion';
+
+      qb.where(new Brackets(b => {
+        b.where('LOWER(typePost.type) = :sol AND donation.userId = :userId', { sol: solicitud, userId })
+         .orWhere('LOWER(typePost.type) != :sol AND post.userId = :userId', { sol: solicitud, userId });
+      }));
+
+      qb.orderBy('donation.createdAt', 'DESC');
+
+      const donations = await qb.getMany();
+      return donations.map(d => this.formatDonationResponse(d, userId));
     } catch (error) {
       throw error;
     }
