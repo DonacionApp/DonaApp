@@ -67,11 +67,19 @@ export class AuditService {
     if (dto.minDate) qb.andWhere('audit.createdAt >= :minDate', { minDate: dto.minDate });
     if (dto.maxDate) qb.andWhere('audit.createdAt <= :maxDate', { maxDate: dto.maxDate });
 
-    const order = dto.order ? (dto.order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC') : 'DESC';
+    // Filtro para solo acciones relacionadas con chats/mensajes
+    if (dto.onlyChats) {
+      qb.andWhere("(audit.action ILIKE :chat OR audit.action ILIKE :message)", { chat: '%chat%', message: '%message%' });
+    }
+
+  const order = dto.order ? (dto.order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC') : 'DESC';
     qb.orderBy('audit.createdAt', order as 'ASC' | 'DESC');
 
     // paginacion 
-    let take = dto.limit ?? 20;
+  let take = dto.limit ?? 20;
+  // limite maximo para evitar consultas pesadas
+  const MAX_LIMIT = 100;
+  if (take > MAX_LIMIT) take = MAX_LIMIT;
     let skip = 0;
     if (typeof dto.offset === 'number') {
       skip = dto.offset;
