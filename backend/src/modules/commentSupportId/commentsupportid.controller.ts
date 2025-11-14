@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards, Req, Delete } from '@nestjs/common';
 import { CommentsupportidService } from './commentsupportid.service';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/shared/guards/roles.guard';
@@ -31,5 +31,26 @@ export class CommentsupportidController {
     @Post('/update/:idComment')
     async updateCommentSupportId(@Param('idComment') idComment: number, @Body() dto:{newComment:string}){
         return this.commentSupportIdService.updateCommentSupportId(idComment, dto.newComment);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Post('/accept/:userId')
+    async acceptCommentSupportId(@Body() dto:{comment:string},@Param('userId') userId:number, @Req() req:any){
+       return  await this.commentSupportIdService.acceptSupportId(userId, dto.comment);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Post('/reject/:userId')
+    async rejectCommentSupportId(@Body() dto:{comment:string},@Param('userId') userId:number, @Req() req:any){
+       return  await this.commentSupportIdService.rejectSupportId(userId, dto.comment);
+    }
+   
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Delete('/delete/:idComment')
+    async deleteCommentSupportId(@Param('idComment') idComment: number){
+        return this.commentSupportIdService.deleteCommentSupportId(idComment);
     }
 }

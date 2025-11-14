@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, Brackets } from 'typeorm';
 import { UserEntity } from './entity/user.entity';
@@ -16,7 +17,6 @@ import { CLOUDINARY_DOCS_FOLDER, CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLD
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { NotifyService } from '../notify/notify.service';
 import { TypeNotifyService } from '../typenotify/typenotify.service';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -102,7 +102,10 @@ export class UserService {
           people: {
             typeDni: true
           },
-          rol: true
+          rol: true,
+          commentSupportId:{
+            status:true,
+          }
         }
       });
       if (!user) {

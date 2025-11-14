@@ -87,7 +87,8 @@ export class UserController {
   @Roles('admin')
   @Post('update/:id')
   async update(@Param('id') id: number, @Body() dto: UpdateUserDto) {
-    return await this.userService.update(Number(id), dto);
+    // admin updates should allow password reset/change
+    return await this.userService.update(Number(id), dto, true);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
