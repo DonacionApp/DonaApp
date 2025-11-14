@@ -1,6 +1,7 @@
 import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserChatEntity } from './entity/user.chat.entity';
+import { MessageChatEntity } from '../messagechat/entity/message.chat.entity';
 import { Repository, Brackets } from 'typeorm';
 import { AddChatToUserDto } from './dto/add.to.chat.dto';
 import { UserService } from '../user/user.service';
@@ -71,7 +72,7 @@ export class UserchatService {
         }
     }
 
-    async removeUserFromChat(userId:number, chatId:number):Promise<void>{
+    async removeUserFromChat(userId:number, chatId:number):Promise<{message:string, status:number}>{
         try {
             if(!userId || !chatId || userId <=0 || chatId <=0 || isNaN(userId) || isNaN(chatId) || typeof userId !== 'number' || typeof chatId !== 'number'){
                 throw new BadRequestException('userId y chatId son necesarios');
@@ -84,6 +85,7 @@ export class UserchatService {
                 throw new BadRequestException('El usuario no pertenece al chat');
             }
             await this.userChatRepository.remove(userChatExist);
+            return { message: 'Usuario removido del chat correctamente', status: 200 };
         } catch (error) {
             throw error;
         }
@@ -132,7 +134,7 @@ export class UserchatService {
             if (search && search.trim().length > 0) {
                 qb.andWhere(new Brackets((b) => {
                     b.where('LOWER(chat.chatName) ILIKE :search', { search: `%${search}%` })
-                     .orWhere('EXISTS (select 1 from user_chat uc2 inner join "user" u on uc2.userId = u.id where uc2.chatId = chat.id and LOWER(u.username) ILIKE :search)', { search: `%${search}%` });
+                     .orWhere('EXISTS (select 1 from user_chat uc2 inner join "user" u on uc2."userId" = u.id where uc2."chatId" = chat.id and LOWER(u.username) ILIKE :search)', { search: `%${search}%` });
                 }));
             }
 
@@ -143,7 +145,15 @@ export class UserchatService {
                     .where('uc2.chatId = chat.id');
             }, 'participantsCount');
 
-            // add lastMessageAt: either the latest message createdAt or fallback to chat.updatedAt
+            qb.addSelect(sub => {
+                return sub
+                    .select('COUNT(m2.id)')
+                    .from(MessageChatEntity, 'm2')
+                    .where('m2.chatId = chat.id')
+                    .andWhere('m2.read = :read', { read: false })
+                    .andWhere('m2.userId != :currentUser', { currentUser: userId });
+            }, 'unreadCount');
+
             qb.addSelect(
                 `COALESCE((select MAX(m."createdAt") from message_chat m where m."chatId" = "chat"."id"), "chat"."updatedAt")`,
                 'lastMessageAt',
@@ -231,6 +241,7 @@ export class UserchatService {
                     chatStatus: uc.chat?.chatStatus ? { id: uc.chat.chatStatus.id } : null,
                     donationId: uc.chat?.donation?.id || null,
                     participantsCount: Number(raw.participantsCount || 0),
+                    unreadCount: Number(raw.unreadCount || 0),
                     lastMessageAt: raw.lastMessageAt || null,
                 };
             });

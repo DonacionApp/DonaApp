@@ -408,7 +408,12 @@ export class UserService {
         throw new BadRequestException('El id del rol es obligatorio');
       }
       const user = await this.userRepository.findOne({
-        where: { id: userId }
+        where: { 
+          id: userId 
+        },
+        relations:{
+          rol:true
+        }
       });
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');

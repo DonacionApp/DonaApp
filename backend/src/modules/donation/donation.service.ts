@@ -843,6 +843,20 @@ export class DonationService {
           });
         }
       }
+      // If donation moved to completed/delivered, try to close associated chat automatically
+      try {
+        if (statusEntity.id === statusCompleted?.id || statusEntity.id === statusDelivered?.id) {
+          const currentId = currentUser?.id ?? currentUser?.sub ?? currentUser;
+          const chatResult: any = await this.chatService.getChatFronDonationId(donationId, currentId);
+          const chatId = chatResult && chatResult.id ? chatResult.id : (chatResult && chatResult.messageChat && chatResult.messageChat.id ? chatResult.messageChat.id : null);
+          if (chatId) {
+            // pass admin flag from this operation so admin callers can close without being donator
+            await this.chatService.closeChat(Number(chatId), currentId, !!admin);
+          }
+        }
+      } catch (e) {
+        // swallow any chat-closing errors to avoid breaking donation flow
+      }
 
       const formatted = this.formatDonationResponse(updated, currentUser.id);
       return formatted;
