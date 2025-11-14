@@ -315,7 +315,7 @@ export class UserService {
       if (dto.verified !== undefined) {
         user.verified = dto.verified;
       }
-      if (dto.isVerifiedEmail) {
+      if (dto.isVerifiedEmail !== undefined) {
         user.emailVerified = dto.isVerifiedEmail;
         if (dto.isVerifiedEmail === true) {
           user.code = null;
@@ -324,6 +324,9 @@ export class UserService {
           user.block = false;
 
         }
+      }
+      if (dto.block !== undefined) {
+        user.block = dto.block;
       }
       if (dto.profilePhoto) {
         user.profilePhoto = dto.profilePhoto;
