@@ -7,14 +7,16 @@ import { ChatstatusModule } from '../chatstatus/chatstatus.module';
 import { UserchatModule } from '../userchat/userchat.module';
 import { DonationModule } from '../donation/donation.module';
 import { UserModule } from '../user/user.module';
+import { MessagechatGateway } from '../messagechat/messagechat.gateway';
+import { MessagechatModule } from '../messagechat/messagechat.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ChatEntity]), ChatstatusModule, 
   forwardRef(() => UserchatModule), forwardRef(()=>DonationModule),
-  forwardRef((()=>UserModule))
+  forwardRef((()=>UserModule)), forwardRef(()=>MessagechatModule),
 ],
   controllers: [ChatController],
-  providers: [ChatService],
+  providers: [ChatService,],
   exports: [ChatService],
 })
 export class ChatModule {}

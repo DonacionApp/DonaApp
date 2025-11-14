@@ -27,7 +27,8 @@ export class CloudinaryService {
                 }
             );
             const readableStream = Readable.from(file.buffer);
-            readableStream.pipe(upload);
+            
+           readableStream.pipe(upload);
         })
     }
 
@@ -141,7 +142,7 @@ export class CloudinaryService {
             ];
 
             this.validateFile(file, allowedPdfTypes, MAX_PDF_BYTES);
-            return this.uploadFile(folder, file, 'raw');
+            return await this.uploadFile(folder, file, 'image');
         } catch (error) {
             throw error;
         }

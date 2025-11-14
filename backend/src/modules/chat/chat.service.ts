@@ -9,6 +9,7 @@ import { UserchatService } from '../userchat/userchat.service';
 import { DonationService } from '../donation/donation.service';
 import { UserService } from '../user/user.service';
 import { ChatstatusService } from '../chatstatus/chatstatus.service';
+import { MessagechatGateway } from '../messagechat/messagechat.gateway';
 
 @Injectable()
 export class ChatService {
@@ -23,6 +24,8 @@ export class ChatService {
         private readonly userService: UserService,
         @Inject(forwardRef(() => ChatstatusService))
         private readonly chatstatusService: ChatstatusService,
+        @Inject(forwardRef(()=> MessagechatGateway))
+        private readonly messagechatGateway: MessagechatGateway,
     ) { }
 
     async getChatById(chatId: number): Promise<ChatEntity> {
@@ -101,16 +104,21 @@ export class ChatService {
             });
             const savedChat = await this.chatRepository.save(newChat);
 
-            // Agregar participantes
             for (const p of participants) {
                 try {
                     await this.userchatService.addUserToChat({ chatId: savedChat.id, userId: p.userId, donator: !!p.isDonator, admin: !!p.isAdmin } as any);
                 } catch (err) {
-                    // si agregar un participante falla, continuamos con los demás y acumulamos (no revertimos)
-                }
+                    }
             }
 
-            return savedChat;
+                    try {
+                        if (this.messagechatGateway && typeof this.messagechatGateway.notifyNewChat === 'function') {
+                            this.messagechatGateway.notifyNewChat(savedChat);
+                        }
+                    } catch (e) {
+                    }
+
+                    return savedChat;
         } catch (error) {
             throw error;
         }
@@ -177,6 +185,14 @@ export class ChatService {
                 await this.userchatService.addUserToChat({ chatId: savedChat.id, userId: donatorId, donator: true } as any);
             }
             await this.userchatService.addUserToChat({ chatId: savedChat.id, userId: beneficiaryId, donator: false } as any);
+
+            try {
+                if (this.messagechatGateway && typeof this.messagechatGateway.notifyNewChat === 'function') {
+                    this.messagechatGateway.notifyNewChat(savedChat);
+                }
+            } catch (e) {
+                console.warn('Error notifying new chat via WebSocket:', e);
+            }
 
             return savedChat;
         } catch (error) {

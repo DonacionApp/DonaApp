@@ -269,6 +269,17 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
     }
   }
 
+
+  public notifyNewChat(chat: any) {
+    try {
+      if (!chat) return;
+      this.server.emit('chat:new', { chat });
+      this.logger.log(`Emitted chat:new for chat ${chat.id || 'unknown'}`);
+    } catch (e) {
+      this.logger.warn('Failed to emit chat:new', e as any);
+    }
+  }
+
   private getRoomName(chatId: number) {
     return `chat_${chatId}`;
   }
