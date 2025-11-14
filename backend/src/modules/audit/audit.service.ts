@@ -98,4 +98,67 @@ export class AuditService {
       },
     };
   }
+
+  // Eliminar un registro de auditoría por su id
+  async deleteAuditById(auditId: number, adminId: number) {
+    const audit = await this.auditRepository.findOne({ where: { id: auditId }, relations: ['user'] });
+    if (!audit) return { deleted: 0, message: 'Registro de auditoría no encontrado' };
+    await this.auditRepository.delete(auditId);
+    return { deleted: 1, message: 'Registro de auditoría eliminado', auditId };
+  }
+
+  // Eliminar la actividad de los primeros 30 días de un usuario
+  async deleteUserFirst30Days(userId: number, adminId: number) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) return { deleted: 0, message: 'Usuario no encontrado' };
+
+    const createdAt = user.createdAt;
+    const threshold = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const now = new Date();
+    // solo permitir si el usuario ha estado al menos 30 días en el sistema
+    if (now < threshold) {
+      return { deleted: 0, message: 'Usuario no ha alcanzado los 30 días en el sistema' };
+    }
+
+    // eliminar auditorías entre createdAt y threshold
+    const res = await this.auditRepository.createQueryBuilder()
+      .delete()
+      .from(AuditEntity)
+      .where('userId = :userId', { userId })
+      .andWhere('createdAt >= :start AND createdAt <= :end', { start: createdAt.toISOString(), end: threshold.toISOString() })
+      .execute();
+
+    return { deleted: res.affected ?? 0, message: 'Eliminada actividad de los primeros 30 días' };
+  }
+
+  // Eliminar actividad de un usuario en un rango de fechas
+  async deleteUserRange(userId: number, minDate: string, maxDate: string, adminId: number) {
+    const min = new Date(minDate);
+    const max = new Date(maxDate);
+    if (isNaN(min.getTime()) || isNaN(max.getTime()) || min > max) return { deleted: 0, message: 'Invalid date range' };
+
+    const res = await this.auditRepository.createQueryBuilder()
+      .delete()
+      .from(AuditEntity)
+      .where('userId = :userId', { userId })
+      .andWhere('createdAt >= :min AND createdAt <= :max', { min: min.toISOString(), max: max.toISOString() })
+      .execute();
+
+    return { deleted: res.affected ?? 0, message: 'Deleted user activity in range' };
+  }
+
+  // Eliminar actividad en rango para todos los usuarios (admin)
+  async deleteRangeAll(minDate: string, maxDate: string, adminId: number) {
+    const min = new Date(minDate);
+    const max = new Date(maxDate);
+    if (isNaN(min.getTime()) || isNaN(max.getTime()) || min > max) return { deleted: 0, message: 'Invalid date range' };
+
+    const res = await this.auditRepository.createQueryBuilder()
+      .delete()
+      .from(AuditEntity)
+      .where('createdAt >= :min AND createdAt <= :max', { min: min.toISOString(), max: max.toISOString() })
+      .execute();
+
+    return { deleted: res.affected ?? 0, message: 'Eliminada actividad en rango para todos los usuarios' };
+  }
 }

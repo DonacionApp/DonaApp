@@ -5,6 +5,9 @@ import { RolesGuard } from 'src/shared/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorators';
 import { FilterAuditDto } from './dto/filter-audit.dto';
 import { QueryAuditDto } from './dto/query-audit.dto';
+import { DeleteUserAuditDto } from './dto/delete-user-audit.dto';
+import { DeleteRangeDto } from './dto/delete-range.dto';
+import { Body as BodyDecorator, Delete } from '@nestjs/common';
 
 export class CreateAuditDto {
   userId: number;
@@ -51,5 +54,38 @@ export class AuditController {
   async getUserActions(@Param('id') id: string, @Req() req: any, @Body() dto: QueryAuditDto) {
     const current = req.user?.sub || req.user?.id || req.user?.userId;
     return this.auditService.findByUser(Number(id), dto, Number(current), true);
+  }
+
+  // Eliminar auditoría de un usuario: por auditId, por rango o first30Day
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Post('admin/user/:id/delete')
+  async deleteUserAudit(@Param('id') id: string, @Req() req: any, @Body() dto: DeleteUserAuditDto) {
+    const adminId = req.user?.sub || req.user?.id || req.user?.userId;
+    // si auditId proporcionado -> eliminar registro de auditoría individual
+    if (dto.auditId) {
+      return this.auditService.deleteAuditById(Number(dto.auditId), Number(adminId));
+    }
+
+    // si first30Day flag -> eliminar primeros 30 días para ese usuario
+    if (dto.first30Day) {
+      return this.auditService.deleteUserFirst30Days(Number(id), Number(adminId));
+    }
+
+    // si minDate y maxDate -> eliminar en rango de fechas
+    if (dto.minDate && dto.maxDate) {
+      return this.auditService.deleteUserRange(Number(id), dto.minDate, dto.maxDate, Number(adminId));
+    }
+
+    return { message: 'No valid delete parameter provided', deleted: 0 };
+  }
+
+  // Eliminar actividad en rango de fechas para todos los usuarios (admin)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Post('admin/delete-range')
+  async deleteRangeAll(@Req() req: any, @Body() dto: DeleteRangeDto) {
+    const adminId = req.user?.sub || req.user?.id || req.user?.userId;
+    return this.auditService.deleteRangeAll(dto.minDate, dto.maxDate, Number(adminId));
   }
 }
