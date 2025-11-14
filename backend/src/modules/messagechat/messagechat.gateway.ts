@@ -138,29 +138,29 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
 
       const room = this.getRoomName(chatId);
 
-      // Emit to chat room: singular `message` when a single message was created
       if (Array.isArray(created) && created.length === 1) {
         this.server.to(room).emit('message:new', { chatId, message: created[0] });
       } else {
         this.server.to(room).emit('message:new', { chatId, messages: created });
       }
 
-      // Get current socket ids in the room (Set<string>)
       const socketsInRoom = await this.server.in(room).allSockets();
 
-      // Notify connected users who are not currently in the chat room
       for (const [otherUserId, sockets] of this.userSockets.entries()) {
         if (otherUserId === userId) continue;
-
         const userHasSocketInRoom = Array.from(sockets).some(sId => socketsInRoom.has(sId));
         if (userHasSocketInRoom) continue;
-
         for (const sId of sockets) {
-          // emit directly to socket id
           if (Array.isArray(created) && created.length === 1) {
             this.server.to(sId).emit('notification:message', { chatId, message: created[0] });
           } else {
             this.server.to(sId).emit('notification:message', { chatId, messages: created });
+          }
+          try {
+            const unreadInChat = await this.messagechatService.countUnreadMessages(chatId, otherUserId).catch(() => 0);
+            const totalUnreadChats = await this.messagechatService.countChatsWithUnread(otherUserId).catch(() => 0);
+            this.server.to(sId).emit('notification:unreadChats', { chatId, unreadInChat, totalUnreadChats });
+          } catch (e) {
           }
         }
       }
@@ -192,6 +192,12 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
           if (sockets) {
             for (const sId of sockets) {
               this.server.to(sId).emit('notification:message', { chatId, message: messageMinimal });
+              try {
+                const unreadInChat = await this.messagechatService.countUnreadMessages(chatId, uid).catch(() => 0);
+                const totalUnreadChats = await this.messagechatService.countChatsWithUnread(uid).catch(() => 0);
+                this.server.to(sId).emit('notification:unreadChats', { chatId, unreadInChat, totalUnreadChats });
+              } catch (e) {
+              }
             }
           }
         }

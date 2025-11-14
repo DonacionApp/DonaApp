@@ -66,6 +66,13 @@ export class MessagechatController {
         return this.messagechatService.deleteMessageChat(id, currentUser);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Put('mark-as-read/chat/:chatId')
+    async markMessagesAsRead(@Param('chatId') chatId: number, @Req() req?: any){
+        const currentUser = req?.user?.id;
+        return this.messagechatService.markMessagesAsRead(chatId, currentUser);
+    }
+
     @UseGuards(JwtAuthGuard,RolesGuard)
     @Delete('admin/delete/message/:id/chat')
     @Roles('admin')

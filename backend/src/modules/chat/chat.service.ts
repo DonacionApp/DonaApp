@@ -202,6 +202,7 @@ export class ChatService {
             const qb = this.chatRepository.createQueryBuilder('chat')
                 .leftJoinAndSelect('chat.userChat', 'uc')
                 .leftJoinAndSelect('uc.user', 'user')
+                .leftJoinAndSelect('chat.chatStatus', 'chatStatus')
                 .where('uc.userId = :userId', { userId });
 
             if (search && search.length > 0) {
