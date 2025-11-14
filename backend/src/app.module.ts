@@ -50,6 +50,7 @@ import { TypemessageModule } from './modules/typemessage/typemessage.module';
 import { UserchatModule } from './modules/userchat/userchat.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { MessagechatModule } from './modules/messagechat/messagechat.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -110,6 +111,7 @@ import { MessagechatModule } from './modules/messagechat/messagechat.module';
   StatusarticledonationModule,
   StatussupportidModule,
   CommentsupportidModule,
+  AuditModule,
   DonationreviewModule,
   SentimentServiceModule,
   SystemModule,
