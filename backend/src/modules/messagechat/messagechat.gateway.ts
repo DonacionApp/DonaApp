@@ -3,6 +3,8 @@ import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnectio
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { MessagechatService } from './messagechat.service';
+import { NotifyService } from '../notify/notify.service';
+import { TypeNotifyService } from '../typenotify/typenotify.service';
 import { UserchatService } from '../userchat/userchat.service';
 
 @WebSocketGateway({ cors: true, namespace: '/' })
@@ -20,6 +22,9 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => MessagechatService))
     private readonly messagechatService: MessagechatService,
+    @Inject(forwardRef(() => NotifyService))
+    private readonly notifyService: NotifyService,
+    private readonly typeNotifyService: TypeNotifyService,
     private readonly userchatService: UserchatService,
   ) {}
 
@@ -150,18 +155,51 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
         if (otherUserId === userId) continue;
         const userHasSocketInRoom = Array.from(sockets).some(sId => socketsInRoom.has(sId));
         if (userHasSocketInRoom) continue;
-        for (const sId of sockets) {
-          if (Array.isArray(created) && created.length === 1) {
-            this.server.to(sId).emit('notification:message', { chatId, message: created[0] });
-          } else {
-            this.server.to(sId).emit('notification:message', { chatId, messages: created });
+        // If the user has connected sockets, emit per-socket notifications
+        if (sockets && sockets.size > 0) {
+          for (const sId of sockets) {
+            if (Array.isArray(created) && created.length === 1) {
+              this.server.to(sId).emit('notification:message', { chatId, message: created[0] });
+            } else {
+              this.server.to(sId).emit('notification:message', { chatId, messages: created });
+            }
+            try {
+              const unreadInChat = await this.messagechatService.countUnreadMessages(chatId, otherUserId).catch(() => 0);
+              const totalUnreadChats = await this.messagechatService.countChatsWithUnread(otherUserId).catch(() => 0);
+              this.server.to(sId).emit('notification:unreadChats', { chatId, unreadInChat, totalUnreadChats });
+            } catch (e) {
+
+            }
           }
+        }
+
+        // Regardless of whether the user has sockets, if they are not in the chat room,
+        // create a persistent notification so they can see it later (user connected but chat closed included).
+        try {
+          const textForNotify = Array.isArray(created) && created.length === 1 ? (created[0].message || '') : (Array.isArray(created) ? created.map(c => c.message).join(' ') : 'Nuevo mensaje');
+          let typeNotifyId: number | null = null;
           try {
-            const unreadInChat = await this.messagechatService.countUnreadMessages(chatId, otherUserId).catch(() => 0);
-            const totalUnreadChats = await this.messagechatService.countChatsWithUnread(otherUserId).catch(() => 0);
-            this.server.to(sId).emit('notification:unreadChats', { chatId, unreadInChat, totalUnreadChats });
-          } catch (e) {
+            const tn = await this.typeNotifyService.getByType('informaacion').catch(() => null);
+            console.log('Tipo notificacion mensaje', tn);
+            if (tn && (tn as any).id) typeNotifyId = (tn as any).id;
+          } catch (e) {}
+          if (!typeNotifyId) {
+            try {
+              const tn = await this.typeNotifyService.getByType('alerta').catch(() => null);
+              if (tn && (tn as any).id) typeNotifyId = (tn as any).id;
+            } catch (e) {}
           }
+          if (typeNotifyId) {
+            await this.notifyService.createNotify({
+              title: 'Nuevo mensaje',
+              message: String(textForNotify).slice(0, 240),
+              typeNotifyId,
+              usersIds: [otherUserId],
+              link: `/chat/${chatId}`,
+            } as any).catch(() => null);
+          }
+        } catch (e) {
+          this.logger.warn('Failed to create persistent notification for offline or background user', e as any);
         }
       }
     } catch (e) {
@@ -189,7 +227,7 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
             this.logger.warn('Unable to mark messages as read', e as any);
           }
         } else {
-          if (sockets) {
+          if (sockets && sockets.size > 0) {
             for (const sId of sockets) {
               this.server.to(sId).emit('notification:message', { chatId, message: messageMinimal });
               try {
@@ -199,6 +237,30 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
               } catch (e) {
               }
             }
+          }
+          try {
+            let typeNotifyId: number | null = null;
+            try {
+              const tn = await this.typeNotifyService.getByType('informaacion').catch(() => null);
+              if (tn && (tn as any).id) typeNotifyId = (tn as any).id;
+            } catch (e) {}
+            if (!typeNotifyId) {
+              try {
+                const tn = await this.typeNotifyService.getByType('alerta').catch(() => null);
+                if (tn && (tn as any).id) typeNotifyId = (tn as any).id;
+              } catch (e) {}
+            }
+            if (typeNotifyId) {
+              await this.notifyService.createNotify({
+                title: 'Nuevo mensaje',
+                message: String(messageMinimal?.message || '').slice(0,240),
+                typeNotifyId,
+                usersIds: [uid],
+                link: `/chat/${chatId}`,
+              } as any).catch(() => null);
+            }
+          } catch (e) {
+            this.logger.warn('Failed to create persistent notification for offline/background participant', e as any);
           }
         }
       }

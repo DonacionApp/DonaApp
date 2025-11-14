@@ -11,11 +11,13 @@ import { UserchatModule } from '../userchat/userchat.module';
 import { MessagechatGateway } from './messagechat.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { NotifyModule } from '../notify/notify.module';
+import { TypeNotifyModule } from '../typenotify/typenotify.module';
 
 @Module({
   imports:[TypeOrmModule.forFeature([MessageChatEntity]), forwardRef(()=>ChatModule),
  forwardRef(()=>UserModule), TypemessageModule, forwardRef(()=>CloudinaryModule),
-  forwardRef(()=>UserchatModule),
+  forwardRef(()=>UserchatModule),forwardRef(()=>NotifyModule), forwardRef(()=>TypeNotifyModule),
   JwtModule.registerAsync({
            imports: [ConfigModule],
            useFactory: async (configService: ConfigService) => ({
