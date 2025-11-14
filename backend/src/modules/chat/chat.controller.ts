@@ -1,8 +1,9 @@
-import { Controller, Get, Param, Req, UseGuards, Query, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards, Query, Post, Body, BadRequestException, Put } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/shared/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorators';
+import { CreateChatDto } from './dto/create.chat.dto';
 
 @Controller('chat')
 export class ChatController {
@@ -48,5 +49,28 @@ export class ChatController {
 
         const result = await this.chatService.getAllChatsAdmin(body, options as any);
         return result;
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Put(':id/close')
+    async closeChat(@Param('id') id: string, @Req() req?: any, @Body() body?: any) {
+        const user = req?.user;
+        return await this.chatService.closeChat(Number(id), user?.id, false);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Put(':id/close/admin')
+    async closeChatAdmin(@Param('id') id: string, @Req() req?: any) {
+        const user = req?.user;
+        return await this.chatService.closeChat(Number(id), user?.id, true);
+    }
+
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('admin')
+    @Post('/admin/admin/create/')
+    async createChatAdmin(@Req() req: any, @Body() body: CreateChatDto) {
+        const user = req?.user;
+        return await this.chatService.createChat(body, true);
     }
 }

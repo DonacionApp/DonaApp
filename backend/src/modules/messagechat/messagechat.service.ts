@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { CLOUDINARY_CHATS_FOLDER, CLOUDINARY_FOLDER_BASE } from 'src/config/constants';
 import { UserchatService } from '../userchat/userchat.service';
 import { read } from 'fs';
+import { MessagechatGateway } from './messagechat.gateway';
 
 @Injectable()
 export class MessagechatService {
@@ -27,7 +28,8 @@ export class MessagechatService {
         private readonly userchatService: UserchatService,
         @Inject(forwardRef(() => CloudinaryService))
         private readonly cloudinaryService: CloudinaryService,
-        private readonly configService: ConfigService
+        private readonly configService: ConfigService,
+        @Inject(forwardRef(() => MessagechatGateway)) private readonly messagechatGateway: MessagechatGateway,
     ) { }
 
     async createMessageChat(currentUser: number, dto: CreateMessageDto, files?: Express.Multer.File[], admin?:boolean): Promise<any> {
@@ -126,6 +128,15 @@ export class MessagechatService {
                 type: msg.type ? { id: msg.type.id, type: msg.type.type } : null,
                 read: msg.read,
             }));
+
+            try {
+                if (this.messagechatGateway && typeof this.messagechatGateway.notifyNewMessage === 'function') {
+                    for (const m of messageMinimalInfo) {
+                        await this.messagechatGateway.notifyNewMessage(chat.id, m);
+                    }
+                }
+            } catch (e) {
+            }
 
             return { messages: messageMinimalInfo, count: messageMinimalInfo.length };
         } catch (error) {

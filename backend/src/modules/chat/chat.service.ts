@@ -1,4 +1,4 @@
-import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Brackets } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatEntity } from './entity/chat.entity';
@@ -15,13 +15,13 @@ export class ChatService {
     constructor(
         @InjectRepository(ChatEntity)
         private readonly chatRepository: Repository<ChatEntity>,
-        @Inject(forwardRef(()=>UserchatService))
+        @Inject(forwardRef(() => UserchatService))
         private readonly userchatService: UserchatService,
-        @Inject(forwardRef(()=> DonationService))
+        @Inject(forwardRef(() => DonationService))
         private readonly donationService: DonationService,
-        @Inject(forwardRef(()=> UserService))
+        @Inject(forwardRef(() => UserService))
         private readonly userService: UserService,
-        @Inject(forwardRef(()=> ChatstatusService))
+        @Inject(forwardRef(() => ChatstatusService))
         private readonly chatstatusService: ChatstatusService,
     ) { }
 
@@ -31,6 +31,7 @@ export class ChatService {
                 throw new BadRequestException('El ID del chat es inválido');
             }
             const chat = await this.chatRepository.createQueryBuilder('chat')
+                .leftJoinAndSelect('chat.chatStatus', 'chatStatus')
                 .where('chat.id = :chatId', { chatId })
                 .getOne();
             if (!chat) {
@@ -55,7 +56,7 @@ export class ChatService {
                 .where('chat.donationId = :donationId', { donationId })
                 .getOne();
             if (!chat) {
-                return {messageChat: 'No existe un chat para esta donación y usuario', status:404} as any;
+                return { messageChat: 'No existe un chat para esta donación y usuario', status: 404 } as any;
             }
             return chat;
         } catch (error) {
@@ -63,9 +64,9 @@ export class ChatService {
         }
     }
 
-    async createChat(dto:CreateChatDto, admin?:boolean): Promise<ChatEntity>{
+    async createChat(dto: CreateChatDto, admin?: boolean): Promise<ChatEntity> {
         try {
-            let errorUsers:string[] = [];
+            let errorUsers: string[] = [];
             const participants = Array.isArray(dto.participantIds) ? dto.participantIds : [];
             if (participants.length === 0) {
                 throw new BadRequestException('Debe agregar al menos un participante al chat');
@@ -73,20 +74,20 @@ export class ChatService {
             if (participants.length > 50) {
                 throw new BadRequestException('No se pueden agregar más de 50 participantes al chat');
             }
-            if(!dto.chatName || dto.chatName.trim().length===0){
+            if (!dto.chatName || dto.chatName.trim().length === 0) {
                 throw new BadRequestException('El nombre del chat no puede estar vacío');
             }
-            for(const userId of participants){
+            for (const userId of participants) {
                 try {
                     await this.userService.findById(userId.userId);
                 } catch (error) {
                     errorUsers.push(`Usuario con ID ${userId.userId} no encontrado`);
                 }
             }
-            if(errorUsers.length>0){
+            if (errorUsers.length > 0) {
                 throw new BadRequestException(`Errores con los usuarios: ${errorUsers.join(', ')}`);
             }
-         
+
             let chatStatus: any = await this.chatstatusService.getStatusByType('open') as any;
             if (!chatStatus || (chatStatus as any).status) {
                 const all = await this.chatstatusService.getAllStatus() as any[];
@@ -207,7 +208,7 @@ export class ChatService {
                 const like = `%${search}%`;
                 qb.andWhere(new Brackets(b => {
                     b.where('chat.chatName ILIKE :like', { like })
-                     .orWhere('user.username ILIKE :like', { like });
+                        .orWhere('user.username ILIKE :like', { like });
                 }));
             }
 
@@ -220,7 +221,7 @@ export class ChatService {
             }
 
             qb.orderBy('chat.createdAt', 'DESC')
-              .take(limit);
+                .take(limit);
 
             const chats = await qb.getMany();
             return chats;
@@ -231,7 +232,7 @@ export class ChatService {
 
     async getAllChatsAdmin(
         filters?: any,
-        options?: { limit?: number; page?: number; offset?: number; cursor?: string; orderBy?: string; order?: 'ASC'|'DESC' }
+        options?: { limit?: number; page?: number; offset?: number; cursor?: string; orderBy?: string; order?: 'ASC' | 'DESC' }
     ): Promise<{ items: ChatEntity[]; total?: number; page?: number; limit?: number }> {
         try {
             const limit = Math.min(Math.max(Number(options?.limit) || 20, 1), 100);
@@ -244,7 +245,7 @@ export class ChatService {
             const orderField = options?.orderBy === 'updatedAt' ? 'last_message_at' : 'last_message_at';
             const orderDir = (options?.order || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-             const qb = this.chatRepository.createQueryBuilder('chat')
+            const qb = this.chatRepository.createQueryBuilder('chat')
                 .leftJoinAndSelect('chat.userChat', 'uc')
                 .leftJoinAndSelect('uc.user', 'user')
                 .leftJoin('chat.messageChat', 'm')
@@ -259,7 +260,7 @@ export class ChatService {
                     const like = `%${String(filters.search).trim()}%`;
                     qb.andWhere(new Brackets(b => {
                         b.where('chat.chatName ILIKE :like', { like })
-                         .orWhere('user.username ILIKE :like', { like });
+                            .orWhere('user.username ILIKE :like', { like });
                     }));
                 }
                 if (filters.donationId) {
@@ -277,7 +278,7 @@ export class ChatService {
             }
 
             qb.orderBy(orderField, orderDir)
-              .limit(limit);
+                .limit(limit);
 
             const items = await qb.getRawAndEntities();
 
@@ -320,7 +321,7 @@ export class ChatService {
                     const like = `%${String(filters.search).trim()}%`;
                     countQb.where(new Brackets(b => {
                         b.where('chat.chatName ILIKE :like', { like })
-                         .orWhere('user.username ILIKE :like', { like });
+                            .orWhere('user.username ILIKE :like', { like });
                     }));
                 }
                 if (filters?.donationId) {
@@ -335,5 +336,68 @@ export class ChatService {
         }
     }
 
+    async updateNameChat(chatId: number, newName: string): Promise<ChatEntity> {
+        try {
+            if (!chatId || chatId <= 0 || isNaN(chatId) || chatId === undefined) {
+                throw new BadRequestException('El ID del chat es inválido');
+            }
+            if (!newName || newName.trim().length === 0) {
+                throw new BadRequestException('El nuevo nombre del chat no puede estar vacío');
+            }
+            const chat = await this.getChatById(chatId);
+            chat.chatName = newName.trim();
+            return await this.chatRepository.save(chat);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async closeChat(chatId: number, currentUser:number, admin?:boolean): Promise<{messageChat:string, status:number}> {
+        try {
+            if (!chatId || chatId <= 0 || isNaN(chatId) || chatId === undefined) {
+                throw new BadRequestException('El ID del chat es inválido');
+            }
+            const chat = await this.chatRepository.createQueryBuilder('chat')
+                .leftJoinAndSelect('chat.chatStatus', 'chatStatus')
+                .leftJoinAndSelect('chat.userChat', 'uc')
+                .leftJoinAndSelect('uc.user', 'user')
+                .leftJoinAndSelect('chat.donation', 'donation')
+                .leftJoinAndSelect('donation.statusDonation', 'donationStatus')
+                .where('chat.id = :chatId', { chatId })
+                .getOne();
+            if (!chat) {
+                throw new NotFoundException('Chat no encontrado');
+            }
+            let currentUserId: number | undefined = undefined;
+            if (currentUser && typeof currentUser === 'object') {
+                currentUserId = Number((currentUser as any).id ?? (currentUser as any).sub ?? undefined);
+            } else {
+                currentUserId = typeof currentUser === 'number' || (typeof currentUser === 'string' && !isNaN(Number(currentUser))) ? Number(currentUser) : undefined;
+            }
+
+            if (!admin) {
+                const donationStatus = (chat as any).donation?.statusDonation?.status?.toString?.().toLowerCase?.() || null;
+                const isDonationFinal = donationStatus && (donationStatus.includes('complet') || donationStatus.includes('entreg'));
+                if (!isDonationFinal) {
+                    const isDonator = Array.isArray(chat.userChat) && chat.userChat.some((uc: any) => (uc.donator === true || uc.donator === 1) && uc.user && Number(uc.user.id) === Number(currentUserId));
+                    if (!isDonator) {
+                        throw new ForbiddenException('Solo el donador puede cerrar el chat');
+                    }
+                }
+            }
+            const closedStatus = await this.chatstatusService.getStatusByType('closed');
+            if (!closedStatus) {
+                throw new BadRequestException('No se encontró el estado cerrado para el chat');
+            }
+            if (!(closedStatus as any).id) {
+                throw new BadRequestException('Estado cerrado inválido');
+            }
+            chat.chatStatus = closedStatus as any;
+             await this.chatRepository.save(chat);
+             return {messageChat: 'Chat cerrado exitosamente', status:200};
+        } catch (error) {
+            throw error;
+        }
+    }
 
 }

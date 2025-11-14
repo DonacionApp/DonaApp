@@ -8,14 +8,25 @@ import { UserModule } from '../user/user.module';
 import { TypemessageModule } from '../typemessage/typemessage.module';
 import { CloudinaryModule } from 'src/core/cloudinary/cloudinary.module';
 import { UserchatModule } from '../userchat/userchat.module';
+import { MessagechatGateway } from './messagechat.gateway';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports:[TypeOrmModule.forFeature([MessageChatEntity]), forwardRef(()=>ChatModule),
  forwardRef(()=>UserModule), TypemessageModule, forwardRef(()=>CloudinaryModule),
-  forwardRef(()=>UserchatModule)
+  forwardRef(()=>UserchatModule),
+  JwtModule.registerAsync({
+           imports: [ConfigModule],
+           useFactory: async (configService: ConfigService) => ({
+              secret: configService.get('JWT_SECRET'),
+              signOptions: { expiresIn: '1d' },
+           }),
+           inject: [ConfigService],
+        }),
 ],
   controllers: [MessagechatController],
-  providers: [MessagechatService],
+  providers: [MessagechatService, MessagechatGateway],
   exports: [MessagechatService],
 })
 export class MessagechatModule {}
