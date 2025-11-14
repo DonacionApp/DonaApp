@@ -29,6 +29,6 @@ import { TypeNotifyModule } from '../typenotify/typenotify.module';
 ],
   controllers: [MessagechatController],
   providers: [MessagechatService, MessagechatGateway],
-  exports: [MessagechatService],
+  exports: [MessagechatService, MessagechatGateway],
 })
 export class MessagechatModule {}
