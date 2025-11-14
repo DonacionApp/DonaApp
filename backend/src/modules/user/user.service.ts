@@ -202,6 +202,58 @@ export class UserService {
     }
   }
 
+  async createUserByAdmin(dto: CreateUserDto): Promise<{ message: string }> {
+    try {
+      if (!dto.username || !dto.email || !dto.password || !dto.rolId || !dto.people) {
+        throw new BadRequestException('Los datos del usuario son obligatorios');
+      }
+
+      dto.username = dto.username.trim();
+      dto.email = dto.email.trim().toLowerCase();
+
+      const usernameExists = await this.userRepository.findOne({
+        where: { username: dto.username }
+      });
+      if (usernameExists) {
+        throw new BadRequestException('El username ya existe');
+      }
+
+      const emailExists = await this.userRepository.findOne({
+        where: { email: dto.email }
+      });
+      if (emailExists) {
+        throw new BadRequestException('El email ya existe');
+      }
+      const rol = await this.rolService.findById(dto.rolId);
+      if (!rol) {
+        throw new BadRequestException('El rol no existe');
+      }
+      const people = await this.peopleService.create(dto.people);
+
+      const salt = await bcrypt.genSalt(10);
+      const passwordhash = await bcrypt.hash(dto.password, salt);
+      dto.password = passwordhash;
+
+      const user = new UserEntity();
+      user.username = dto.username;
+      user.email = dto.email;
+      user.password = dto.password;
+      user.rol = rol;
+      user.people = people;
+      if (dto.profilePhoto !== undefined) {
+        user.profilePhoto = dto.profilePhoto;
+      }
+      if (dto.block !== undefined) user.block = dto.block;
+
+      const newUser = this.userRepository.create(user);
+      await this.userRepository.save(newUser);
+      
+      return { message: 'Usuario creado correctamente' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async update(id: number, dto: UpdateUserDto, resetPass?: boolean): Promise<UserEntity> {
     try {
       const user = await this.userRepository.findOne({

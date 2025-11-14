@@ -80,7 +80,7 @@ export class UserController {
   @Roles('admin')
   @Post()
   async create(@Body() dto: CreateUserDto) {
-    return await this.userService.create(dto);
+    return await this.userService.createUserByAdmin(dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
