@@ -16,6 +16,7 @@ export class CommentsupportidService {
         @InjectRepository(CommentSupportIdEntity)
         private readonly commentSupportIdRepository: Repository<CommentSupportIdEntity>,
         private readonly statusSupportIdService: StatussupportidService,
+        @Inject(forwardRef(() => UserService))
         private readonly userService: UserService,
         @Inject(forwardRef(() => NotifyService))
         private readonly notifyService: NotifyService,
@@ -74,12 +75,12 @@ export class CommentsupportidService {
 
     }
 
-    async getCommentsByUserId(idUser: number): Promise<CommentSupportIdEntity[]> {
+    async getCommentsByUserId(idUser: number): Promise<CommentSupportIdEntity> {
         try {
             if (!idUser || isNaN(idUser) || idUser === undefined || idUser <= 0) {
                 throw new BadRequestException('ID de usuario inválido');
             }
-            const comments = await this.commentSupportIdRepository.find({
+            const comments = await this.commentSupportIdRepository.findOne({
                 where: {
                     user: {
                         id: idUser
@@ -89,7 +90,7 @@ export class CommentsupportidService {
                     status: true
                 }
             });
-            if (comments.length === 0) {
+            if (!comments) {
                 throw new BadRequestException('No se encontraron comentarios para el ID de usuario proporcionado');
             }
             return comments;
@@ -199,14 +200,27 @@ export class CommentsupportidService {
             const userUpdated = new UpdateUserDto();
             userUpdated.verified = true;
             await this.userService.update(user.id, userUpdated, false);
-            await this.commentSupportIdRepository.save({
-                comment: comments,
-                status: acceptStatus,
-            });
-            await this.commentSupportIdRepository.save({
-                comment: comments,
-                status: acceptStatus,
-            });
+
+            // If a comment for this user already exists, update it. Otherwise create a new one.
+            let existingComment = await this.commentSupportIdRepository.findOne({
+                where: {
+                    user: { id: user.id }
+                },
+                relations: { status: true }
+            }).catch(() => null);
+
+            if (existingComment) {
+                existingComment.comment = comments;
+                existingComment.status = acceptStatus;
+                await this.commentSupportIdRepository.save(existingComment);
+            } else {
+                const created = this.commentSupportIdRepository.create({
+                    comment: comments,
+                    status: acceptStatus,
+                    user: user,
+                });
+                await this.commentSupportIdRepository.save(created);
+            }
             const typeNotify = await this.typeNotifyService.getByType('informaacion')
             if (!typeNotify) {
                 throw new NotFoundException('El tipo de notificación no existe');
@@ -234,12 +248,27 @@ export class CommentsupportidService {
                 throw new BadRequestException('El usuario ya está verificado');
             }
             const rejectStatus = await this.statusSupportIdService.getStatusSupportIdByName('rechazado');
-            const createdComment = await this.commentSupportIdRepository.create({
-                comment: comment,
-                status: rejectStatus,
-                user: user,
-            });
-            await this.commentSupportIdRepository.save(createdComment);
+
+            // If a comment for this user already exists, update it. Otherwise create a new one.
+            let existingComment = await this.commentSupportIdRepository.findOne({
+                where: {
+                    user: { id: user.id }
+                },
+                relations: { status: true }
+            }).catch(() => null);
+
+            if (existingComment) {
+                existingComment.comment = comment;
+                existingComment.status = rejectStatus;
+                await this.commentSupportIdRepository.save(existingComment);
+            } else {
+                const createdComment = this.commentSupportIdRepository.create({
+                    comment: comment,
+                    status: rejectStatus,
+                    user: user,
+                });
+                await this.commentSupportIdRepository.save(createdComment);
+            }
             const typeNotify = await this.typeNotifyService.getByType('alerta')
             if (typeNotify) {
                 await this.notifyService.createNotify({

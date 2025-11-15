@@ -12,10 +12,13 @@ import { TypeNotifyModule } from '../typenotify/typenotify.module';
 import { ConfigModule } from '@nestjs/config';
 import { CloudinaryModule } from 'src/core/cloudinary/cloudinary.module';
 import { NotifyModule } from '../notify/notify.module';
+import { CommentsupportidModule } from '../commentSupportId/commentsupportid.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserEntity, RolEntity, PeopleEntity]),RolModule, PeopleModule, CountriesModule, ConfigModule,
-forwardRef(() => CloudinaryModule), forwardRef(() => NotifyModule), TypeNotifyModule],
+forwardRef(() => CloudinaryModule), forwardRef(() => NotifyModule), TypeNotifyModule,
+forwardRef(()=>CommentsupportidModule),
+],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService]

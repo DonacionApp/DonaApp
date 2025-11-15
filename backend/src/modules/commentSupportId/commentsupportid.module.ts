@@ -11,7 +11,7 @@ import { TypeNotifyModule } from '../typenotify/typenotify.module';
 @Module({
   imports:[
     TypeOrmModule.forFeature([CommentSupportIdEntity]),
-    UserModule,
+   forwardRef(()=> UserModule),
     StatussupportidModule,
     forwardRef(() => NotifyModule),
     forwardRef(() => TypeNotifyModule),
