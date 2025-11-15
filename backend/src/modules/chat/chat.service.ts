@@ -363,7 +363,15 @@ export class ChatService {
             }
             const chat = await this.getChatById(chatId);
             chat.chatName = newName.trim();
-            return await this.chatRepository.save(chat);
+            const saved = await this.chatRepository.save(chat);
+            try {
+                if (this.messagechatGateway && typeof this.messagechatGateway.notifyChatRenamed === 'function') {
+                    this.messagechatGateway.notifyChatRenamed(saved);
+                }
+            } catch (e) {
+                // don't block update on emit errors
+            }
+            return saved;
         } catch (error) {
             throw error;
         }
