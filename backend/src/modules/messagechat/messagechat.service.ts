@@ -295,7 +295,24 @@ export class MessagechatService {
             }
             message.message = newMessageText;
             const saved = await this.messageChatRepository.save(message);
-            return { newMessage: saved.message, status: 200 };
+
+            // Prepare minimal payload for realtime update
+            const messageMinimal = {
+                id: saved.id,
+                message: saved.message,
+                createdAt: saved.createdAt,
+                user: saved.user ? { id: saved.user.id, username: saved.user.username, profilePhoto: saved.user.profilePhoto } : null,
+            } as any;
+
+            try {
+                if (this.messagechatGateway && typeof this.messagechatGateway.notifyEditMessage === 'function') {
+                    this.messagechatGateway.notifyEditMessage(saved.chat?.id, messageMinimal);
+                }
+            } catch (e) {
+                // non-blocking
+            }
+
+            return { newMessage: saved.message, status: 200, id: saved.id, chatId: saved.chat?.id } as any;
         } catch (error) {
             throw error;
         }
@@ -330,8 +347,19 @@ export class MessagechatService {
                 await this.cloudinaryService.deleteFile(folder, publicId);
                 console.log('Archivo asociado al mensaje eliminado de Cloudinary');
             }
+            const chatId = message.chat?.id;
+            const messageId = message.id;
             await this.messageChatRepository.remove(message);
-            return { message: 'Mensaje eliminado correctamente', status: 200 };
+
+            try {
+                if (this.messagechatGateway && typeof this.messagechatGateway.notifyDeleteMessage === 'function') {
+                    this.messagechatGateway.notifyDeleteMessage(chatId, messageId);
+                }
+            } catch (e) {
+                // ignore
+            }
+
+            return { message: 'Mensaje eliminado correctamente', status: 200, chatId, id: messageId } as any;
         } catch (error) {
             throw error;
         }
