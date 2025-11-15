@@ -17,6 +17,7 @@ import { CLOUDINARY_DOCS_FOLDER, CLOUDINARY_FOLDER_BASE, CLOUDINARY_PROFILE_FOLD
 import { CloudinaryService } from 'src/core/cloudinary/cloudinary.service';
 import { NotifyService } from '../notify/notify.service';
 import { TypeNotifyService } from '../typenotify/typenotify.service';
+import { CommentsupportidService } from '../commentSupportId/commentsupportid.service';
 
 @Injectable()
 export class UserService {
@@ -35,6 +36,8 @@ export class UserService {
     @Inject(forwardRef(() => NotifyService))
     private readonly notifyService: NotifyService,
     private readonly typeNotifyService: TypeNotifyService,
+    @Inject(forwardRef(()=>CommentsupportidService))
+    private readonly commentSupportIdService: CommentsupportidService,
   ) { }
 
   async findAll(): Promise<Omit<UserEntity, 'password'>[]> {
@@ -544,6 +547,13 @@ export class UserService {
         const userNew = new UpdateUserDto();
         userNew.people = { supportId: urlNewDocument } as any;
         const updatedUser = await this.update(userId, userNew);
+        let commentSupportId;
+        try {
+          const commentUser= await this.commentSupportIdService.getCommentsByUserId(Number(userId))
+          await this.commentSupportIdService.deleteCommentSupportId(commentUser.id)
+        } catch (error) {
+        }
+        
         try {
           const typeNotify = await this.typeNotifyService.getByType('informaacion');
           await this.notifyService.createNotifyForAdmins({

@@ -349,6 +349,32 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
     }
   }
 
+  @SubscribeMessage('renameChat')
+  async handleRenameChat(@MessageBody() payload: { chatId: number; newName: string }, @ConnectedSocket() socket: Socket) {
+    const userId = this.socketUser.get(socket.id);
+    if (!userId) {
+      socket.emit('error', { message: 'Not authenticated' });
+      return;
+    }
+    const chatId = Number(payload?.chatId);
+    const newName = String(payload?.newName || '').trim();
+    if (!chatId || !newName) {
+      socket.emit('error', { message: 'Invalid rename payload' });
+      return;
+    }
+    try {
+      const res: any = await this.messagechatService.renameChat(chatId, newName, userId).catch(() => null);
+      if (!res) {
+        socket.emit('error', { message: 'Could not rename chat' });
+        return;
+      }
+      // ChatService.updateNameChat will trigger notifyChatRenamed, so just ack
+      socket.emit('chat:rename:ok', { chatId: res.id || chatId, chatName: res.chatName || newName });
+    } catch (e) {
+      socket.emit('error', { message: 'Error renaming chat' });
+    }
+  }
+
   @SubscribeMessage('deleteMessage')
   async handleDeleteMessage(@MessageBody() payload: { messageId: number; chatId?: number }, @ConnectedSocket() socket: Socket) {
     const userId = this.socketUser.get(socket.id);
@@ -374,7 +400,6 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
     }
   }
 
-  /** Emit that a message was edited to all sockets in the chat room */
   public notifyEditMessage(chatId: number, messageMinimal: any) {
     try {
       if (!chatId) return;
@@ -385,7 +410,6 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
     }
   }
 
-  /** Emit that a message was deleted to all sockets in the chat room */
   public notifyDeleteMessage(chatId: number, messageId: number) {
     try {
       if (!chatId) return;
@@ -393,6 +417,39 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
       this.logger.log(`Emitted message:deleted for chat ${chatId} message ${messageId}`);
     } catch (e) {
       this.logger.warn('Failed to emit message:deleted', e as any);
+    }
+  }
+
+  /** Emit that a chat was renamed to participants (room and connected sockets) */
+  public notifyChatRenamed(chat: any) {
+    try {
+      if (!chat || !chat.id) return;
+      const room = this.getRoomName(chat.id);
+      // Emit to room
+      this.server.to(room).emit('chat:renamed', { chatId: chat.id, chatName: chat.chatName });
+
+      // Also emit to connected participants outside the room
+      (async () => {
+        try {
+          const participants = await this.userchatService.getUsersChatByChatId(chat.id).catch(() => [] as any[]);
+          for (const uc of participants) {
+            const uid = uc?.user?.id;
+            if (!uid) continue;
+            const sockets = this.userSockets.get(uid);
+            if (sockets && sockets.size > 0) {
+              for (const sId of sockets) {
+                this.server.to(sId).emit('chat:renamed', { chatId: chat.id, chatName: chat.chatName });
+              }
+            }
+          }
+        } catch (e) {
+          this.logger.warn('Error emitting chat:renamed to participants', e as any);
+        }
+      })();
+
+      this.logger.log(`Emitted chat:renamed for chat ${chat.id}`);
+    } catch (e) {
+      this.logger.warn('Failed to emit chat:renamed', e as any);
     }
   }
 

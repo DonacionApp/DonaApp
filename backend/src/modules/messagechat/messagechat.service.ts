@@ -145,6 +145,19 @@ export class MessagechatService {
         }
     }
 
+            async renameChat(chatId: number, newName: string, currentUserId: number): Promise<any> {
+                try {
+                    if (!chatId || chatId <= 0 || !newName || newName.trim().length === 0) {
+                        throw new BadRequestException('chatId y newName son requeridos');
+                    }
+                    // Delegate to ChatService which will handle persistence and permissions
+                    const saved = await this.chatService.updateNameChat(chatId, newName);
+                    return saved;
+                } catch (error) {
+                    throw error;
+                }
+            }
+
     async getMessagesByChatId(
         chatId: number,
         currentUser?: number,
