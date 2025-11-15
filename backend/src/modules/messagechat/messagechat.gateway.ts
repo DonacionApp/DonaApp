@@ -270,13 +270,129 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
   }
 
 
-  public notifyNewChat(chat: any) {
+  public async notifyNewChat(chat: any) {
     try {
-      if (!chat) return;
-      this.server.emit('chat:new', { chat });
-      this.logger.log(`Emitted chat:new for chat ${chat.id || 'unknown'}`);
+      if (!chat || !chat.id) return;
+
+      // Fetch participants of the chat
+      const participants = await this.userchatService.getUsersChatByChatId(chat.id).catch(() => [] as any[]);
+      const userIds: number[] = Array.isArray(participants)
+        ? Array.from(new Set(participants.map(p => p?.user?.id).filter(Boolean)))
+        : [];
+
+      // Emit `chat:new` only to connected participant sockets
+      for (const uid of userIds) {
+        const sockets = this.userSockets.get(uid);
+        if (sockets && sockets.size > 0) {
+          for (const sId of sockets) {
+            this.server.to(sId).emit('chat:new', { chat });
+          }
+        }
+      }
+
+      // Create a persistent notification for all participants (will also emit via NotifyGateway)
+      try {
+        let typeNotifyId: number | null = null;
+        try {
+          const tn = await this.typeNotifyService.getByType('informaacion').catch(() => null);
+          if (tn && (tn as any).id) typeNotifyId = (tn as any).id;
+        } catch (e) {}
+        if (!typeNotifyId) {
+          try {
+            const tn = await this.typeNotifyService.getByType('alerta').catch(() => null);
+            if (tn && (tn as any).id) typeNotifyId = (tn as any).id;
+          } catch (e) {}
+        }
+        if (typeNotifyId && userIds.length > 0) {
+          await this.notifyService.createNotify({
+            title: 'Nuevo chat',
+            message: String(chat?.chatName || 'Se creó un nuevo chat').slice(0, 240),
+            typeNotifyId,
+            usersIds: userIds,
+            link: `/chat/${chat.id}`,
+          } as any).catch(() => null);
+        }
+      } catch (e) {
+        this.logger.warn('Failed to create persistent notification for new chat', e as any);
+      }
+
+      this.logger.log(`Emitted chat:new for chat ${chat.id || 'unknown'} to ${userIds.length} participant(s)`);
     } catch (e) {
       this.logger.warn('Failed to emit chat:new', e as any);
+    }
+  }
+
+  @SubscribeMessage('editMessage')
+  async handleEditMessage(@MessageBody() payload: { messageId: number; chatId?: number; newText: string }, @ConnectedSocket() socket: Socket) {
+    const userId = this.socketUser.get(socket.id);
+    if (!userId) {
+      socket.emit('error', { message: 'Not authenticated' });
+      return;
+    }
+    const messageId = Number(payload?.messageId);
+    const newText = String(payload?.newText || '').trim();
+    if (!messageId || !newText) {
+      socket.emit('error', { message: 'Invalid edit payload' });
+      return;
+    }
+    try {
+      const res: any = await this.messagechatService.updateMessageChat(messageId, newText, userId).catch(() => null);
+      if (!res || (res as any).status !== 200) {
+        socket.emit('error', { message: 'Could not edit message' });
+        return;
+      }
+      const chatId = (res as any).chatId || payload.chatId;
+      const messageMinimal = { id: res.id || messageId, message: (res as any).newMessage, user: { id: userId }, createdAt: new Date() };
+      this.notifyEditMessage(chatId, messageMinimal);
+    } catch (e) {
+      socket.emit('error', { message: 'Error editing message' });
+    }
+  }
+
+  @SubscribeMessage('deleteMessage')
+  async handleDeleteMessage(@MessageBody() payload: { messageId: number; chatId?: number }, @ConnectedSocket() socket: Socket) {
+    const userId = this.socketUser.get(socket.id);
+    if (!userId) {
+      socket.emit('error', { message: 'Not authenticated' });
+      return;
+    }
+    const messageId = Number(payload?.messageId);
+    if (!messageId) {
+      socket.emit('error', { message: 'Invalid delete payload' });
+      return;
+    }
+    try {
+      const res: any = await this.messagechatService.deleteMessageChat(messageId, userId).catch(() => null);
+      if (!res || (res as any).status !== 200) {
+        socket.emit('error', { message: 'Could not delete message' });
+        return;
+      }
+      const chatId = (res as any).chatId || payload.chatId;
+      this.notifyDeleteMessage(chatId, messageId);
+    } catch (e) {
+      socket.emit('error', { message: 'Error deleting message' });
+    }
+  }
+
+  /** Emit that a message was edited to all sockets in the chat room */
+  public notifyEditMessage(chatId: number, messageMinimal: any) {
+    try {
+      if (!chatId) return;
+      this.server.to(this.getRoomName(chatId)).emit('message:edited', { chatId, message: messageMinimal });
+      this.logger.log(`Emitted message:edited for chat ${chatId} message ${messageMinimal?.id || 'unknown'}`);
+    } catch (e) {
+      this.logger.warn('Failed to emit message:edited', e as any);
+    }
+  }
+
+  /** Emit that a message was deleted to all sockets in the chat room */
+  public notifyDeleteMessage(chatId: number, messageId: number) {
+    try {
+      if (!chatId) return;
+      this.server.to(this.getRoomName(chatId)).emit('message:deleted', { chatId, messageId });
+      this.logger.log(`Emitted message:deleted for chat ${chatId} message ${messageId}`);
+    } catch (e) {
+      this.logger.warn('Failed to emit message:deleted', e as any);
     }
   }
 
