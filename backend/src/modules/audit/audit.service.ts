@@ -144,7 +144,7 @@ export class AuditService {
       .andWhere('createdAt >= :min AND createdAt <= :max', { min: min.toISOString(), max: max.toISOString() })
       .execute();
 
-    return { deleted: res.affected ?? 0, message: 'Deleted user activity in range' };
+    return { deleted: res.affected ?? 0, message: 'Actividad en el rango eliminada' };
   }
 
   // Eliminar actividad en rango para todos los usuarios (admin)
