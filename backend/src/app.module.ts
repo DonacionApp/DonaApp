@@ -51,6 +51,7 @@ import { UserchatModule } from './modules/userchat/userchat.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { MessagechatModule } from './modules/messagechat/messagechat.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { StatisticsModule } from './modules/statistics/statistics.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -123,6 +124,7 @@ import { AuditModule } from './modules/audit/audit.module';
   UserchatModule,
   ChatModule,
   MessagechatModule,
+  StatisticsModule,
 ],
   controllers: [AppController],
   providers: [
