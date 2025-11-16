@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { PostController } from './post.controller';
 import { PostService } from './post.service';
+import { AuditModule } from '../audit/audit.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PostEntity } from './entity/post.entity';
 import { TagsModule } from '../tags/tags.module';
@@ -16,7 +17,7 @@ import { UserModule } from '../user/user.module';
 @Module({
   imports:[TypeOrmModule.forFeature([PostEntity]),TagsModule,forwardRef(()=>ImagepostModule),
    forwardRef(()=>PosttagsModule), forwardRef(()=>TypepostModule), forwardRef(()=>PostlikedModule),
-  ArticleModule, forwardRef(()=>PostarticleModule), UserModule],
+  ArticleModule, forwardRef(()=>PostarticleModule), UserModule, forwardRef(() => AuditModule)],
   controllers: [PostController],
   providers: [PostService],
   exports:[PostService]

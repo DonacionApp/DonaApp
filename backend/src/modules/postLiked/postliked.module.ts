@@ -7,6 +7,7 @@ import { PostModule } from '../post/post.module';
 import { UserModule } from '../user/user.module';
 import { NotifyModule } from '../notify/notify.module';
 import { TypeNotifyModule } from '../typenotify/typenotify.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports:[
@@ -14,7 +15,8 @@ import { TypeNotifyModule } from '../typenotify/typenotify.module';
     forwardRef(()=>PostModule),
     UserModule,
     NotifyModule,
-    TypeNotifyModule
+    TypeNotifyModule,
+    forwardRef(() => AuditModule)
   ],
   controllers: [PostlikedController],
   providers: [PostlikedService],

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, Inject, forwardRef, BadRequestException, HttpException, ForbiddenException } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entity/post.entity';
 import { Repository } from 'typeorm';
@@ -31,6 +32,8 @@ export class PostService {
         @Inject(forwardRef(() => PostarticleService))
         private readonly postArticleService: PostarticleService,
         private readonly userService: UserService,
+        @Inject(forwardRef(() => AuditService))
+        private readonly auditService: AuditService,
     ) { }
 
     async userLikedPost(userId: number, postId: number): Promise<boolean> {
@@ -127,34 +130,50 @@ export class PostService {
     }
 
     async createPost(data: any, files?: Express.Multer.File | Express.Multer.File[]): Promise<PostEntity> {
+        const action = 'post.create';
+        const userId = data?.userId || data?.user?.id;
+        const payload = { data, filesMeta: Array.isArray(files) ? files.map(f => ({ originalname: f.originalname, mimetype: f.mimetype, size: f.size })) : undefined };
         try {
-            if (!data) throw new Error('Data es requerida para crear el post');
-            const { tags, typePost, userId, user, articles, postArticles, ...rest } = data;
-
+            if (!data) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'Data es requerida para crear el post', payload }), 400, payload);
+                throw new Error('Data es requerida para crear el post');
+            }
+            const { tags, typePost, user, articles, postArticles, ...rest } = data;
             if (!rest.title || !rest.message) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'title y message son obligatorios', payload }), 400, payload);
                 throw new Error('title y message son obligatorios');
             }
             if (data?.typePost && data?.typePost <= 0) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'El tipo de post es invalido', payload }), 400, payload);
                 throw new BadRequestException('El tipo de post es invalido');
             }
             const typePostNormali = typePost ? (typeof typePost === 'number' ? { id: typePost } : (typePost.id ? { id: typePost.id } : (!isNaN(Number(typePost)) ? { id: Number(typePost) } : undefined))) : undefined;
-            if (!typePostNormali) throw new BadRequestException('El tipo de post es invalido');
+            if (!typePostNormali) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'El tipo de post es invalido', payload }), 400, payload);
+                throw new BadRequestException('El tipo de post es invalido');
+            }
             const existTypePost = await this.typePostService.findById(typePostNormali.id);
-            if (!existTypePost) throw new NotFoundException('El tipo de post no existe');
-            
+            if (!existTypePost) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'El tipo de post no existe', payload }), 404, payload);
+                throw new NotFoundException('El tipo de post no existe');
+            }
             if (existTypePost && existTypePost.type && existTypePost.type.toLowerCase() === 'solicitud de donacion') {
                 const userIdToCheck = (user && user.id) ? user.id : userId;
-                if (!userIdToCheck) throw new BadRequestException('No se puede identificar el usuario');
-                
+                if (!userIdToCheck) {
+                    await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'No se puede identificar el usuario', payload }), 400, payload);
+                    throw new BadRequestException('No se puede identificar el usuario');
+                }
                 const userEntity = await this.userService.findById(userIdToCheck);
-                if (!userEntity) throw new NotFoundException('Usuario no encontrado');
-                
+                if (!userEntity) {
+                    await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'Usuario no encontrado', payload }), 404, payload);
+                    throw new NotFoundException('Usuario no encontrado');
+                }
                 const userRol = (userEntity as any).rol?.rol?.toLowerCase();
                 if (userRol !== 'organizacion') {
+                    await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'Solo los usuarios con rol "organizacion" pueden crear publicaciones de tipo "solicitud de donacion"', payload }), 403, payload);
                     throw new ForbiddenException('Solo los usuarios con rol "organizacion" pueden crear publicaciones de tipo "solicitud de donacion"');
                 }
             }
-
             const postPayload: any = {
                 title: rest.title,
                 message: rest.message,
@@ -171,31 +190,27 @@ export class PostService {
                 }));
                 if (largeFilesError.length > 0) {
                     const errorMessages = largeFilesError.map(err => err.message).join('; ');
+                    await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: `Algunos archivos son demasiado grandes: ${errorMessages}`, payload }), 413, payload);
                     throw new HttpException({ message: `Algunos archivos son demasiado grandes: ${errorMessages}`, details: largeFilesError }, 413);
                 }
             } else if (files && !Array.isArray(files)) {
                 const fileSizeValidation = await this.imagePostService.verifyFileSize(files);
                 if ((fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 413) || (fileSizeValidation && fileSizeValidation.status && fileSizeValidation.status === 415)) {
+                    await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: `El archivo es demasiado grande`, payload }), 413, payload);
                     throw new HttpException({ message: `El archivo es demasiado grande`, details: [fileSizeValidation] }, 413);
                 }
-            } else {
-                // no files provided; nothing to validate
             }
-
-
             if (!postPayload.user) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'User (userId o user.id) es requerido para crear post', payload }), 400, payload);
                 throw new Error('User (userId o user.id) es requerido para crear post');
             }
-
             const newPost = this.postRepository.create(postPayload);
             const savedPost = await this.postRepository.save(newPost);
             const postId = (savedPost as any).id;
-
             if (tags) {
                 let tagsArr: any[] = [];
                 if (Array.isArray(tags)) tagsArr = tags;
                 else if (typeof tags === 'string') tagsArr = tags.split(',').map((t: string) => t.trim()).filter(Boolean);
-
                 for (const t of tagsArr) {
                     try {
                         if (!t) continue;
@@ -221,7 +236,6 @@ export class PostService {
                     }
                 }
             }
-
             const rawArticlesInput = (articles ?? postArticles);
             if (rawArticlesInput) {
                 let items: any[] = [];
@@ -231,11 +245,8 @@ export class PostService {
                     try {
                         const parsed = JSON.parse(rawArticlesInput);
                         if (Array.isArray(parsed)) items = parsed;
-                    } catch (_) {
-                        
-                    }
+                    } catch (_) {}
                 }
-
                 if (items.length > 0) {
                     const ownerUserId = (user && user.id) ? Number(user.id) : (userId ? Number(userId) : undefined);
                     for (const item of items) {
@@ -243,13 +254,11 @@ export class PostService {
                             if (!item) continue;
                             const qty = (item.quantiy ?? item.quantity ?? 1);
                             const quantity = String(isNaN(Number(qty)) ? 1 : Number(qty));
-
                             if (item.idArticle && !isNaN(Number(item.idArticle)) && Number(item.idArticle) > 0) {
                                 const dto = { post: Number(postId), article: Number(item.idArticle), quantity } as any;
                                 await this.postArticleService.addPostArticle(dto, Number(ownerUserId));
                                 continue;
                             }
-
                             if (item.name && typeof item.name === 'string') {
                                 const name = String(item.name).trim().toLowerCase();
                                 const description = (typeof item.description === 'string' ? item.description.trim() : undefined);
@@ -272,15 +281,16 @@ export class PostService {
                     }
                 }
             }
-
             if (files && Array.isArray(files) && files.length > 0) {
                 for (const file of files) {
                     await this.imagePostService.addImageToPost(postId, file);
                 }
             }
-
-            return await this.getPostById(postId);
+            const result = await this.getPostById(postId);
+            await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'Post creado', payload, response: result }), 201, payload);
+            return result;
         } catch (error) {
+            await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: error?.message || 'Error al crear post', payload, response: error?.response }), error?.status || 500, payload);
             throw error;
         }
     }
@@ -370,16 +380,21 @@ export class PostService {
     }
 
     async deletePost(id: number, userId?: number, admin?: boolean): Promise<{ massage: string }> {
+        const action = 'post.delete';
+        const payload = { id, userId, admin };
         try {
             if (!id || id <= 0 || id === null || id === undefined) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'ID de post inválido', payload }), 400, payload);
                 throw new BadRequestException('ID de post inválido');
             }
             id = Number(id);
             const post = await this.getPostById(id);
             if (!post) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'Post no encontrado', payload }), 404, payload);
                 throw new NotFoundException('Post no encontrado');
             }
             if (userId && post.user && post.user.id !== userId && !admin) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'No tienes permiso para eliminar este post', payload }), 403, payload);
                 throw new BadRequestException('No tienes permiso para eliminar este post');
             }
             const imagePost = post.imagePost;
@@ -389,8 +404,10 @@ export class PostService {
                 }
             }
             await this.postRepository.delete(id);
+            await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'Post eliminado correctamente', payload, response: { id } }), 200, payload);
             return { massage: 'Post eliminado correctamente' };
         } catch (error) {
+            await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: error?.message || 'Error al eliminar post', payload, response: error?.response }), error?.status || 500, payload);
             throw error;
         }
     }
@@ -440,16 +457,21 @@ export class PostService {
     }
 
     async updatePost(id: number, data: any, userId?: number, admin?: boolean): Promise<PostEntity> {
+        const action = 'post.update';
+        const payload = { id, data, userId, admin };
         try {
             if (!id || id <= 0 || id === null || id === undefined) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'ID de post inválido', payload }), 400, payload);
                 throw new BadRequestException('ID de post inválido');
             }
             console.log('data recibida para updatePost:', data);
             const post = await this.getPostById(id);
             if (!post) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'Post no encontrado', payload }), 404, payload);
                 throw new NotFoundException('Post no encontrado');
             }
             if (userId && post.user && post.user.id !== userId && !admin) {
+                await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'No tienes permiso para actualizar este post', payload }), 403, payload);
                 throw new BadRequestException('No tienes permiso para actualizar este post');
             }
             const { title, description, message } = data;
@@ -463,8 +485,11 @@ export class PostService {
                 post.message = message;
             }
             await this.postRepository.save(post);
-            return post;
+            const result = await this.getPostById(id);
+            await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: 'Post actualizado', payload, response: result }), 200, payload);
+            return result;
         } catch (error) {
+            await this.auditService.createLog(userId ?? null, action, JSON.stringify({ message: error?.message || 'Error al actualizar post', payload, response: error?.response }), error?.status || 500, payload);
             throw error;
         }
     }
