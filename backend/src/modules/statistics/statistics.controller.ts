@@ -29,4 +29,25 @@ export class StatisticsController {
     async getUserDonationRankings(@Query() query: UserRankingQueryDto){
         return await this.statisticsService.getUserDonationRankings(query);
     }
+
+    @Get('users/rankings/donations-made')
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+    async getTopDonationsMade(@Query() query: UserRankingQueryDto){
+        return await this.statisticsService.getTopDonationsMade(query);
+    }
+
+    @Get('users/rankings/donations-received')
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+    async getTopDonationsReceived(@Query() query: UserRankingQueryDto){
+        return await this.statisticsService.getTopDonationsReceived(query);
+    }
+
+    @Get('users/rankings/average-rating')
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+    async getTopAverageRating(@Query() query: UserRankingQueryDto){
+        return await this.statisticsService.getTopAverageRating(query);
+    }
 }

@@ -14,6 +14,9 @@ describe('StatisticsController', () => {
           useValue: {
             getUserMetrics: jest.fn(),
             getUserDonationRankings: jest.fn(),
+            getTopDonationsMade: jest.fn(),
+            getTopDonationsReceived: jest.fn(),
+            getTopAverageRating: jest.fn(),
           },
         },
       ],
