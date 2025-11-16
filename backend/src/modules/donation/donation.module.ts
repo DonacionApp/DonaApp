@@ -20,6 +20,7 @@ import { UserarticleModule } from '../userarticle/userarticle.module';
 import { NotifyModule } from '../notify/notify.module';
 import { TypeNotifyModule } from '../typenotify/typenotify.module';
 import { ChatModule } from '../chat/chat.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ChatModule } from '../chat/chat.module';
     NotifyModule,
     TypeNotifyModule,
     forwardRef(()=>ChatModule),
+    forwardRef(()=>AuditModule),
   ],
   controllers: [DonationController],
   providers: [DonationService],

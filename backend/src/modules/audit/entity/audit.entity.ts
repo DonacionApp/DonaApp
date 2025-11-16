@@ -5,8 +5,8 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 export class AuditEntity{
     @PrimaryGeneratedColumn()
     id:number;
-    @ManyToOne(()=>UserEntity,(user)=>user.audit, {onDelete:'CASCADE', nullable:false})
-    user:UserEntity;
+    @ManyToOne(()=>UserEntity,(user)=>user.audit, {onDelete:'CASCADE', nullable:true})
+    user:UserEntity | null | 0;
     @Column({type:'varchar', nullable:false})
     action:string;
     @Column({type:'varchar', nullable:false})

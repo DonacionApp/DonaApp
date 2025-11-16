@@ -7,6 +7,7 @@ import { UserModule } from '../user/user.module';
 import { StatussupportidModule } from '../statussupportid/statussupportid.module';
 import { NotifyModule } from '../notify/notify.module';
 import { TypeNotifyModule } from '../typenotify/typenotify.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports:[
@@ -15,6 +16,7 @@ import { TypeNotifyModule } from '../typenotify/typenotify.module';
     StatussupportidModule,
     forwardRef(() => NotifyModule),
     forwardRef(() => TypeNotifyModule),
+    forwardRef(()=> AuditModule)
   ],
   controllers: [CommentsupportidController],
   providers: [CommentsupportidService],

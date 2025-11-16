@@ -647,7 +647,7 @@ export class AuthService {
          return response;
       } catch (error) {
             await this.auditService.createLog(
-               Number(user?.id) || 0,
+               Number(user?.id) || null,
                'login',
                JSON.stringify({
                   message: `Error en login: ${error.message}`,

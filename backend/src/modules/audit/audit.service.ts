@@ -50,17 +50,20 @@ export class AuditService {
   }
 
   async createLog(
-    userId: number,
+    userId: number | null,
     action: any,
     comment: string,
     statusCode: number | string,
     payload?: any,
   ): Promise<AuditEntity> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) throw new BadRequestException('Usuario no encontrado para el log de auditoría');
-
+    let user: UserEntity | null = null;
+    if (userId && Number(userId) > 0) {
+      user = await this.userRepository.findOne({ where: { id: Number(userId) } });
+    }
     const log = new AuditEntity();
-    log.user = user;
+    if (user) {
+      log.user = user;
+    }
     log.action = typeof action === 'string' ? action : JSON.stringify(action);
     log.comment = comment ?? '';
     log.status = String(statusCode ?? '');
@@ -69,7 +72,6 @@ export class AuditService {
         log.comment = `${log.comment} | payload: ${JSON.stringify(payload)}`;
       } catch (e) {}
     }
-
     return await this.auditRepository.save(log);
   }
 
