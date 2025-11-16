@@ -17,6 +17,7 @@ import { ConfigService } from '@nestjs/config';
 import { URL_FRONTEND } from 'src/config/constants';
 import { TypeNotifyService } from '../typenotify/typenotify.service';
 import { ChatService } from '../chat/chat.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class DonationService {
@@ -36,6 +37,8 @@ export class DonationService {
     private readonly typeNotifyService: TypeNotifyService,
     @Inject(forwardRef(() => ChatService))
     private readonly chatService: ChatService,
+    @Inject(forwardRef(() => AuditService))
+    private readonly auditService: AuditService,
   ) { }
 
   async getDonationById(id: number, format: boolean = true): Promise<DonationEntity> {
@@ -376,8 +379,31 @@ export class DonationService {
         });
       }
 
+      await this.auditService.createLog(
+        currentUser?.id ?? currentUser?.sub ?? currentUser ?? 0,
+        'createDonation',
+        JSON.stringify({
+          message: 'Donación creada',
+          payload: createDonationDto,
+          response: donationWithArticles
+        }),
+        201,
+        createDonationDto
+      );
       return donationWithArticles;
     } catch (error) {
+      const userId = currentUser?.id ?? currentUser?.sub ?? currentUser ?? 0;
+      await this.auditService.createLog(
+        userId,
+        'createDonation',
+        JSON.stringify({
+          message: 'Error al crear donación',
+          payload: createDonationDto,
+          response: error?.message || error
+        }),
+        error?.status || 500,
+        createDonationDto
+      );
       throw error;
     }
   }
@@ -596,8 +622,31 @@ export class DonationService {
       // Remover campos sensibles
       const formatted = this.formatDonationResponse(updated, currentUser.id);
 
+      await this.auditService.createLog(
+        currentUser?.id ?? currentUser?.sub ?? currentUser ?? 0,
+        'updateDonation',
+        JSON.stringify({
+          message: 'Donación actualizada',
+          payload: { id, updateDonationDto },
+          response: formatted
+        }),
+        200,
+        { id, updateDonationDto }
+      );
       return formatted;
     } catch (error) {
+      const userId = currentUser?.id ?? currentUser?.sub ?? currentUser ?? 0;
+      await this.auditService.createLog(
+        userId,
+        'updateDonation',
+        JSON.stringify({
+          message: 'Error al actualizar donación',
+          payload: { id, updateDonationDto },
+          response: error?.message || error
+        }),
+        error?.status || 500,
+        { id, updateDonationDto }
+      );
       throw error;
     }
   }
@@ -638,8 +687,31 @@ export class DonationService {
       }
 
       await this.donationRepo.delete(id);
+      await this.auditService.createLog(
+        currentUser?.id ?? currentUser?.sub ?? currentUser ?? 0,
+        'deleteDonation',
+        JSON.stringify({
+          message: 'Donación eliminada',
+          payload: { id },
+          response: { id }
+        }),
+        200,
+        { id }
+      );
       return { message: 'Donación eliminada correctamente', status: 200 };
     } catch (error) {
+      const userId = currentUser?.id ?? currentUser?.sub ?? currentUser ?? 0;
+      await this.auditService.createLog(
+        userId,
+        'deleteDonation',
+        JSON.stringify({
+          message: 'Error al eliminar donación',
+          payload: { id },
+          response: error?.message || error
+        }),
+        error?.status || 500,
+        { id }
+      );
       throw error;
     }
   }
@@ -662,8 +734,30 @@ export class DonationService {
       }
 
       await this.donationRepo.delete(id);
+      await this.auditService.createLog(
+        0,
+        'deleteAdminDonation',
+        JSON.stringify({
+          message: 'Donación eliminada por admin',
+          payload: { id },
+          response: { id }
+        }),
+        200,
+        { id }
+      );
       return { message: 'Donación eliminada correctamente por admin', status: 200 };
     } catch (error) {
+      await this.auditService.createLog(
+        0,
+        'deleteAdminDonation',
+        JSON.stringify({
+          message: 'Error al eliminar donación por admin',
+          payload: { id },
+          response: error?.message || error
+        }),
+        error?.status || 500,
+        { id }
+      );
       throw error;
     }
   }
@@ -859,8 +953,31 @@ export class DonationService {
       }
 
       const formatted = this.formatDonationResponse(updated, currentUser.id);
+      await this.auditService.createLog(
+        currentUser?.id ?? currentUser?.sub ?? currentUser ?? 0,
+        'changeStatus',
+        JSON.stringify({
+          message: 'Estado de donación cambiado',
+          payload: { donationId, newStatus },
+          response: formatted
+        }),
+        200,
+        { donationId, newStatus }
+      );
       return formatted;
     } catch (error) {
+      const userId = currentUser?.id ?? currentUser?.sub ?? currentUser ?? 0;
+      await this.auditService.createLog(
+        userId,
+        'changeStatus',
+        JSON.stringify({
+          message: 'Error al cambiar estado de donación',
+          payload: { donationId, newStatus },
+          response: error?.message || error
+        }),
+        error?.status || 500,
+        { donationId, newStatus }
+      );
       throw error;
     }
   }

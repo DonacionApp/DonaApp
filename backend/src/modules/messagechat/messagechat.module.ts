@@ -13,6 +13,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NotifyModule } from '../notify/notify.module';
 import { TypeNotifyModule } from '../typenotify/typenotify.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports:[TypeOrmModule.forFeature([MessageChatEntity]), forwardRef(()=>ChatModule),
@@ -26,6 +27,7 @@ import { TypeNotifyModule } from '../typenotify/typenotify.module';
            }),
            inject: [ConfigService],
         }),
+        forwardRef(()=>AuditModule)
 ],
   controllers: [MessagechatController],
   providers: [MessagechatService, MessagechatGateway],
