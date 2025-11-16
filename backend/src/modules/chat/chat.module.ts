@@ -9,11 +9,13 @@ import { DonationModule } from '../donation/donation.module';
 import { UserModule } from '../user/user.module';
 import { MessagechatGateway } from '../messagechat/messagechat.gateway';
 import { MessagechatModule } from '../messagechat/messagechat.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ChatEntity]), ChatstatusModule, 
   forwardRef(() => UserchatModule), forwardRef(()=>DonationModule),
   forwardRef((()=>UserModule)), forwardRef(()=>MessagechatModule),
+  forwardRef(()=>AuditModule)
 ],
   controllers: [ChatController],
   providers: [ChatService,],
