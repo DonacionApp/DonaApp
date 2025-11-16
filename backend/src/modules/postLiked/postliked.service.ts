@@ -1,4 +1,5 @@
 import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostLikedEntity } from './entity/post.liked.entity';
 import { Repository } from 'typeorm';
@@ -21,6 +22,8 @@ export class PostlikedService {
         @Inject(forwardRef(()=>TypeNotifyService))
         private readonly typeNotifyService: TypeNotifyService,
         private readonly configService:ConfigService,
+        @Inject(forwardRef(() => AuditService))
+        private readonly auditService: AuditService,
     ) { }
 
     async addLikeToPost(userId: number, postId: number): Promise<{message:string, status:number} > {
@@ -71,6 +74,7 @@ export class PostlikedService {
                         link:linkSanead
                     });
                 }
+             try { await this.auditService.createLog(userId ?? null, 'post.like.create', JSON.stringify({ message: 'Like agregado a publicación', payload: { postId, userId } }), 201, { postId, userId }); } catch (err) {}
             return { message: 'Like agregado correctamente', status: 201 };
         } catch (error) {
             throw error;
@@ -143,6 +147,7 @@ export class PostlikedService {
                 throw new BadRequestException('el usuario no ha dado like a este post');
             }
             await this.postLikedRepository.remove(postLiked);
+            try { await this.auditService.createLog(userId ?? null, 'post.like.delete', JSON.stringify({ message: 'Like removido de publicación', payload: { postId, userId } }), 200, { postId, userId }); } catch (err) {}
             return { message: 'Like eliminado correctamente', status: 200 };
         } catch (error) {
             throw error;
