@@ -11,7 +11,14 @@ export class MessagechatController {
     constructor(
         private readonly messagechatService: MessagechatService
     ){}
-    
+
+    @UseGuards(JwtAuthGuard)
+    @Get('unread/count')
+    async getCountUnreadMessages(@Req() req?: any) {
+        const currentUser = req?.user?.id;
+        return this.messagechatService.getCountUnreadMessages(currentUser);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Post('send/new/message/')
     @UseInterceptors(FilesInterceptor('files'))
