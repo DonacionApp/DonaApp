@@ -248,12 +248,41 @@ export class AuditService {
     ];
 
     audits.forEach((audit) => {
-      const username = audit.user?.username ?? `user-${audit.user?.id ?? 'N/D'}`;
+      // use normalizeAuditLog to parse comment and remove sensitive fields
+      const normalized = this.normalizeAuditLog(audit);
+
+      // audit.user can be a UserEntity or a non-object sentinel (e.g. 0), so guard before property access
+      let username: string;
+      if (audit.user && typeof audit.user === 'object') {
+        username = (audit.user as UserEntity).username ?? `user-${(audit.user as UserEntity).id ?? 'N/D'}`;
+      } else {
+        username = `user-${(audit.user as any)?.id ?? 'N/D'}`;
+      }
+
+      // Format comment: if normalized.comment is an object, prefer the `message` and `response` fields
+      let commentCell = '';
+      const c = normalized.comment;
+      if (typeof c === 'string') {
+        commentCell = c;
+      } else if (c && typeof c === 'object') {
+        const msg = c.message ?? '';
+        let resp = '';
+        if (c.response) {
+          try {
+            resp = JSON.stringify(c.response);
+          } catch {
+            resp = String(c.response);
+          }
+        }
+        commentCell = msg;
+        if (resp) commentCell += ` | response: ${resp}`;
+      }
+
       worksheet.addRow({
         id: audit.id,
         username,
         action: audit.action,
-        comment: audit.comment,
+        comment: commentCell,
         status: audit.status,
         createdAt: audit.createdAt?.toISOString() ?? '',
       });
