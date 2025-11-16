@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Query, Post, UseGuards, Req, Param } from '@nestjs/common';
+import { Body, Controller, Get, Query, Post, UseGuards, Req, Param, Res } from '@nestjs/common';
 import { AuditService } from './audit.service';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/shared/guards/roles.guard';
@@ -7,7 +7,8 @@ import { FilterAuditDto } from './dto/filter-audit.dto';
 import { QueryAuditDto } from './dto/query-audit.dto';
 import { DeleteUserAuditDto } from './dto/delete-user-audit.dto';
 import { DeleteRangeDto } from './dto/delete-range.dto';
-import { Body as BodyDecorator, Delete } from '@nestjs/common';
+import { ExportAuditDto } from './dto/export-audit.dto';
+import { Response } from 'express';
 
 export class CreateAuditDto {
   userId: number;
@@ -87,5 +88,22 @@ export class AuditController {
   async deleteRangeAll(@Req() req: any, @Body() dto: DeleteRangeDto) {
     const adminId = req.user?.sub || req.user?.id || req.user?.userId;
     return this.auditService.deleteRangeAll(dto.minDate, dto.maxDate, Number(adminId));
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Post('admin/export')
+  async exportAudit(@Body() dto: ExportAuditDto, @Res() res: Response) {
+    const { workbook, format, filename } = await this.auditService.generateAuditExport(dto);
+
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    if (format === 'xlsx') {
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      await workbook.xlsx.write(res);
+    } else {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      await workbook.csv.write(res);
+    }
+    res.end();
   }
 }

@@ -5,6 +5,8 @@ import { AuditEntity } from './entity/audit.entity';
 import { UserEntity } from '../user/entity/user.entity';
 import { ForbiddenException } from '@nestjs/common';
 import { QueryAuditDto } from './dto/query-audit.dto';
+import { ExportAuditDto } from './dto/export-audit.dto';
+import { Workbook } from 'exceljs';
 
 @Injectable()
 export class AuditService {
@@ -160,5 +162,72 @@ export class AuditService {
       .execute();
 
     return { deleted: res.affected ?? 0, message: 'Eliminada actividad en rango para todos los usuarios' };
+  }
+
+  async generateAuditExport(dto: ExportAuditDto) {
+    const format = (dto.format ?? 'xlsx').toLowerCase() as 'xlsx' | 'csv';
+    const order = dto.order ? dto.order.toUpperCase() : 'DESC';
+    const normalizedOrder = order === 'ASC' ? 'ASC' : 'DESC';
+
+    if ((dto.fromDate && !dto.toDate) || (!dto.fromDate && dto.toDate)) {
+      throw new BadRequestException('Debe proporcionar ambas fechas para el rango.');
+    }
+
+    let fromDate: Date | undefined;
+    let toDate: Date | undefined;
+    if (dto.fromDate && dto.toDate) {
+      fromDate = new Date(dto.fromDate);
+      toDate = new Date(dto.toDate);
+      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        throw new BadRequestException('Formato de fecha inválido.');
+      }
+      if (fromDate > toDate) {
+        throw new BadRequestException('La fecha inicial no puede ser mayor a la final.');
+      }
+      const diffMs = toDate.getTime() - fromDate.getTime();
+      const maxRangeMs = 1000 * 60 * 60 * 24 * 62; // ~2 meses
+      if (diffMs > maxRangeMs) {
+        throw new BadRequestException('El rango de fechas no puede superar los 2 meses.');
+      }
+    }
+
+    const qb = this.auditRepository.createQueryBuilder('audit').leftJoinAndSelect('audit.user', 'user');
+    if (dto.userId) qb.andWhere('user.id = :userId', { userId: dto.userId });
+    if (dto.action) qb.andWhere('audit.action ILIKE :action', { action: `%${dto.action}%` });
+    if (dto.username) qb.andWhere('user.username ILIKE :username', { username: `%${dto.username}%` });
+    if (fromDate) qb.andWhere('audit.createdAt >= :from', { from: fromDate.toISOString() });
+    if (toDate) qb.andWhere('audit.createdAt <= :to', { to: toDate.toISOString() });
+
+    qb.orderBy('audit.createdAt', normalizedOrder);
+
+    const audits = await qb.getMany();
+
+    const workbook = new Workbook();
+    const worksheet = workbook.addWorksheet('Auditoria');
+    worksheet.columns = [
+      { header: 'ID Registro', key: 'id', width: 12 },
+      { header: 'Usuario', key: 'username', width: 24 },
+      { header: 'Acción', key: 'action', width: 32 },
+      { header: 'Comentario', key: 'comment', width: 60 },
+      { header: 'Estado', key: 'status', width: 14 },
+      { header: 'Fecha', key: 'createdAt', width: 26 },
+    ];
+
+    audits.forEach((audit) => {
+      const username = audit.user?.username ?? `user-${audit.user?.id ?? 'N/D'}`;
+      worksheet.addRow({
+        id: audit.id,
+        username,
+        action: audit.action,
+        comment: audit.comment,
+        status: audit.status,
+        createdAt: audit.createdAt?.toISOString() ?? '',
+      });
+    });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `audit-export-${timestamp}.${format}`;
+
+    return { workbook, format, filename };
   }
 }
