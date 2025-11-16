@@ -10,6 +10,7 @@ import { UserChatEntity } from '../userchat/entity/user.chat.entity';
 import { PostArticleDonationEntity } from '../postdonationarticle/entity/post.article.donation.entity';
 import { ArticleEntity } from '../article/entity/article.entity';
 import { PostArticleEntity } from '../postarticle/entity/postarticle.entity';
+import { DonationReviewEntity } from '../donationreview/entity/donation.review.entity';
 
 // Módulo de estadísticas: importa los repositorios necesarios para las consultas
 @Module({
@@ -21,7 +22,8 @@ import { PostArticleEntity } from '../postarticle/entity/postarticle.entity';
     UserChatEntity,
     PostArticleDonationEntity,
     PostArticleEntity,
-    ArticleEntity
+    ArticleEntity,
+    DonationReviewEntity
   ])],
   controllers: [StatisticsController],
   providers: [StatisticsService]

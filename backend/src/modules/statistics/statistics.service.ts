@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from '../user/entity/user.entity';
-import { Repository, Not, IsNull, In } from 'typeorm';
+import { Repository, In, SelectQueryBuilder, ObjectLiteral } from 'typeorm';
 import { PostEntity } from '../post/entity/post.entity';
 import { DonationEntity } from '../donation/entity/donation.entity';
 import { PostLikedEntity } from '../postLiked/entity/post.liked.entity';
@@ -9,6 +9,13 @@ import { UserChatEntity } from '../userchat/entity/user.chat.entity';
 import { PostArticleDonationEntity } from '../postdonationarticle/entity/post.article.donation.entity';
 import { PostArticleEntity } from '../postarticle/entity/postarticle.entity';
 import { ArticleEntity } from '../article/entity/article.entity';
+import { DonationReviewEntity } from '../donationreview/entity/donation.review.entity';
+import {
+    UserRankingQueryDto,
+    UserRankingResponse,
+    UserRankingItem,
+    UserAverageRankingItem,
+} from './dto/user-ranking.dto';
 
 @Injectable()
 export class StatisticsService {
@@ -37,6 +44,9 @@ export class StatisticsService {
 
         @InjectRepository(ArticleEntity)
         private readonly articleRepository: Repository<ArticleEntity>,
+
+        @InjectRepository(DonationReviewEntity)
+        private readonly donationReviewRepository: Repository<DonationReviewEntity>,
     ){}
 
     // Devuelve métricas y estadísticas para un usuario específico, ordenadas para charts
@@ -138,5 +148,103 @@ export class StatisticsService {
         };
 
         return result;
+    }
+
+    async getUserDonationRankings(dto: UserRankingQueryDto): Promise<UserRankingResponse> {
+        const limit = dto.limit && dto.limit > 0 ? Math.min(dto.limit, 50) : 10;
+
+        const applyPostFilters = <T extends ObjectLiteral>(qb: SelectQueryBuilder<T>) => {
+            if (dto.postId) {
+                qb.andWhere('post.id = :postId', { postId: dto.postId });
+            }
+            if (dto.typePostId) {
+                qb.andWhere('typePost.id = :typePostId', { typePostId: dto.typePostId });
+            }
+            if (dto.typePostSlug) {
+                qb.andWhere('LOWER(typePost.type) = LOWER(:typePostSlug)', { typePostSlug: dto.typePostSlug });
+            }
+            return qb;
+        };
+
+        const donationsMadeRaw = await applyPostFilters(
+            this.donationRepository
+                .createQueryBuilder('donation')
+                .innerJoin('donation.user', 'donor')
+                .innerJoin('donation.post', 'post')
+                .leftJoin('post.typePost', 'typePost')
+                .select('donor.id', 'userId')
+                .addSelect('donor.username', 'username')
+                .addSelect('COUNT(donation.id)', 'total')
+                .groupBy('donor.id')
+                .addGroupBy('donor.username')
+                .orderBy('total', 'DESC')
+                .addOrderBy('donor.username', 'ASC')
+                .limit(limit)
+        ).getRawMany();
+
+        const donationsReceivedRaw = await applyPostFilters(
+            this.donationRepository
+                .createQueryBuilder('donation')
+                .innerJoin('donation.post', 'post')
+                .innerJoin('post.user', 'receiver')
+                .leftJoin('post.typePost', 'typePost')
+                .select('receiver.id', 'userId')
+                .addSelect('receiver.username', 'username')
+                .addSelect('COUNT(donation.id)', 'total')
+                .groupBy('receiver.id')
+                .addGroupBy('receiver.username')
+                .orderBy('total', 'DESC')
+                .addOrderBy('receiver.username', 'ASC')
+                .limit(limit)
+        ).getRawMany();
+
+        const averageRatingRaw = await applyPostFilters(
+            this.donationReviewRepository
+                .createQueryBuilder('review')
+                .innerJoin('review.donation', 'donation')
+                .innerJoin('donation.user', 'donor')
+                .innerJoin('donation.post', 'post')
+                .leftJoin('post.typePost', 'typePost')
+                .select('donor.id', 'userId')
+                .addSelect('donor.username', 'username')
+                .addSelect('AVG(review.raiting)', 'average')
+                .addSelect('COUNT(review.id)', 'reviews')
+                .groupBy('donor.id')
+                .addGroupBy('donor.username')
+                .having('COUNT(review.id) > 0')
+                .orderBy('average', 'DESC')
+                .addOrderBy('reviews', 'DESC')
+                .addOrderBy('donor.username', 'ASC')
+                .limit(limit)
+        ).getRawMany();
+
+        const toRankingItem = (rows: Array<{ userId: string; username: string | null; total: string }>): UserRankingItem[] =>
+            rows.map((row) => ({
+                userId: Number(row.userId),
+                username: row.username ?? `user-${row.userId}`,
+                total: Number(row.total) || 0,
+            }));
+
+        const toAverageRankingItem = (
+            rows: Array<{ userId: string; username: string | null; average: string; reviews: string }>,
+        ): UserAverageRankingItem[] =>
+            rows.map((row) => {
+                const avgRaw = Number(row.average);
+                const reviewsCount = Number(row.reviews) || 0;
+                const normalizedAvg = Number.isFinite(avgRaw) ? Number(avgRaw.toFixed(2)) : 0;
+                return {
+                    userId: Number(row.userId),
+                    username: row.username ?? `user-${row.userId}`,
+                    total: normalizedAvg,
+                    reviews: reviewsCount,
+                    average: normalizedAvg,
+                };
+            });
+
+        return {
+            topAverageRating: toAverageRankingItem(averageRatingRaw),
+            topDonationsMade: toRankingItem(donationsMadeRaw),
+            topDonationsReceived: toRankingItem(donationsReceivedRaw),
+        };
     }
 }
