@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Param, ParseIntPipe } from '@nestjs/common';
 import { StatisticsService } from './statistics.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../shared/guards/roles.guard';
@@ -15,10 +15,10 @@ export class StatisticsController {
 
     constructor(private readonly statisticsService: StatisticsService){}
 
-    @Get('user')
+    @Get('user/:id')
     @UseGuards(AuthGuard('jwt'), RolesGuard)
     @Roles(RolEnum.ADMIN, RolEnum.SUPERADMIN)
-    async getUserStatistics(){
-        return await this.statisticsService.getUserStatistics();
+    async getUserMetrics(@Param('id', ParseIntPipe) id: number){
+        return await this.statisticsService.getUserMetrics(id);
     }
 }
