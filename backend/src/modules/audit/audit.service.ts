@@ -17,18 +17,53 @@ export class AuditService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
+  private normalizeAuditLog(audit: AuditEntity) {
+    const safeUser = audit.user
+      ? {
+          id: audit.user.id,
+          username: audit.user.username,
+          email: audit.user.email,
+        }
+      : null;
+    let commentStr = audit.comment;
+    if (typeof commentStr === 'string' && commentStr.includes('| payload:')) {
+      commentStr = commentStr.split('| payload:')[0].trim();
+    }
+    let parsedComment: any = commentStr;
+    try {
+      parsedComment = JSON.parse(commentStr);
+      if (parsedComment && parsedComment.response && parsedComment.response.access_token) {
+        delete parsedComment.response.access_token;
+      }
+    } catch {
+      parsedComment = commentStr;
+    }
+    return {
+      id: audit.id,
+      user: safeUser,
+      action: audit.action,
+      comment: parsedComment,
+      status: audit.status,
+      createdAt: audit.createdAt,
+      updatedAt: audit.updatedAt,
+    };
+  }
+
   async createLog(
-    userId: number,
+    userId: number | null,
     action: any,
     comment: string,
     statusCode: number | string,
     payload?: any,
   ): Promise<AuditEntity> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) throw new BadRequestException('Usuario no encontrado para el log de auditoría');
-
+    let user: UserEntity | null = null;
+    if (userId && Number(userId) > 0) {
+      user = await this.userRepository.findOne({ where: { id: Number(userId) } });
+    }
     const log = new AuditEntity();
-    log.user = user;
+    if (user) {
+      log.user = user;
+    }
     log.action = typeof action === 'string' ? action : JSON.stringify(action);
     log.comment = comment ?? '';
     log.status = String(statusCode ?? '');
@@ -37,7 +72,6 @@ export class AuditService {
         log.comment = `${log.comment} | payload: ${JSON.stringify(payload)}`;
       } catch (e) {}
     }
-
     return await this.auditRepository.save(log);
   }
 
@@ -48,9 +82,9 @@ export class AuditService {
     if (filter.from) qb.andWhere('audit.createdAt >= :from', { from: filter.from });
     if (filter.to) qb.andWhere('audit.createdAt <= :to', { to: filter.to });
     qb.orderBy('audit.createdAt', 'DESC');
-    return qb.getMany();
+    const data = await qb.getMany();
+    return data.map(audit => this.normalizeAuditLog(audit));
   }
- // si usuario es admin puede ver cualquier usuario, si no solo puede ver el suyo
   async findByUser(
     targetUserId: number,
     dto: QueryAuditDto,
@@ -92,7 +126,7 @@ export class AuditService {
 
     const [data, total] = await qb.getManyAndCount();
     return {
-      data,
+      data: data.map(audit => this.normalizeAuditLog(audit)),
       meta: {
         total,
         limit: take,
@@ -214,12 +248,41 @@ export class AuditService {
     ];
 
     audits.forEach((audit) => {
-      const username = audit.user?.username ?? `user-${audit.user?.id ?? 'N/D'}`;
+      // use normalizeAuditLog to parse comment and remove sensitive fields
+      const normalized = this.normalizeAuditLog(audit);
+
+      // audit.user can be a UserEntity or a non-object sentinel (e.g. 0), so guard before property access
+      let username: string;
+      if (audit.user && typeof audit.user === 'object') {
+        username = (audit.user as UserEntity).username ?? `user-${(audit.user as UserEntity).id ?? 'N/D'}`;
+      } else {
+        username = `user-${(audit.user as any)?.id ?? 'N/D'}`;
+      }
+
+      // Format comment: if normalized.comment is an object, prefer the `message` and `response` fields
+      let commentCell = '';
+      const c = normalized.comment;
+      if (typeof c === 'string') {
+        commentCell = c;
+      } else if (c && typeof c === 'object') {
+        const msg = c.message ?? '';
+        let resp = '';
+        if (c.response) {
+          try {
+            resp = JSON.stringify(c.response);
+          } catch {
+            resp = String(c.response);
+          }
+        }
+        commentCell = msg;
+        if (resp) commentCell += ` | response: ${resp}`;
+      }
+
       worksheet.addRow({
         id: audit.id,
         username,
         action: audit.action,
-        comment: audit.comment,
+        comment: commentCell,
         status: audit.status,
         createdAt: audit.createdAt?.toISOString() ?? '',
       });

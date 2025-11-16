@@ -10,6 +10,7 @@ import { DonationService } from '../donation/donation.service';
 import { UserService } from '../user/user.service';
 import { ChatstatusService } from '../chatstatus/chatstatus.service';
 import { MessagechatGateway } from '../messagechat/messagechat.gateway';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class ChatService {
@@ -26,6 +27,8 @@ export class ChatService {
         private readonly chatstatusService: ChatstatusService,
         @Inject(forwardRef(()=> MessagechatGateway))
         private readonly messagechatGateway: MessagechatGateway,
+        @Inject(forwardRef(() => AuditService))
+        private readonly auditService: AuditService,
     ) { }
 
     async getChatById(chatId: number): Promise<ChatEntity> {
@@ -118,8 +121,32 @@ export class ChatService {
                     } catch (e) {
                     }
 
+                    const creatorUserId = Array.isArray(dto.participantIds) && dto.participantIds.length > 0 ? dto.participantIds[0].userId : 0;
+                    await this.auditService.createLog(
+                        creatorUserId,
+                        'createChat',
+                        JSON.stringify({
+                            message: 'Chat creado',
+                            payload: { chatName: dto.chatName, participants: dto.participantIds },
+                            response: { chatId: savedChat.id }
+                        }),
+                        201,
+                        { chatName: dto.chatName, participants: dto.participantIds }
+                    );
                     return savedChat;
         } catch (error) {
+            const creatorUserId = Array.isArray(dto.participantIds) && dto.participantIds.length > 0 ? dto.participantIds[0].userId : 0;
+            await this.auditService.createLog(
+                creatorUserId,
+                'createChat',
+                JSON.stringify({
+                    message: 'Error al crear chat',
+                    payload: { chatName: dto.chatName, participants: dto.participantIds },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { chatName: dto.chatName, participants: dto.participantIds }
+            );
             throw error;
         }
     }
@@ -194,8 +221,30 @@ export class ChatService {
                 console.warn('Error notifying new chat via WebSocket:', e);
             }
 
+            await this.auditService.createLog(
+                currentUser || 0,
+                'createChatFromDonation',
+                JSON.stringify({
+                    message: 'Chat creado desde donación',
+                    payload: { donationId: dto.donationId, beneficiaryId: dto.beneficiaryId },
+                    response: { chatId: savedChat.id }
+                }),
+                201,
+                { donationId: dto.donationId, beneficiaryId: dto.beneficiaryId }
+            );
             return savedChat;
         } catch (error) {
+            await this.auditService.createLog(
+                currentUser || 0,
+                'createChatFromDonation',
+                JSON.stringify({
+                    message: 'Error al crear chat desde donación',
+                    payload: { donationId: dto.donationId, beneficiaryId: dto.beneficiaryId },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { donationId: dto.donationId, beneficiaryId: dto.beneficiaryId }
+            );
             throw error;
         }
     }
@@ -371,8 +420,30 @@ export class ChatService {
             } catch (e) {
                 // don't block update on emit errors
             }
+            await this.auditService.createLog(
+                0,
+                'updateNameChat',
+                JSON.stringify({
+                    message: 'Nombre de chat actualizado',
+                    payload: { chatId, newName },
+                    response: { chatId, newName }
+                }),
+                200,
+                { chatId, newName }
+            );
             return saved;
         } catch (error) {
+            await this.auditService.createLog(
+                0,
+                'updateNameChat',
+                JSON.stringify({
+                    message: 'Error al actualizar nombre de chat',
+                    payload: { chatId, newName },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { chatId, newName }
+            );
             throw error;
         }
     }
@@ -419,8 +490,30 @@ export class ChatService {
             }
             chat.chatStatus = closedStatus as any;
              await this.chatRepository.save(chat);
+             await this.auditService.createLog(
+                currentUser || 0,
+                'closeChat',
+                JSON.stringify({
+                    message: 'Chat cerrado',
+                    payload: { chatId, currentUser },
+                    response: { chatId }
+                }),
+                200,
+                { chatId, currentUser }
+            );
              return {messageChat: 'Chat cerrado exitosamente', status:200};
         } catch (error) {
+            await this.auditService.createLog(
+                currentUser || 0,
+                'closeChat',
+                JSON.stringify({
+                    message: 'Error al cerrar chat',
+                    payload: { chatId, currentUser },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { chatId, currentUser }
+            );
             throw error;
         }
     }

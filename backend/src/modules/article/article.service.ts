@@ -1,8 +1,9 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { Not, Repository } from 'typeorm';
 import { ArticleEntity } from './entity/article.entity';
 import { FiltersDtoArticles } from './dto/filters.dto.articles';
 import { InjectRepository } from '@nestjs/typeorm';
+import { AuditService } from '../audit/audit.service';
 import { CreateArticleDto } from './dto/create.article.dto';
 import { UpdateArticleDto } from './dto/update.article.dto';
 
@@ -11,6 +12,8 @@ export class ArticleService {
     constructor(
         @InjectRepository(ArticleEntity)
         private readonly articleRepository: Repository<ArticleEntity>,
+        @Inject(forwardRef(() => AuditService))
+        private readonly auditService: AuditService,
     ) { }
 
     async getAllArticles(dto?: FiltersDtoArticles): Promise<ArticleEntity[]> {
@@ -70,8 +73,11 @@ export class ArticleService {
     }
 
     async createArticle(dto: CreateArticleDto): Promise<ArticleEntity> {
+        const action = 'article.create';
+        const payload = { dto };
         try {
             if (!dto || !dto.name || dto.name.trim() === '' || dto.name === undefined) {
+                await this.auditService.createLog(null, action, JSON.stringify({ message: 'datos invalidos para crear articulo', payload }), 400, payload);
                 throw new BadRequestException('datos invalidos para crear articulo');
             }
             dto.name = dto.name.trim().toLowerCase();
@@ -81,14 +87,22 @@ export class ArticleService {
                 }
             });
             if (existArticle) {
+                await this.auditService.createLog(null, action, JSON.stringify({ message: 'el articulo ya existe', payload }), 400, payload);
                 throw new BadRequestException('el articulo ya existe');
             };
             const newArticle = this.articleRepository.create({
                 name: dto.name,
                 descripcion: dto.description
             })
-            return await this.articleRepository.save(newArticle);
+            const result = await this.articleRepository.save(newArticle);
+            await this.auditService.createLog(null, action, JSON.stringify({ message: 'articulo creado', payload, response: result }), 201, payload);
+            return result;
         } catch (error) {
+            try {
+                await this.auditService.createLog(null, action, JSON.stringify({ message: error?.message || 'Error al crear articulo', payload, response: error?.response }), error?.status || 500, payload);
+            } catch (err) {
+                // ignore audit errors
+            }
             throw error;
         }
     }

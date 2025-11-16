@@ -7,10 +7,11 @@ import { TypereportModule } from '../typeReport/typereport.module';
 import { UserModule } from '../user/user.module';
 import { NotifyModule } from '../notify/notify.module';
 import { TypeNotifyModule } from '../typenotify/typenotify.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports:[TypeOrmModule.forFeature([ReportEntity]), TypereportModule,
-  forwardRef(() => UserModule), forwardRef(() => NotifyModule), forwardRef(()=>TypeNotifyModule)],
+  forwardRef(() => UserModule), forwardRef(() => NotifyModule), forwardRef(()=>TypeNotifyModule), forwardRef(()=>AuditModule)],
   controllers: [ReportController],
   providers: [ReportService],
   exports: [ReportService],

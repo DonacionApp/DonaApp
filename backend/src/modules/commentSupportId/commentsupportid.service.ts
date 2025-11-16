@@ -9,6 +9,7 @@ import { TypeNotifyService } from '../typenotify/typenotify.service';
 import { createCommentSupportIdDto } from './dto/create.comment.dto';
 import { FilterSearchCommentSupportIdDto } from './dto/filter.search.dto';
 import { UpdateUserDto } from '../user/dto/update.user.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class CommentsupportidService {
@@ -22,6 +23,8 @@ export class CommentsupportidService {
         private readonly notifyService: NotifyService,
         @Inject(forwardRef(() => TypeNotifyService))
         private readonly typeNotifyService: TypeNotifyService,
+        @Inject(forwardRef(() => AuditService))
+        private readonly auditService: AuditService,
     ) { }
 
     async createCommentSupportId(dto: createCommentSupportIdDto): Promise<Omit<CommentSupportIdEntity, 'user'>> {
@@ -65,10 +68,32 @@ export class CommentsupportidService {
                 });
             }
             const savedComment = await this.commentSupportIdRepository.save(acceptComment);
+            await this.auditService.createLog(
+                dto.idUser,
+                'createCommentSupportId',
+                JSON.stringify({
+                    message: 'Comentario de soporte creado',
+                    payload: { comment: dto.comment, idStatusSupportId: dto.idStatusSupportId },
+                    response: { id: savedComment.id }
+                }),
+                201,
+                { comment: dto.comment, idStatusSupportId: dto.idStatusSupportId }
+            );
             const { user: _user, ...commentWithoutUser } = savedComment;
             return commentWithoutUser;
 
         } catch (error) {
+            await this.auditService.createLog(
+                dto.idUser || 0,
+                'createCommentSupportId',
+                JSON.stringify({
+                    message: 'Error al crear comentario de soporte',
+                    payload: { comment: dto.comment, idStatusSupportId: dto.idStatusSupportId },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { comment: dto.comment, idStatusSupportId: dto.idStatusSupportId }
+            );
             throw error;
         }
 
@@ -150,12 +175,35 @@ export class CommentsupportidService {
             }
             comment.comment = newComment;
             await this.commentSupportIdRepository.save(comment);
+            const userId = comment.user?.id || 0;
+            await this.auditService.createLog(
+                userId,
+                'updateCommentSupportId',
+                JSON.stringify({
+                    message: 'Comentario de soporte actualizado',
+                    payload: { idComment, newComment },
+                    response: { idComment, newComment }
+                }),
+                200,
+                { idComment, newComment }
+            );
             return {
                 message: 'Comentario actualizado exitosamente',
                 status: 200,
                 commentUp: comment.comment
             };
         } catch (error) {
+            await this.auditService.createLog(
+                0,
+                'updateCommentSupportId',
+                JSON.stringify({
+                    message: 'Error al actualizar comentario de soporte',
+                    payload: { idComment, newComment },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { idComment, newComment }
+            );
             throw error;
         }
     }
@@ -174,11 +222,34 @@ export class CommentsupportidService {
                 throw new NotFoundException('El comentario con ID proporcionado no existe');
             }
             await this.commentSupportIdRepository.remove(comment);
+            const userId = comment.user?.id || 0;
+            await this.auditService.createLog(
+                userId,
+                'deleteCommentSupportId',
+                JSON.stringify({
+                    message: 'Comentario de soporte eliminado',
+                    payload: { idComment },
+                    response: { idComment }
+                }),
+                200,
+                { idComment }
+            );
             return {
                 message: 'Comentario eliminado exitosamente',
                 status: 200
             };
         } catch (error) {
+            await this.auditService.createLog(
+                0,
+                'deleteCommentSupportId',
+                JSON.stringify({
+                    message: 'Error al eliminar comentario de soporte',
+                    payload: { idComment },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { idComment }
+            );
             throw error;
         }
     }
@@ -232,8 +303,30 @@ export class CommentsupportidService {
                 usersIds: [user.id],
                 link: null,
             })
+            await this.auditService.createLog(
+                userId,
+                'acceptSupportId',
+                JSON.stringify({
+                    message: 'Soporte de identificación aceptado',
+                    payload: { userId, comments },
+                    response: { userId }
+                }),
+                200,
+                { userId, comments }
+            );
             return { message: 'Soporte aceptado correctamente', status: 200 };
         } catch (error) {
+            await this.auditService.createLog(
+                userId || 0,
+                'acceptSupportId',
+                JSON.stringify({
+                    message: 'Error al aceptar soporte de identificación',
+                    payload: { userId, comments },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { userId, comments }
+            );
             throw error;
         }
     }
@@ -279,9 +372,30 @@ export class CommentsupportidService {
                     link: null,
                 })
             }
-
+            await this.auditService.createLog(
+                userId,
+                'rejectSupportId',
+                JSON.stringify({
+                    message: 'Soporte de identificación rechazado',
+                    payload: { userId, comment },
+                    response: { userId }
+                }),
+                200,
+                { userId, comment }
+            );
             return { message: 'Soporte rechazado correctamente', status: 200 };
         } catch (error) {
+            await this.auditService.createLog(
+                userId || 0,
+                'rejectSupportId',
+                JSON.stringify({
+                    message: 'Error al rechazar soporte de identificación',
+                    payload: { userId, comment },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { userId, comment }
+            );
             throw error;
         }
     }

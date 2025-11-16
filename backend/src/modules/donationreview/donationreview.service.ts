@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DonationReviewEntity } from './entity/donation.review.entity';
 import { Repository } from 'typeorm';
@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { CreateReviewDto } from './dto/create.review.dto';
 import { SentimentServiceService } from 'src/core/sentiment-service/sentiment-service.service';
 import { retry } from 'rxjs';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class DonationreviewService {
@@ -17,6 +18,8 @@ export class DonationreviewService {
         private readonly donationService:DonationService,
         private readonly configService: ConfigService,
         private readonly sentimentService: SentimentServiceService,
+        @Inject(forwardRef(() => AuditService))
+        private readonly auditService: AuditService,
     ){}
 
     async createReview(currentUserId:number, dto:CreateReviewDto):Promise<DonationReviewEntity>{
@@ -66,6 +69,17 @@ export class DonationreviewService {
                 existing.review = review;
                 existing.raiting = Number(sentimentScore);
                 const saved = await this.donationReviewRepository.save(existing);
+                await this.auditService.createLog(
+                    currentUserId,
+                    'updateReview',
+                    JSON.stringify({
+                        message: 'Review actualizada',
+                        payload: { donationId: dto.donationId, review: dto.review },
+                        response: saved
+                    }),
+                    200,
+                    { donationId: dto.donationId, review: dto.review }
+                );
                 const { user: { password, email, token, loginAttempts, lockUntil, block, dateSendCodigo, ...userRest }, ...reviewRest } = saved as any;
                 return { ...reviewRest, user: userRest } as any;
             }
@@ -79,9 +93,31 @@ export class DonationreviewService {
                 user: { id: currentUserId }
             });
             const saved = await this.donationReviewRepository.save(donationReview);
+            await this.auditService.createLog(
+                currentUserId,
+                'createReview',
+                JSON.stringify({
+                    message: 'Review creada',
+                    payload: { donationId: dto.donationId, review: dto.review },
+                    response: saved
+                }),
+                201,
+                { donationId: dto.donationId, review: dto.review }
+            );
             const { user: { password, email, token, loginAttempts, lockUntil, block, dateSendCodigo, ...userRest }, ...reviewRest } = saved as any;
             return { ...reviewRest, user: userRest } as any;
         } catch (error) {
+            await this.auditService.createLog(
+                currentUserId || 0,
+                'createReview',
+                JSON.stringify({
+                    message: 'Error al crear/actualizar review',
+                    payload: { donationId: dto?.donationId, review: dto?.review },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { donationId: dto?.donationId, review: dto?.review }
+            );
             throw error;
         }
     }
@@ -136,8 +172,30 @@ export class DonationreviewService {
                 throw new BadRequestException('No tienes permiso para eliminar esta review')
             }
             await this.donationReviewRepository.delete({id:reviewId});
+            await this.auditService.createLog(
+                currentUserId,
+                'deleteReviewById',
+                JSON.stringify({
+                    message: 'Review eliminada',
+                    payload: { reviewId },
+                    response: { reviewId }
+                }),
+                200,
+                { reviewId }
+            );
             return {message:'Review eliminada correctamente', status:200};
         } catch (error) {
+            await this.auditService.createLog(
+                currentUserId || 0,
+                'deleteReviewById',
+                JSON.stringify({
+                    message: 'Error al eliminar review',
+                    payload: { reviewId },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { reviewId }
+            );
             throw error;
         }
     }
@@ -162,9 +220,31 @@ export class DonationreviewService {
             review.review = newReview;
             review.raiting = Number(sentimentScore);
             const result = await this.donationReviewRepository.save(review);
+            await this.auditService.createLog(
+                currentUserId,
+                'updateReviewById',
+                JSON.stringify({
+                    message: 'Review actualizada por id',
+                    payload: { reviewId, newReview },
+                    response: result
+                }),
+                200,
+                { reviewId, newReview }
+            );
             const { user: { password, email, token, loginAttempts, lockUntil, block, dateSendCodigo, ...userRest }, ...reviewRest } = result;
             return reviewRest as any;
         } catch (error) {
+            await this.auditService.createLog(
+                currentUserId || 0,
+                'updateReviewById',
+                JSON.stringify({
+                    message: 'Error al actualizar review por id',
+                    payload: { reviewId, newReview },
+                    response: error?.message || error
+                }),
+                error?.status || 500,
+                { reviewId, newReview }
+            );
             throw error;
         }
     }
