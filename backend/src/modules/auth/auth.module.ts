@@ -12,6 +12,7 @@ import { MailModule } from "src/core/mail/mail.module";
 import { RefreshTokenMiddleware } from "src/shared/middleware/refresh-token.middleware";
 import { UsersystemModule } from "../usersystem/usersystem.module";
 import { SystemModule } from "../system/system.module";
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
    imports: [
@@ -29,6 +30,7 @@ import { SystemModule } from "../system/system.module";
       UserModule,
       MailModule,
    forwardRef(() => UsersystemModule),
+   AuditModule,
       
    ],
    providers: [

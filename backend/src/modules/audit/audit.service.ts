@@ -17,6 +17,38 @@ export class AuditService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
+  private normalizeAuditLog(audit: AuditEntity) {
+    const safeUser = audit.user
+      ? {
+          id: audit.user.id,
+          username: audit.user.username,
+          email: audit.user.email,
+        }
+      : null;
+    let commentStr = audit.comment;
+    if (typeof commentStr === 'string' && commentStr.includes('| payload:')) {
+      commentStr = commentStr.split('| payload:')[0].trim();
+    }
+    let parsedComment: any = commentStr;
+    try {
+      parsedComment = JSON.parse(commentStr);
+      if (parsedComment && parsedComment.response && parsedComment.response.access_token) {
+        delete parsedComment.response.access_token;
+      }
+    } catch {
+      parsedComment = commentStr;
+    }
+    return {
+      id: audit.id,
+      user: safeUser,
+      action: audit.action,
+      comment: parsedComment,
+      status: audit.status,
+      createdAt: audit.createdAt,
+      updatedAt: audit.updatedAt,
+    };
+  }
+
   async createLog(
     userId: number,
     action: any,
@@ -48,9 +80,9 @@ export class AuditService {
     if (filter.from) qb.andWhere('audit.createdAt >= :from', { from: filter.from });
     if (filter.to) qb.andWhere('audit.createdAt <= :to', { to: filter.to });
     qb.orderBy('audit.createdAt', 'DESC');
-    return qb.getMany();
+    const data = await qb.getMany();
+    return data.map(audit => this.normalizeAuditLog(audit));
   }
- // si usuario es admin puede ver cualquier usuario, si no solo puede ver el suyo
   async findByUser(
     targetUserId: number,
     dto: QueryAuditDto,
@@ -92,7 +124,7 @@ export class AuditService {
 
     const [data, total] = await qb.getManyAndCount();
     return {
-      data,
+      data: data.map(audit => this.normalizeAuditLog(audit)),
       meta: {
         total,
         limit: take,
