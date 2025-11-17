@@ -13,7 +13,6 @@ export class IaController {
     @UseInterceptors(FilesInterceptor('files'))
     @Post('tags-from-images')
     async getTagsFromImages(@UploadedFiles() files:Express.Multer.File[]): Promise<string[]> {
-        console.log('Archivos recibidos en el controlador IA:', files);
         return this.iaService.getTagsFromImages(files);
     }
 
