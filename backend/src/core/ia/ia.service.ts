@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Express } from 'express';
+import { RespaldoiaService } from './respaldoia/respaldoia.service';
 
 @Injectable()
 export class IaService {
@@ -10,7 +11,8 @@ export class IaService {
     private readonly modelName = 'gemini-2.5-flash';
 
     constructor(
-        private configService: ConfigService
+        private configService: ConfigService,
+        @Optional() private readonly iaRespaldoService?: RespaldoiaService,
     ) {
         const apiKey = this.configService.get<string>('GEMINI_API_KEY');
         if (!apiKey) {
@@ -71,9 +73,20 @@ export class IaService {
             return tagsCollection;
         } catch (error) {
             this.logger.error("Error analizando imágenes con Gemini:", error);
+
+            if (this.iaRespaldoService) {
+                try {
+                    return await this.iaRespaldoService.getTagsFromImages(files);
+                } catch (backupError) {
+                    this.logger.error("Error analizando imágenes con el servicio de respaldo:", backupError);
+                }
+            } else {
+                this.logger.warn('Servicio de respaldo no inyectado; no se puede procesar con respaldo.');
+            }
+
             throw new InternalServerErrorException(
                 'Error al procesar una o más imágenes con la API de Gemini.',
-                error
+                error,
             );
         }
     }
