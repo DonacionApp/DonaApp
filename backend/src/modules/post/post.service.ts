@@ -450,7 +450,38 @@ export class PostService {
                 throw new NotFoundException('El usuario no tiene posts');
             }
 
-            return posts;
+            // Procesar posts para normalizar usuario y mapear userHasLiked
+            const enrichedPosts = await Promise.all(posts.map(async post => {
+                // Normalizar información del usuario
+                if (post.user) {
+                    const roleName = (post.user as any).rol?.rol;
+                    const people = (post.user as any).people;
+                    const residencia = people?.residencia ?? null;
+                    let municipio: any = null;
+                    if (people?.municipio) {
+                        try {
+                            const { countryExist, stateExist, citiExist } = await this.userService.normalizeMunicipio(people.municipio as any);
+                            municipio = { country: countryExist, state: stateExist, city: citiExist };
+                        } catch (_) {}
+                    }
+                    const { id, username, profilePhoto, emailVerified, verified, createdAt } = post.user as any;
+                    post.user = { id, username, profilePhoto, emailVerified, verified, createdAt, rol: roleName, residencia, municipio } as any;
+                }
+
+                // Mapear userHasLiked a booleano y limpiar propiedad interna
+                const internalCount = (post as any)._userHasLikedCount;
+                if (internalCount !== undefined) {
+                    (post as any).userHasLiked = Number(internalCount) > 0;
+                    delete (post as any)._userHasLikedCount;
+                } else if (numericUserRequest && numericUserRequest > 0) {
+                    // Fallback: si no existe el campo mapeado, consultar directamente
+                    (post as any).userHasLiked = false;
+                }
+
+                return post;
+            }));
+
+            return enrichedPosts;
         } catch (error) {
             throw error;
         }
