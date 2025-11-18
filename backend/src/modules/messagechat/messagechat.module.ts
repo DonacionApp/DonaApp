@@ -3,6 +3,7 @@ import { MessagechatController } from './messagechat.controller';
 import { MessagechatService } from './messagechat.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MessageChatEntity } from './entity/message.chat.entity';
+import { UserEntity } from '../user/entity/user.entity';
 import { ChatModule } from '../chat/chat.module';
 import { UserModule } from '../user/user.module';
 import { TypemessageModule } from '../typemessage/typemessage.module';
@@ -14,9 +15,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NotifyModule } from '../notify/notify.module';
 import { TypeNotifyModule } from '../typenotify/typenotify.module';
 import { AuditModule } from '../audit/audit.module';
+import { WsRefreshGuard } from 'src/shared/guards/ws-refresh.guard';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([MessageChatEntity]), forwardRef(()=>ChatModule),
+  imports:[TypeOrmModule.forFeature([MessageChatEntity, UserEntity]), forwardRef(()=>ChatModule),
  forwardRef(()=>UserModule), TypemessageModule, forwardRef(()=>CloudinaryModule),
   forwardRef(()=>UserchatModule),forwardRef(()=>NotifyModule), forwardRef(()=>TypeNotifyModule),
   JwtModule.registerAsync({
@@ -30,7 +32,7 @@ import { AuditModule } from '../audit/audit.module';
         forwardRef(()=>AuditModule)
 ],
   controllers: [MessagechatController],
-  providers: [MessagechatService, MessagechatGateway],
+  providers: [MessagechatService, MessagechatGateway, WsRefreshGuard],
   exports: [MessagechatService, MessagechatGateway],
 })
 export class MessagechatModule {}
