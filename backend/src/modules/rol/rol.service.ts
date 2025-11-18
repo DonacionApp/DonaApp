@@ -53,7 +53,7 @@ export class RolService {
     if (!id) {
       throw new BadRequestException('El id del rol es obligatorio');
     }
-    dto.rol = dto.rol.toUpperCase().trim();
+    dto.rol = dto.rol.toLowerCase().trim();
     const rolEntity = await this.findById(id);
     if (dto.rol === rolEntity.rol) {
       throw new BadRequestException('No se realizaron cambios en el rol');
