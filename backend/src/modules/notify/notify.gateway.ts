@@ -9,12 +9,16 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Inject, Optional, forwardRef } from '@nestjs/common';
+import { Logger, Inject, Optional, forwardRef, UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { NotifyService } from './notify.service';
 import { UserNotifyService } from '../userNotify/usernotify.service';
-import { WsAuthHelper } from '../../shared/helpers/ws-auth.helper';
+import { UserEntity } from '../user/entity/user.entity';
+import { WsRefreshGuard } from 'src/shared/guards/ws-refresh.guard';
+import { WsTokenRefreshHelper } from 'src/shared/helpers/ws-token-refresh.helper';
 
 interface ConnectedUser {
   userId: number;
@@ -43,6 +47,8 @@ export class NotifyGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     @Optional() @Inject(forwardRef(() => NotifyService))
     private readonly notifyService?: NotifyService,
     @Optional() @Inject(forwardRef(() => UserNotifyService))
@@ -58,16 +64,16 @@ export class NotifyGateway
     try {
       this.logger.log(` Client attempting to connect: ${client.id}`);
 
-      // Validar token y obtener userId
-      const result = await WsAuthHelper.validateConnection(
+      // Validar y refrescar token si es necesario
+      const result = await WsTokenRefreshHelper.validateAndRefreshToken(
         client,
         this.jwtService,
-        this.configService,
+        this.userRepository,
       );
 
       if (!result.valid || !result.userId) {
-        // El helper ya manejó el error y desconectó al cliente
-        return;
+        this.logger.warn(`Socket ${client.id} authentication failed`);
+        return; // El helper ya manejó el error y desconectó
       }
 
       const { userId, userName } = result;
@@ -86,6 +92,7 @@ export class NotifyGateway
         userId: userId,
         userName: userName,
         timestamp: new Date(),
+        tokenRefreshed: result.tokenRefreshed || false,
       });
 
     } catch (error) {
@@ -164,6 +171,7 @@ export class NotifyGateway
   /**
    * Evento para que el cliente marque una notificación como leída
    */
+  @UseGuards(WsRefreshGuard)
   @SubscribeMessage('markAsRead')
   async handleMarkAsRead(
     @MessageBody() data: { notificationId: number },
@@ -198,6 +206,7 @@ export class NotifyGateway
     }
   }
 
+  @UseGuards(WsRefreshGuard)
   @SubscribeMessage('getNotifications')
   async handleGetNotifications(@ConnectedSocket() client: Socket) {
     try {
@@ -219,6 +228,7 @@ export class NotifyGateway
     }
   }
 
+  @UseGuards(WsRefreshGuard)
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() client: Socket) {
     const userId = this.socketToUser.get(client.id);

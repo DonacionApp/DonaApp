@@ -1,11 +1,16 @@
-import { Logger, Inject, forwardRef } from '@nestjs/common';
+import { Logger, Inject, forwardRef, UseGuards } from '@nestjs/common';
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { MessagechatService } from './messagechat.service';
 import { NotifyService } from '../notify/notify.service';
 import { TypeNotifyService } from '../typenotify/typenotify.service';
 import { UserchatService } from '../userchat/userchat.service';
+import { UserEntity } from '../user/entity/user.entity';
+import { WsRefreshGuard } from 'src/shared/guards/ws-refresh.guard';
+import { WsTokenRefreshHelper } from 'src/shared/helpers/ws-token-refresh.helper';
 
 @WebSocketGateway({ cors: true, namespace: '/' })
 export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -20,6 +25,8 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
 
   constructor(
     private readonly jwtService: JwtService,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     @Inject(forwardRef(() => MessagechatService))
     private readonly messagechatService: MessagechatService,
     @Inject(forwardRef(() => NotifyService))
@@ -30,34 +37,33 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
 
   async handleConnection(socket: Socket) {
     try {
-      const token = socket.handshake?.auth?.token || (socket.handshake?.headers?.authorization || '').replace(/^Bearer\s+/i, '') || null;
-      if (!token) {
-        this.logger.warn(`Socket ${socket.id} missing token, disconnecting`);
+      // Validar y refrescar token si es necesario
+      const result = await WsTokenRefreshHelper.validateAndRefreshToken(
+        socket,
+        this.jwtService,
+        this.userRepository,
+      );
+
+      if (!result.valid || !result.userId) {
+        this.logger.warn(`Socket ${socket.id} authentication failed, disconnecting`);
         socket.disconnect(true);
         return;
       }
 
-      const payload = await this.jwtService.verifyAsync(token).catch(() => null);
-      if (!payload) {
-        this.logger.warn(`Socket ${socket.id} invalid token, disconnecting`);
-        socket.disconnect(true);
-        return;
-      }
-
-      const userId = Number((payload as any).id ?? (payload as any).sub ?? null);
-      if (!userId || isNaN(userId)) {
-        this.logger.warn(`Socket ${socket.id} token missing user id, disconnecting`);
-        socket.disconnect(true);
-        return;
-      }
-
+      const userId = result.userId;
       this.socketUser.set(socket.id, userId);
       const set = this.userSockets.get(userId) || new Set<string>();
       set.add(socket.id);
       this.userSockets.set(userId, set);
 
-      this.logger.log(`User ${userId} connected on socket ${socket.id}`);
-      this.server.to(socket.id).emit('connected', { userId });
+      this.logger.log(`User ${userId} (${result.userName}) connected on socket ${socket.id}`);
+      
+      // Emitir conexión exitosa (el token ya fue enviado por el helper si se refrescó)
+      this.server.to(socket.id).emit('connected', { 
+        userId,
+        userName: result.userName,
+        tokenRefreshed: result.tokenRefreshed || false
+      });
     } catch (e) {
       this.logger.error('Error during socket connection', e as any);
       socket.disconnect(true);
@@ -85,6 +91,7 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
     }
   }
 
+  @UseGuards(WsRefreshGuard)
   @SubscribeMessage('joinChat')
   async handleJoinChat(@MessageBody() payload: { chatId: number }, @ConnectedSocket() socket: Socket) {
     const chatId = Number(payload?.chatId);
@@ -126,6 +133,7 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
     socket.emit('leftChat', { chatId });
   }
 
+  @UseGuards(WsRefreshGuard)
   @SubscribeMessage('sendMessage')
   async handleSendMessage(@MessageBody() payload: any, @ConnectedSocket() socket: Socket) {
     const userId = this.socketUser.get(socket.id);

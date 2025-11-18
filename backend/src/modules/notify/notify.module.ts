@@ -1,6 +1,7 @@
 import { forwardRef, Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { NotifyEntity } from "./entity/notify.entity";
+import { UserEntity } from "../user/entity/user.entity";
 import { TypeNotifyModule } from "../typenotify/typenotify.module";
 import { NotifyService } from "./notify.service";
 import { NotifyController } from "./notify.controller";
@@ -9,10 +10,11 @@ import { UserModule } from "../user/user.module";
 import { NotifyGateway } from './notify.gateway';
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { WsRefreshGuard } from "src/shared/guards/ws-refresh.guard";
 
 @Module({
    imports: [
-      TypeOrmModule.forFeature([NotifyEntity]),
+      TypeOrmModule.forFeature([NotifyEntity, UserEntity]),
       TypeNotifyModule,
    forwardRef(() => UserNotifyModule),
    forwardRef(() => UserModule),
@@ -26,7 +28,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
       }),
       ConfigModule,
    ],
-   providers: [NotifyService, NotifyGateway],
+   providers: [NotifyService, NotifyGateway, WsRefreshGuard],
    controllers: [NotifyController],
    exports: [NotifyService, NotifyGateway],
 })
