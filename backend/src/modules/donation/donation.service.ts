@@ -222,6 +222,7 @@ export class DonationService {
       let receiver: any;
       if (isSolicitudDonacion) {
         receiver = post.user;
+        console.log('receiver : ', receiver)
         if (currentUserEntity.id === post.user.id) {
           throw new ForbiddenException('No puedes donar a tu propia solicitud de donación');
         }
@@ -232,10 +233,13 @@ export class DonationService {
         }
       }
 
-      const receiverRol = (receiver as any).rol?.rol?.toLowerCase();
+      const receiverRol = (receiver as any).rol?.rol?.toLowerCase() || (receiver as any).rol?.toLowerCase();
+  
       if (receiverRol !== 'organizacion') {
         throw new ForbiddenException('Solo los usuarios con rol "organizacion" pueden recibir donaciones');
       }
+      
+      receiver = currentUserEntity;
 
       const statusPendiente = await this.statusDonationService.findByname('pendiente');
 
