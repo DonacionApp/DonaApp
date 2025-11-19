@@ -40,4 +40,9 @@ export class StatisticsController {
     async getTopAverageRating(@Query() query: UserRankingQueryDto){
         return await this.statisticsService.getTopAverageRating(query);
     }
+
+    @Get('public')
+    async getPublicStatistics(){
+        return await this.statisticsService.getPublicStatistics();
+    }
 }

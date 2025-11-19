@@ -11,6 +11,8 @@ import { PostArticleDonationEntity } from '../postdonationarticle/entity/post.ar
 import { ArticleEntity } from '../article/entity/article.entity';
 import { PostArticleEntity } from '../postarticle/entity/postarticle.entity';
 import { DonationReviewEntity } from '../donationreview/entity/donation.review.entity';
+import { RolEntity } from '../rol/entity/rol.entity';
+import { ChatEntity } from '../chat/entity/chat.entity';
 
 // Módulo de estadísticas: importa los repositorios necesarios para las consultas
 @Module({
@@ -23,7 +25,9 @@ import { DonationReviewEntity } from '../donationreview/entity/donation.review.e
     PostArticleDonationEntity,
     PostArticleEntity,
     ArticleEntity,
-    DonationReviewEntity
+    DonationReviewEntity,
+    RolEntity,
+    ChatEntity
   ])],
   controllers: [StatisticsController],
   providers: [StatisticsService]
