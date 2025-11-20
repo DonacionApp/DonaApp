@@ -10,10 +10,12 @@ import { PostArticleDonationEntity } from '../postdonationarticle/entity/post.ar
 import { PostArticleEntity } from '../postarticle/entity/postarticle.entity';
 import { ArticleEntity } from '../article/entity/article.entity';
 import { DonationReviewEntity } from '../donationreview/entity/donation.review.entity';
-//verifica que el servicio de estadisticas este definido
+import { RolEntity } from '../rol/entity/rol.entity';
+import { ChatEntity } from '../chat/entity/chat.entity';
+
 describe('StatisticsService', () => {
   let service: StatisticsService;
-//por cada prueba se crea un modulo de testing
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -27,6 +29,8 @@ describe('StatisticsService', () => {
         { provide: getRepositoryToken(PostArticleEntity), useValue: {} },
         { provide: getRepositoryToken(ArticleEntity), useValue: {} },
         { provide: getRepositoryToken(DonationReviewEntity), useValue: {} },
+        { provide: getRepositoryToken(RolEntity), useValue: {} },
+        { provide: getRepositoryToken(ChatEntity), useValue: {} },
       ],
     }).compile();
 

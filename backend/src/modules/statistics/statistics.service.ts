@@ -10,6 +10,8 @@ import { PostArticleDonationEntity } from '../postdonationarticle/entity/post.ar
 import { PostArticleEntity } from '../postarticle/entity/postarticle.entity';
 import { ArticleEntity } from '../article/entity/article.entity';
 import { DonationReviewEntity } from '../donationreview/entity/donation.review.entity';
+import { RolEntity } from '../rol/entity/rol.entity';
+import { ChatEntity } from '../chat/entity/chat.entity';
 import {
     UserRankingQueryDto,
     UserRankingResponse,
@@ -47,6 +49,12 @@ export class StatisticsService {
 
         @InjectRepository(DonationReviewEntity)
         private readonly donationReviewRepository: Repository<DonationReviewEntity>,
+
+        @InjectRepository(RolEntity)
+        private readonly rolRepository: Repository<RolEntity>,
+
+        @InjectRepository(ChatEntity)
+        private readonly chatRepository: Repository<ChatEntity>,
     ){}
 
     // Devuelve métricas y estadísticas para un usuario específico, ordenadas para charts
@@ -284,4 +292,102 @@ export class StatisticsService {
             };
         });
     }
+
+    async getPublicStatistics() {
+        const totalDonations = await this.donationRepository.count();
+
+        const rolOrganizacion = await this.rolRepository.findOne({
+            where: [
+                { rol: 'organizacion' },
+                { rol: 'organización' },
+                { rol: 'Organización' },
+                { rol: 'Organizacion' },
+            ]
+        });
+        const totalOrganizaciones = rolOrganizacion 
+            ? await this.userRepository.count({ where: { rol: { id: rolOrganizacion.id } } })
+            : 0;
+
+        const totalUsers = await this.userRepository.count();
+
+        const citiesRaw = await this.userRepository
+            .createQueryBuilder('user')
+            .innerJoin('user.people', 'people')
+            .select('DISTINCT people.municipio', 'municipio')
+            .where('people.municipio IS NOT NULL')
+            .andWhere('people.municipio != :empty', { empty: '' })
+            .getRawMany();
+        const totalCities = citiesRaw.length;
+        const reviewsResult = await this.donationReviewRepository
+            .createQueryBuilder('review')
+            .select('AVG(review.raiting)', 'average')
+            .addSelect('COUNT(review.id)', 'total')
+            .getRawOne();
+        
+        const averageRating = reviewsResult?.average ? Number(reviewsResult.average) : 0;
+        const totalReviews = reviewsResult?.total ? Number(reviewsResult.total) : 0;
+        const satisfactionPercentage = averageRating > 0 ? Number(((averageRating / 5) * 100).toFixed(2)) : 0;
+
+        const totalChats = await this.chatRepository.count();
+
+        const totalPostLikes = await this.postLikedRepository.count();
+
+        const totalArticles = await this.articleRepository.count();
+
+        const topDonorRaw = await this.donationRepository
+            .createQueryBuilder('donation')
+            .innerJoin('donation.user', 'user')
+            .select('user.id', 'userId')
+            .addSelect('user.username', 'username')
+            .addSelect('COUNT(donation.id)', 'total')
+            .groupBy('user.id')
+            .addGroupBy('user.username')
+            .orderBy('total', 'DESC')
+            .limit(1)
+            .getRawOne();
+
+        const topDonor = topDonorRaw ? {
+            userId: Number(topDonorRaw.userId),
+            username: topDonorRaw.username,
+            totalDonations: Number(topDonorRaw.total) || 0
+        } : null;
+
+        const topPosterRaw = await this.postRepository
+            .createQueryBuilder('post')
+            .innerJoin('post.user', 'user')
+            .select('user.id', 'userId')
+            .addSelect('user.username', 'username')
+            .addSelect('COUNT(post.id)', 'total')
+            .groupBy('user.id')
+            .addGroupBy('user.username')
+            .orderBy('total', 'DESC')
+            .limit(1)
+            .getRawOne();
+
+        const topPoster = topPosterRaw ? {
+            userId: Number(topPosterRaw.userId),
+            username: topPosterRaw.username,
+            totalPosts: Number(topPosterRaw.total) || 0
+        } : null;
+
+        return {
+            totalDonations,
+            totalOrganizaciones,
+            totalUsers,
+            totalCities,
+            satisfaction: {
+                percentage: satisfactionPercentage,
+                averageRating: Number(averageRating.toFixed(2)),
+                totalReviews
+            },
+            totalChats,
+            totalPostLikes,
+            totalArticles,
+            topDonor,
+            topPoster
+        };
+    }
+
+    
+    
 }
