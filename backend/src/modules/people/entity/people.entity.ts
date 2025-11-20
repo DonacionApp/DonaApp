@@ -10,7 +10,7 @@ export class PeopleEntity{
     name:string;
     @Column({type:'varchar', nullable:true})
     municipio:string | null;
-    @Column({type:'varchar', length:50, nullable:true})
+    @Column({type:'varchar', nullable:true})
     lastName:string | null;
     @Column({type:'date', nullable:false})
     birdthDate:Date;
