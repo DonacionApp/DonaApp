@@ -1,0 +1,38 @@
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Build output
+dist
+build
+
+# Local env files
+.env
+backend/.env
+
+# Editor and OS files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose.yml
+Dockerfile
+DockerFile
+
+# Coverage
+coverage
+
+# Logs
+logs
+*.log
+
+# Misc
+*.tgz
