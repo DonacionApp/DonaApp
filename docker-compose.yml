@@ -6,7 +6,6 @@ services:
       context: ./bd-docker
       dockerfile: Dockerfile
     container_name: donaapp-postgres
-    # Use backend/.env to provide DB credentials so both services share same values
     env_file:
       - ./backend/.env
     ports:
@@ -15,7 +14,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      # Use double-dollar so expansion happens inside the container at runtime
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-testuser}"]
       interval: 5s
       timeout: 5s
