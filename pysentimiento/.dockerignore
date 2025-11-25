@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (opcional, mantener README.md si quieres)
+# *.md
+# !README.md
+
+# Cache y modelos del host (NO excluir el caché creado DENTRO del contenedor durante el build)
+# Nota: El caché de Hugging Face se crea DURANTE el build del Dockerfile (RUN command),
+# por lo que NO se ve afectado por .dockerignore. Solo excluimos el caché del host local.
+.cache/
+.pytest_cache/
+.huggingface/
+transformers_cache/
+*.bin
+*.safetensors
+*.h5
+*.ckpt
+*.pt
+*.pth
+models/
+# IMPORTANTE: El caché dentro de /app/.cache/huggingface en el contenedor
+# se crea durante el build y NO se excluye aquí
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# Optimizaciones (documentación)
+OPTIMIZACIONES.md
+DOCKER.md
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporal
+*.tmp
+*.temp
+tmp/
+temp/
+
