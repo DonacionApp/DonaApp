@@ -2,6 +2,7 @@
 
 API mínima para evaluar el sentimiento de reseñas en español usando pysentimiento.
 
+
 ## Instalación
 
 ```bash

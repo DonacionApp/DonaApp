@@ -1,0 +1,64 @@
+name: PySentimiento CI
+
+on:
+  push:
+    branches:
+      - main
+      - 142-backend-crear-dockerfilevv
+    paths:
+      - 'pysentimiento/**'
+  pull_request:
+    branches:
+      - main
+      - 142-backend-crear-dockerfilevv
+    paths:
+      - 'pysentimiento/**'
+
+jobs:
+  pysentimiento:
+    name: Start pysentimiento and run healthcheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies (pysentimiento)
+        working-directory: pysentimiento
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start service (uvicorn) in background
+        working-directory: pysentimiento
+        run: |
+          nohup uvicorn main:app --host 127.0.0.1 --port 8000 >/dev/null 2>&1 &
+          sleep 4
+
+      - name: Health check
+        run: |
+          URL=http://127.0.0.1:8000/health
+          echo "Checking $URL"
+          for i in $(seq 1 10); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' $URL || true)
+            echo "Attempt $i: status=$status"
+            if [ "$status" = "200" ]; then
+              echo "Service healthy"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Service did not respond with 200"
+          exit 1
+
+      - name: Sample analyze request
+        working-directory: pysentimiento
+        run: |
+          curl -sS -X POST http://127.0.0.1:8000/analyze-sentiment \
+            -H 'Content-Type: application/json' \
+            -d '{"review_text":"Me encantó, muy buena experiencia"}' || true
