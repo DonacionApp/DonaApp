@@ -35,5 +35,5 @@ USER appuser
 
 EXPOSE 5000
 
-# Espera a PostgreSQL y luego arranca la app (JSON form evita problemas de quoting)
-CMD ["sh", "-c", "until pg_isready -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} -U ${DB_USER:-postgres}; do echo \"Esperando PostgreSQL...\"; sleep 2; done; echo \"PostgreSQL listo, iniciando backend...\"; export PORT=${PORT:-${APP_PORT:-5000}}; node dist/main"]
+# Arranca la app inmediatamente. Cloud Run provee PORT; en local se usará APP_PORT.
+CMD ["sh", "-c", "export PORT=${PORT:-${APP_PORT:-5000}}; node dist/main"]
