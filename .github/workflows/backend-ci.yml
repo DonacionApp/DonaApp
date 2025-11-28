@@ -78,6 +78,7 @@ jobs:
     secrets:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      CLOUD_SQL_INSTANCE_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_INSTANCE_CONNECTION_NAME }}
       PROD_DB_HOST: ${{ secrets.PROD_DB_HOST }}
       PROD_DB_PORT: ${{ secrets.PROD_DB_PORT }}
       PROD_DB_USER: ${{ secrets.PROD_DB_USER }}
