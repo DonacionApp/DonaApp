@@ -93,6 +93,7 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
+      # 1. AUTENTICACIÓN GCP
       - name: Autenticación en Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -103,6 +104,7 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           
+      # 2. CONSTRUCCIÓN Y ALMACENAMIENTO DE LA IMAGEN DOCKER
       - name: Construir y Empujar Imagen a Artifact Registry
         run: |
           # Configura Docker para autenticarse en Artifact Registry de us-central1
@@ -114,6 +116,7 @@ jobs:
           docker build -f ../Dockerfile -t $IMAGE_URL ..
           docker push $IMAGE_URL
 
+      # 3. DESPLIEGUE A CLOUD RUN
       - name: Desplegar a Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
@@ -123,6 +126,10 @@ jobs:
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           
           env_vars: |
+            # ESTE ES EL CAMBIO CLAVE: Cloud Run requiere que el contenedor escuche en el puerto definido por PORT (8080).
+            PORT=8080
+            APP_PORT=8080 
+            
             DB_HOST=${{ secrets.PROD_DB_HOST }}
             DB_PORT=${{ secrets.PROD_DB_PORT }}
             DB_USER=${{ secrets.PROD_DB_USER }}
@@ -132,7 +139,6 @@ jobs:
             POSTGRES_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
             POSTGRES_DB=${{ secrets.PROD_DB_NAME }}
 
-            APP_PORT=${{ secrets.APP_PORT }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
             URL_COUNTRIES_API=${{ secrets.URL_COUNTRIES_API }}
