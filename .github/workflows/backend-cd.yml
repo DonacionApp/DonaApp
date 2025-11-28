@@ -116,10 +116,13 @@ jobs:
       # 2. CONSTRUCCIÓN Y ALMACENAMIENTO DE LA IMAGEN DOCKER
       - name: Construir y Empujar Imagen a Artifact Registry
         run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev
+          # Configura credenciales de docker para Artifact Registry sin prompt
+          gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
           # Usa el project id pasado como secret al workflow
           IMAGE_URL=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo/nestjs-api:latest
-          docker build -t $IMAGE_URL .
+          echo "Building image: $IMAGE_URL"
+          # El Dockerfile está en la raíz del repo; el paso corre en ./backend, por eso usamos -f ../Dockerfile y contexto ..
+          docker build -f ../Dockerfile -t $IMAGE_URL ..
           docker push $IMAGE_URL
 
       # 3. DESPLIEGUE A CLOUD RUN
