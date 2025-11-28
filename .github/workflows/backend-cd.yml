@@ -1,15 +1,96 @@
 name: CD Backend (NestJS a Cloud Run)
 
+# CAMBIO CLAVE: Usa workflow_call para ser un workflow reutilizable.
+# El archivo CI lo llamará SÓLO si las pruebas pasan.
 on:
-  push:
-    # Ajustado: El branch de desarrollo no debe ser el que despliega a producción (usa 'main')
-    branches: [ "main","144-backend-configurar-cd-de-backend" ] 
+  workflow_call:
+    # 1. Variables (Vars) que se pasan como entradas
+    vars:
+      GCP_PROJECT_ID:
+        required: true
+      # Variables de la BD de producción
+      PROD_DB_HOST:
+        required: true
+      PROD_DB_PORT:
+        required: true
+      PROD_DB_USER:
+        required: true
+      PROD_DB_NAME:
+        required: true
+    # 2. Secrets que se pasan como entradas (Nombres de los secrets de GitHub)
+    secrets:
+      GCP_SA_KEY:
+        required: true
+      PROD_DB_PASSWORD:
+        required: true
+      
+      # Variables de la aplicación (TODAS TUS VARIABLES)
+      APP_PORT:
+        required: true
+      JWT_SECRET:
+        required: true
+      JWT_EXPIRES_IN:
+        required: true
+      URL_COUNTRIES_API:
+        required: true
+      API_KEY_COUNTRIES_API:
+        required: true
+      MAIL_HOST:
+        required: true
+      MAIL_USER:
+        required: true
+      MAIL_PASSWORD:
+        required: true
+      MAIL_FROM:
+        required: true
+      MAIL_PORT:
+        required: true
+      URL_FRONTEND:
+        required: true
+      URL_FRONTEND_VERIFY_TOKEN:
+        required: true
+      URL_FRONTEND_VERIFY:
+        required: true
+      URL_FRONTEND_RESET_PASS_TOKEN:
+        required: true
+      CLOUDINARY_NAME:
+        required: true
+      CLOUDINARY_API_KEY:
+        required: true
+      CLOUDINARY_API_SECRET:
+        required: true
+      CLOUDINARY_FOLDER_BASE:
+        required: true
+      CLOUDINARY_PROFILE_FOLDER:
+        required: true
+      CLOUDINARY_POST_FOLDER:
+        required: true
+      CLOUDINARY_DOCS_FOLDER:
+        required: true
+      CLOUDINARY_CHATS_FOLDER:
+        required: true
+      CLOUDINARY_POSTS_FOLDER:
+        required: true
+      AWS_REGION:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      GEMINI_API_KEY_AUX:
+        required: true
+      GEMINI_API_KEY:
+        required: true
+      MICROSERVICONSENTIMENTS_URL:
+        required: true
+      MICROSERVICONSENTIMENTS_URL_AUX:
+        required: true
 
 jobs:
+  # El job ya NO tiene 'needs', ya que es el primer job del workflow_call
   deploy_backend:
     name: Despliegue a Producción (Cloud Run)
     runs-on: ubuntu-latest
-    needs: check_backend_ci 
     
     defaults:
       run:
@@ -23,17 +104,20 @@ jobs:
       - name: Autenticación en Google Cloud
         uses: google-github-actions/auth@v2
         with:
+          # Usa el secret pasado al workflow
           credentials_json: ${{ secrets.GCP_SA_KEY }} 
 
       - name: Configurar GCloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
+          # Usa la variable pasada al workflow
           project_id: ${{ vars.GCP_PROJECT_ID }}
           
       # 2. CONSTRUCCIÓN Y ALMACENAMIENTO DE LA IMAGEN DOCKER
       - name: Construir y Empujar Imagen a Artifact Registry
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
+          # Usa la variable pasada al workflow
           IMAGE_URL=us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/backend-repo/nestjs-api:latest
           docker build -t $IMAGE_URL .
           docker push $IMAGE_URL
@@ -42,14 +126,14 @@ jobs:
       - name: Desplegar a Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: donaapp-nestjs-backend # Nombre único para tu servicio Cloud Run
+          service: donaapp-nestjs-backend
           region: us-central1 
+          # Usa la variable pasada al workflow
           image: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/backend-repo/nestjs-api:latest
           
-          # Todas las variables inyectadas como Secrets de Cloud Run (los nombres son los que NestJS espera)
-          # NOTA: Los nombres de la izquierda deben coincidir con lo que NestJS lee (ej. DB_HOST).
+          # Inyecta todos los secrets al Cloud Run. Los nombres de la izquierda son los que espera NestJS
           secrets: |
-            # VARIABLES DE LA BD (Usando los Secrets de PRODUCCIÓN)
+            # VARIABLES DE LA BD (Usando los Secrets de PRODUCCIÓN, pasados como inputs)
             DB_HOST=${{ secrets.PROD_DB_HOST }}
             DB_PORT=${{ secrets.PROD_DB_PORT }}
             DB_USER=${{ secrets.PROD_DB_USER }}
