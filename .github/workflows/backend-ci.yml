@@ -80,7 +80,7 @@ jobs:
   deploy_if_passed:
     name: Llamar al CD (Despliegue)
     needs: check_backend_ci
-    if: success() && github.ref == 'refs/heads/main'
+    if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/144-backend-configurar-cd-de-backend')
     # Llama al workflow reusable a nivel de job (archivo: .github/workflows/backend-cd.yml)
     uses: ./.github/workflows/backend-cd.yml
     with:
