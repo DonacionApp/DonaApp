@@ -73,10 +73,11 @@ jobs:
     name: Llamar al CD (Despliegue)
     needs: check_backend_ci
     if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/144-backend-configurar-cd-de-backend')
-
+    
     uses: ./.github/workflows/backend-cd.yml
+    with:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} 
     secrets:
-      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
       PROD_DB_HOST: ${{ secrets.PROD_DB_HOST }}
       PROD_DB_PORT: ${{ secrets.PROD_DB_PORT }}
