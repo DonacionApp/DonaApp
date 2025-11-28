@@ -105,12 +105,9 @@ jobs:
           
       - name: Construir y Empujar Imagen a Artifact Registry
         run: |
-          # Configura credenciales de docker para Artifact Registry sin prompt
           gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
-          # Usa el project id pasado como secret al workflow
           IMAGE_URL=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           echo "Building image: $IMAGE_URL"
-          # El Dockerfile está en la raíz del repo; el paso corre en ./backend, por eso usamos -f ../Dockerfile y contexto ..
           docker build -f ../Dockerfile -t $IMAGE_URL ..
           docker push $IMAGE_URL
 
@@ -122,7 +119,6 @@ jobs:
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           
           secrets: |
-            # VARIABLES DE LA BD (Usando los Secrets de PRODUCCIÓN, pasados como inputs)
             DB_HOST=${{ secrets.PROD_DB_HOST }}
             DB_PORT=${{ secrets.PROD_DB_PORT }}
             DB_USER=${{ secrets.PROD_DB_USER }}
@@ -132,7 +128,6 @@ jobs:
             POSTGRES_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
             POSTGRES_DB=${{ secrets.PROD_DB_NAME }}
 
-            # VARIABLES DE LA APP (Usando los Secrets con nombres originales)
             APP_PORT=${{ secrets.APP_PORT }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
