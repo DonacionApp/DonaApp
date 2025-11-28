@@ -128,8 +128,9 @@ jobs:
           
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           
-          # 2. CONFIGURACIÓN DEL PROXY: Esto inyecta el Cloud SQL Proxy sidecar
-          cloud_sql_instances: ${{ secrets.CLOUD_SQL_INSTANCE_CONNECTION_NAME }}
+          # 2. CONFIGURACIÓN DEL PROXY: pasar la instancia como flag para gcloud
+          #    Deploy action no soporta 'cloud_sql_instances' directamente, usamos 'flags'
+          flags: --add-cloudsql-instances=${{ secrets.CLOUD_SQL_INSTANCE_CONNECTION_NAME }} --timeout=300s
           
           env_vars: |
             APP_PORT=8080 
