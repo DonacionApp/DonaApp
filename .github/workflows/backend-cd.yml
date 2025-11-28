@@ -105,9 +105,12 @@ jobs:
           
       - name: Construir y Empujar Imagen a Artifact Registry
         run: |
+          # Configura Docker para autenticarse en Artifact Registry de us-central1
           gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
+          
           IMAGE_URL=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           echo "Building image: $IMAGE_URL"
+          # Construye la imagen desde la raíz usando el Dockerfile que está en la raíz
           docker build -f ../Dockerfile -t $IMAGE_URL ..
           docker push $IMAGE_URL
 
@@ -116,9 +119,10 @@ jobs:
         with:
           service: donaapp-nestjs-backend
           region: us-central1 
+          
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           
-          secrets: |
+          env_vars: |
             DB_HOST=${{ secrets.PROD_DB_HOST }}
             DB_PORT=${{ secrets.PROD_DB_PORT }}
             DB_USER=${{ secrets.PROD_DB_USER }}
