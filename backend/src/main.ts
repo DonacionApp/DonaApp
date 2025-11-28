@@ -11,7 +11,6 @@ async function bootstrap() {
     credentials: true,
     exposedHeaders: ['X-New-Token'],
   });
-  
   const configService= app.get(ConfigService)
   const port= configService.get<number>(APP_PORT)
   console.log('listening on port ', port)
