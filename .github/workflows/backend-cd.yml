@@ -18,6 +18,9 @@ on:
         required: true
       PROD_DB_NAME:
         required: true
+      # 1. SECRET NUEVO: Identificador de la instancia de Cloud SQL para el Proxy.
+      CLOUD_SQL_INSTANCE_CONNECTION_NAME:
+        required: true
       
       APP_PORT:
         required: true
@@ -125,11 +128,14 @@ jobs:
           
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           
+          # 2. CONFIGURACIÓN DEL PROXY: Esto inyecta el Cloud SQL Proxy sidecar
+          cloud_sql_instances: ${{ secrets.CLOUD_SQL_INSTANCE_CONNECTION_NAME }}
+          
           env_vars: |
-            APP_PORT=8080
+            APP_PORT=8080 
             
-            DB_HOST=${{ secrets.PROD_DB_HOST }}
-            DB_PORT=${{ secrets.PROD_DB_PORT }}
+            DB_HOST=127.0.0.1 
+            DB_PORT=${{ secrets.PROD_DB_PORT }} # El puerto es el estándar (e.g., 5432)
             DB_USER=${{ secrets.PROD_DB_USER }}
             DB_PASS=${{ secrets.PROD_DB_PASSWORD }}
             DB_NAME=${{ secrets.PROD_DB_NAME }}
