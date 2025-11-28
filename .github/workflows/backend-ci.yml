@@ -17,10 +17,8 @@ jobs:
         working-directory: ./backend
 
     env:
-      # Variables de entorno para el ambiente de CI (PostgreSQL en Docker Compose)
       POSTGRES_USER: ${{ vars.POSTGRES_USER }}
       POSTGRES_DB: ${{ vars.POSTGRES_DB }}
-      # El Host debe ser 'postgres' si usas el nombre del servicio en el compose
       DB_HOST: ${{ vars.DB_HOST }} 
       DB_PORT: ${{ vars.DB_PORT }}
       DB_USER: ${{ vars.DB_USER }}
@@ -31,10 +29,7 @@ jobs:
       
       DATABASE_URL: postgresql://${{ vars.POSTGRES_USER }}:${{ secrets.DB_PASSWORD }}@${{ vars.DB_HOST }}:${{ vars.DB_PORT }}/${{ vars.POSTGRES_DB }}
       
-      # Mapeo de secrets de la aplicación para que las pruebas puedan ejecutarse
-      # Si tus pruebas requieren estas variables, debes pasarlas también:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      # Aquí van el resto de los secrets que tu NestJS necesite para CI/Testing...
 
     steps:
       - name: Checkout del código
@@ -46,7 +41,6 @@ jobs:
           node-version: 22
 
       - name: Levantar PostgreSQL con Docker Compose
-        # Nota: Asegúrate de que docker-compose-postgress.yml existe y es el correcto
         run: |
           docker compose -f docker-compose-postgress.yml up -d
           docker ps
@@ -67,7 +61,6 @@ jobs:
 
       - name: Ejecutar Pruebas Unitarias/E2E
         run: npm run test:ci || npm run test
-        ##continue-on-error: true # Descomenta si las pruebas no son obligatorias
 
       - name: Detener contenedores
         if: always()
@@ -76,15 +69,14 @@ jobs:
       - name: Verificación final
         run: echo "CI Backend completado correctamente"
 
-  # NUEVO JOB: LLAMA AL CD SÓLO SI EL CI FUE EXITOSO
   deploy_if_passed:
     name: Llamar al CD (Despliegue)
     needs: check_backend_ci
     if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/144-backend-configurar-cd-de-backend')
-    # Llama al workflow reusable a nivel de job (archivo: .github/workflows/backend-cd.yml)
+
     uses: ./.github/workflows/backend-cd.yml
     with:
-      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
     secrets:
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
       PROD_DB_HOST: ${{ secrets.PROD_DB_HOST }}
