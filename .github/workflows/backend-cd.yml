@@ -1,14 +1,9 @@
 name: CD Backend (NestJS a Cloud Run)
 
-# CAMBIO CLAVE: Usa workflow_call para ser un workflow reutilizable.
-# El archivo CI lo llamará SÓLO si las pruebas pasan.
 on:
   workflow_call:
-    # 1. Variables (Vars) que se pasan como entradas
     inputs: {}
-    # 2. Secrets que se pasan como entradas (Nombres de los secrets de GitHub)
     secrets:
-      # Secrets para autenticación, project id y base de datos de producción
       GCP_SA_KEY:
         required: true
       GCP_PROJECT_ID:
@@ -24,7 +19,6 @@ on:
       PROD_DB_NAME:
         required: true
       
-      # Variables de la aplicación (TODAS TUS VARIABLES)
       APP_PORT:
         required: true
       JWT_SECRET:
@@ -87,7 +81,6 @@ on:
         required: true
 
 jobs:
-  # El job ya NO tiene 'needs', ya que es el primer job del workflow_call
   deploy_backend:
     name: Despliegue a Producción (Cloud Run)
     runs-on: ubuntu-latest
@@ -100,41 +93,34 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      # 1. AUTENTICACIÓN GCP
       - name: Autenticación en Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          # Usa el secret pasado al workflow
           credentials_json: ${{ secrets.GCP_SA_KEY }} 
 
       - name: Configurar GCloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
-          # Usa el project id pasado como secret al workflow
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           
-      # 2. CONSTRUCCIÓN Y ALMACENAMIENTO DE LA IMAGEN DOCKER
       - name: Construir y Empujar Imagen a Artifact Registry
         run: |
           # Configura credenciales de docker para Artifact Registry sin prompt
           gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
           # Usa el project id pasado como secret al workflow
-          IMAGE_URL=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo/nestjs-api:latest
+          IMAGE_URL=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           echo "Building image: $IMAGE_URL"
           # El Dockerfile está en la raíz del repo; el paso corre en ./backend, por eso usamos -f ../Dockerfile y contexto ..
           docker build -f ../Dockerfile -t $IMAGE_URL ..
           docker push $IMAGE_URL
 
-      # 3. DESPLIEGUE A CLOUD RUN
       - name: Desplegar a Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: donaapp-nestjs-backend
           region: us-central1 
-          # Usa el project id pasado como secret al workflow
-          image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo/nestjs-api:latest
+          image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           
-          # Inyecta todos los secrets al Cloud Run. Los nombres de la izquierda son los que espera NestJS
           secrets: |
             # VARIABLES DE LA BD (Usando los Secrets de PRODUCCIÓN, pasados como inputs)
             DB_HOST=${{ secrets.PROD_DB_HOST }}
