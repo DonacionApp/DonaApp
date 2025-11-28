@@ -2,7 +2,7 @@ name: CI Backend (NestJS + PostgreSQL)
 
 on:
   push:
-    branches: [ "main", "87-backend-configuracion-ci-con-claves" ]
+    branches: [ "main", "144-backend-configurar-cd-de-backend" ]
   pull_request:
     branches: [ "main" ]
     paths:
