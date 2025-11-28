@@ -53,8 +53,8 @@ services:
       context: ../fontnd-donarApp
       dockerfile: Dockerfile
       args:
-        API_URL: "${API_URL:-http://backend:8080}"
-        SOCKET_URL: "${SOCKET_URL:-http://backend:8080}"
+        API_URL: "${API_URL:-http://localhost:8080}"
+        SOCKET_URL: "${SOCKET_URL:-http://localhost:8080}"
         API_KEY_GOOGLE_MAPS: "${API_KEY_GOOGLE_MAPS:-}"
         MAPS_MAP_ID: "${MAPS_MAP_ID:-}"
     container_name: donaapp-frontend
