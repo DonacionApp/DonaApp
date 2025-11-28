@@ -5,10 +5,17 @@ name: CD Backend (NestJS a Cloud Run)
 on:
   workflow_call:
     # 1. Variables (Vars) que se pasan como entradas
-    vars:
+    inputs:
       GCP_PROJECT_ID:
+        type: string
         required: true
-      # Variables de la BD de producción
+    # 2. Secrets que se pasan como entradas (Nombres de los secrets de GitHub)
+    secrets:
+      # Secrets para autenticación y base de datos de producción
+      GCP_SA_KEY:
+        required: true
+      PROD_DB_PASSWORD:
+        required: true
       PROD_DB_HOST:
         required: true
       PROD_DB_PORT:
@@ -16,12 +23,6 @@ on:
       PROD_DB_USER:
         required: true
       PROD_DB_NAME:
-        required: true
-    # 2. Secrets que se pasan como entradas (Nombres de los secrets de GitHub)
-    secrets:
-      GCP_SA_KEY:
-        required: true
-      PROD_DB_PASSWORD:
         required: true
       
       # Variables de la aplicación (TODAS TUS VARIABLES)
@@ -111,14 +112,14 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           # Usa la variable pasada al workflow
-          project_id: ${{ vars.GCP_PROJECT_ID }}
+          project_id: ${{ inputs.GCP_PROJECT_ID }}
           
       # 2. CONSTRUCCIÓN Y ALMACENAMIENTO DE LA IMAGEN DOCKER
       - name: Construir y Empujar Imagen a Artifact Registry
         run: |
           gcloud auth configure-docker us-central1-docker.pkg.dev
-          # Usa la variable pasada al workflow
-          IMAGE_URL=us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/backend-repo/nestjs-api:latest
+          # Usa la variable pasada al workflow (inputs)
+          IMAGE_URL=us-central1-docker.pkg.dev/${{ inputs.GCP_PROJECT_ID }}/backend-repo/nestjs-api:latest
           docker build -t $IMAGE_URL .
           docker push $IMAGE_URL
 
@@ -128,8 +129,8 @@ jobs:
         with:
           service: donaapp-nestjs-backend
           region: us-central1 
-          # Usa la variable pasada al workflow
-          image: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/backend-repo/nestjs-api:latest
+          # Usa la variable pasada al workflow (inputs)
+          image: us-central1-docker.pkg.dev/${{ inputs.GCP_PROJECT_ID }}/backend-repo/nestjs-api:latest
           
           # Inyecta todos los secrets al Cloud Run. Los nombres de la izquierda son los que espera NestJS
           secrets: |
