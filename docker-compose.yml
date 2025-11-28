@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile
     container_name: donaapp-backend
     ports:
-      - "${APP_PORT:-8080}:8080"
+      - "${APP_PORT:-8080}:${APP_PORT:-8080}"
     env_file:
       - ./backend/.env
     environment:
@@ -53,15 +53,13 @@ services:
       context: ../fontnd-donarApp
       dockerfile: Dockerfile
       args:
-        API_URL: "${API_URL:-http://localhost:8080}"
-        SOCKET_URL: "${SOCKET_URL:-http://localhost:8080}"
+        API_URL: "${API_URL:-http://backend:8080}"
+        SOCKET_URL: "${SOCKET_URL:-http://backend:8080}"
         API_KEY_GOOGLE_MAPS: "${API_KEY_GOOGLE_MAPS:-}"
         MAPS_MAP_ID: "${MAPS_MAP_ID:-}"
     container_name: donaapp-frontend
     ports:
       - "4200:4200"
-    environment:
-      PORT: 4200
     env_file:
       - ../fontnd-donarApp/frontend/.env
     depends_on:
