@@ -27,13 +27,13 @@ COPY --from=builder /app/backend/node_modules ./node_modules
 COPY --from=builder /app/backend/package*.json ./
 
 ENV NODE_ENV=production \
-    APP_PORT=5000
+    APP_PORT=8080
 
 RUN chown -R appuser:appgroup /app || true
     
 USER appuser
 
-EXPOSE 5000
+EXPOSE 8080
 
 # Arranca la app inmediatamente. Cloud Run provee PORT; en local se usará APP_PORT.
-CMD ["sh", "-c", "export PORT=${PORT:-${APP_PORT:-5000}}; node dist/main"]
+CMD ["sh", "-c", "export PORT=${PORT:-${APP_PORT:-8080}}; node dist/main"]
