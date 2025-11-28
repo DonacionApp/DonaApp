@@ -125,9 +125,9 @@ jobs:
           
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           
-          # La corrección principal es forzar PORT=8080 y APP_PORT=8080
           env_vars: |
-            APP_PORT=8080 
+            PORT=8080
+            APP_PORT=8080
             
             DB_HOST=${{ secrets.PROD_DB_HOST }}
             DB_PORT=${{ secrets.PROD_DB_PORT }}
