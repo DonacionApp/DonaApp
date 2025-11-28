@@ -126,7 +126,6 @@ jobs:
           image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
           
           env_vars: |
-            PORT=8080
             APP_PORT=8080
             
             DB_HOST=${{ secrets.PROD_DB_HOST }}

@@ -27,8 +27,7 @@ COPY --from=builder /app/backend/node_modules ./node_modules
 COPY --from=builder /app/backend/package*.json ./
 
 ENV NODE_ENV=production \
-    APP_PORT=5000 \
-    PORT=5000
+    APP_PORT=5000
 
 RUN chown -R appuser:appgroup /app || true
     
@@ -37,4 +36,4 @@ USER appuser
 EXPOSE 5000
 
 # Espera a PostgreSQL y luego arranca la app (JSON form evita problemas de quoting)
-CMD ["sh", "-c", "until pg_isready -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} -U ${DB_USER:-postgres}; do echo \"Esperando PostgreSQL...\"; sleep 2; done; echo \"PostgreSQL listo, iniciando backend...\"; node dist/main"]
+CMD ["sh", "-c", "until pg_isready -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} -U ${DB_USER:-postgres}; do echo \"Esperando PostgreSQL...\"; sleep 2; done; echo \"PostgreSQL listo, iniciando backend...\"; export PORT=${PORT:-${APP_PORT:-5000}}; node dist/main"]
