@@ -60,6 +60,8 @@ services:
     container_name: donaapp-frontend
     ports:
       - "4200:4200"
+    environment:
+      PORT: 4200
     env_file:
       - ../fontnd-donarApp/frontend/.env
     depends_on:
