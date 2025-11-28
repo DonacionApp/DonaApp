@@ -136,7 +136,7 @@ jobs:
             APP_PORT=8080 
             
             DB_HOST=/cloudsql/${{ secrets.CLOUD_SQL_INSTANCE_CONNECTION_NAME }}
-            DB_PORT=${{ secrets.PROD_DB_PORT }} # El puerto es el estándar (e.g., 5432)
+            DB_PORT=${{ secrets.PROD_DB_PORT }}
             DB_USER=${{ secrets.PROD_DB_USER }}
             DB_PASS=${{ secrets.PROD_DB_PASSWORD }}
             DB_NAME=${{ secrets.PROD_DB_NAME }}
