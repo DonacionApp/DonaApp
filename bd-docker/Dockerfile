@@ -6,5 +6,4 @@ ENV POSTGRES_USER=postgres \
 
 EXPOSE 5432
 
-
 VOLUME /var/lib/postgresql/data

@@ -6,18 +6,21 @@ services:
       context: ./bd-docker
       dockerfile: Dockerfile
     container_name: donaapp-postgres
-    env_file:
-      - ./backend/.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-2005}
+      POSTGRES_DB: ${POSTGRES_DB:-donarapp}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-testuser}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-donarapp}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
 
   backend:
     build: 
@@ -25,11 +28,15 @@ services:
       dockerfile: Dockerfile
     container_name: donaapp-backend
     ports:
-      - "${APP_PORT:-5000}:5000"
+      - "${APP_PORT:-8080}:${APP_PORT:-8080}"
     env_file:
       - ./backend/.env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   pysentiment:
@@ -46,8 +53,8 @@ services:
       context: ../fontnd-donarApp
       dockerfile: Dockerfile
       args:
-        API_URL: "${API_URL:-http://localhost:5000}"
-        SOCKET_URL: "${SOCKET_URL:-http://localhost:5000}"
+        API_URL: "${API_URL:-http://localhost:8080}"
+        SOCKET_URL: "${SOCKET_URL:-http://localhost:8080}"
         API_KEY_GOOGLE_MAPS: "${API_KEY_GOOGLE_MAPS:-}"
         MAPS_MAP_ID: "${MAPS_MAP_ID:-}"
     container_name: donaapp-frontend

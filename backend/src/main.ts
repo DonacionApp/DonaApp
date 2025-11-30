@@ -11,11 +11,12 @@ async function bootstrap() {
     credentials: true,
     exposedHeaders: ['X-New-Token'],
   });
-  
-  const configService= app.get(ConfigService)
-  const port= configService.get<number>(APP_PORT)
-  console.log('listening on port ', port)
-  console.log(`listening on http://localhost:${port}`)
-  await app.listen(port?? 3000);
+  const configService = app.get(ConfigService);
+  const appPort = configService.get<number>(APP_PORT);
+  const envPort = process.env.PORT ? Number(process.env.PORT) : undefined;
+  const port = envPort || appPort || 3000;
+  console.log('listening on port', port);
+  console.log(`listening on http://0.0.0.0:${port}`);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();

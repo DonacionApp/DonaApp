@@ -1,0 +1,175 @@
+name: CD Backend (NestJS a Cloud Run)
+
+on:
+  workflow_call:
+    inputs: {}
+    secrets:
+      GCP_SA_KEY:
+        required: true
+      GCP_PROJECT_ID:
+        required: true
+      PROD_DB_PASSWORD:
+        required: true
+      PROD_DB_HOST:
+        required: true
+      PROD_DB_PORT:
+        required: true
+      PROD_DB_USER:
+        required: true
+      PROD_DB_NAME:
+        required: true
+      # 1. SECRET NUEVO: Identificador de la instancia de Cloud SQL para el Proxy.
+      CLOUD_SQL_INSTANCE_CONNECTION_NAME:
+        required: true
+      
+      APP_PORT:
+        required: true
+      JWT_SECRET:
+        required: true
+      JWT_EXPIRES_IN:
+        required: true
+      URL_COUNTRIES_API:
+        required: true
+      API_KEY_COUNTRIES_API:
+        required: true
+      MAIL_HOST:
+        required: true
+      MAIL_USER:
+        required: true
+      MAIL_PASSWORD:
+        required: true
+      MAIL_FROM:
+        required: true
+      MAIL_PORT:
+        required: true
+      URL_FRONTEND:
+        required: true
+      URL_FRONTEND_VERIFY_TOKEN:
+        required: true
+      URL_FRONTEND_VERIFY:
+        required: true
+      URL_FRONTEND_RESET_PASS_TOKEN:
+        required: true
+      CLOUDINARY_NAME:
+        required: true
+      CLOUDINARY_API_KEY:
+        required: true
+      CLOUDINARY_API_SECRET:
+        required: true
+      CLOUDINARY_FOLDER_BASE:
+        required: true
+      CLOUDINARY_PROFILE_FOLDER:
+        required: true
+      CLOUDINARY_POST_FOLDER:
+        required: true
+      CLOUDINARY_DOCS_FOLDER:
+        required: true
+      CLOUDINARY_CHATS_FOLDER:
+        required: true
+      CLOUDINARY_POSTS_FOLDER:
+        required: true
+      AWS_REGION:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      GEMINI_API_KEY_AUX:
+        required: true
+      GEMINI_API_KEY:
+        required: true
+      MICROSERVICONSENTIMENTS_URL:
+        required: true
+      MICROSERVICONSENTIMENTS_URL_AUX:
+        required: true
+
+jobs:
+  deploy_backend:
+    name: Despliegue a Producción (Cloud Run)
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./backend 
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # 1. AUTENTICACIÓN GCP
+      - name: Autenticación en Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }} 
+
+      - name: Configurar GCloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          
+      # 2. CONSTRUCCIÓN Y ALMACENAMIENTO DE LA IMAGEN DOCKER
+      - name: Construir y Empujar Imagen a Artifact Registry
+        run: |
+          # Configura Docker para autenticarse en Artifact Registry de us-central1
+          gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
+          
+          IMAGE_URL=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
+          echo "Building image: $IMAGE_URL"
+          # Construye la imagen desde la raíz usando el Dockerfile que está en la raíz
+          docker build -f ../Dockerfile -t $IMAGE_URL ..
+          docker push $IMAGE_URL
+
+      # 3. DESPLIEGUE A CLOUD RUN
+      - name: Desplegar a Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: donaapp-nestjs-backend
+          region: us-central1 
+          
+          image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/backend-repo-donarapp/nestjs-api:latest
+          
+          # 2. CONFIGURACIÓN DEL PROXY: pasar la instancia como flag para gcloud
+          #    Deploy action no soporta 'cloud_sql_instances' directamente, usamos 'flags'
+          flags: --add-cloudsql-instances=${{ secrets.CLOUD_SQL_INSTANCE_CONNECTION_NAME }} --timeout=300s
+          
+          env_vars: |
+            APP_PORT=8080 
+            
+            DB_HOST=/cloudsql/${{ secrets.CLOUD_SQL_INSTANCE_CONNECTION_NAME }}
+            DB_PORT=${{ secrets.PROD_DB_PORT }}
+            DB_USER=${{ secrets.PROD_DB_USER }}
+            DB_PASS=${{ secrets.PROD_DB_PASSWORD }}
+            DB_NAME=${{ secrets.PROD_DB_NAME }}
+            POSTGRES_USER=${{ secrets.PROD_DB_USER }}
+            POSTGRES_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+            POSTGRES_DB=${{ secrets.PROD_DB_NAME }}
+
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
+            URL_COUNTRIES_API=${{ secrets.URL_COUNTRIES_API }}
+            API_KEY_COUNTRIES_API=${{ secrets.API_KEY_COUNTRIES_API }}
+            MAIL_HOST=${{ secrets.MAIL_HOST }}
+            MAIL_USER=${{ secrets.MAIL_USER }}
+            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            MAIL_FROM=${{ secrets.MAIL_FROM }}
+            MAIL_PORT=${{ secrets.MAIL_PORT }}
+            URL_FRONTEND=${{ secrets.URL_FRONTEND }}
+            URL_FRONTEND_VERIFY_TOKEN=${{ secrets.URL_FRONTEND_VERIFY_TOKEN }}
+            URL_FRONTEND_VERIFY=${{ secrets.URL_FRONTEND_VERIFY }}
+            URL_FRONTEND_RESET_PASS_TOKEN=${{ secrets.URL_FRONTEND_RESET_PASS_TOKEN }}
+            CLOUDINARY_NAME=${{ secrets.CLOUDINARY_NAME }}
+            CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+            CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+            CLOUDINARY_FOLDER_BASE=${{ secrets.CLOUDINARY_FOLDER_BASE }}
+            CLOUDINARY_PROFILE_FOLDER=${{ secrets.CLOUDINARY_PROFILE_FOLDER }}
+            CLOUDINARY_POST_FOLDER=${{ secrets.CLOUDINARY_POST_FOLDER }}
+            CLOUDINARY_DOCS_FOLDER=${{ secrets.CLOUDINARY_DOCS_FOLDER }}
+            CLOUDINARY_CHATS_FOLDER=${{ secrets.CLOUDINARY_CHATS_FOLDER }}
+            CLOUDINARY_POSTS_FOLDER=${{ secrets.CLOUDINARY_POSTS_FOLDER }}
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            GEMINI_API_KEY_AUX=${{ secrets.GEMINI_API_KEY_AUX }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            MICROSERVICONSENTIMENTS_URL=${{ secrets.MICROSERVICONSENTIMENTS_URL }}
+            MICROSERVICONSENTIMENTS_URL_AUX=${{ secrets.MICROSERVICONSENTIMENTS_URL_AUX }}
