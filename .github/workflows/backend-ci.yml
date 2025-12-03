@@ -2,7 +2,7 @@ name: CI Backend (NestJS + PostgreSQL)
 
 on:
   push:
-    branches: [ "main", "144-backend-configurar-cd-de-backend" ]
+    branches: [ "main"]
   pull_request:
     branches: [ "main" ]
     paths:
@@ -72,8 +72,8 @@ jobs:
   deploy_if_passed:
     name: Llamar al CD (Despliegue)
     needs: check_backend_ci
-    if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/144-backend-configurar-cd-de-backend')
-    
+    # if: success() && (github.ref == 'refs/heads/main' )
+    if: false
     uses: ./.github/workflows/backend-cd.yml
     secrets:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
