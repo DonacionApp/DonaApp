@@ -22,7 +22,7 @@ export class SentimentServiceService {
         } else {
             url=apiUrl;
         }
-
+        console.log('Sending sentiment analysis request to URL:', url);
         const response = await fetch(url, {
             method: 'POST',
             headers: {
