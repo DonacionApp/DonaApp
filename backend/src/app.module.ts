@@ -38,6 +38,7 @@ import { UserEntity } from './modules/user/entity/user.entity';
 import { MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { RefreshTokenMiddleware } from './shared/middleware/refresh-token.middleware';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { AddRefreshTokenInterceptor } from './shared/interceptors/add-refresh-token.interceptor';
 import { DonationreviewModule } from './modules/donationreview/donationreview.module';
 import { SentimentServiceModule } from './core/sentiment-service/sentiment-service.module';
@@ -54,7 +55,9 @@ import { AuditModule } from './modules/audit/audit.module';
 import { StatisticsModule } from './modules/statistics/statistics.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({
+  imports: [
+    PrometheusModule.register(),
+    ConfigModule.forRoot({
     envFilePath: '.env',
     isGlobal:true
   }),
