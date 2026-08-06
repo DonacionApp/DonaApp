@@ -37,6 +37,7 @@ export class WsRefreshGuard implements CanActivate {
       // Adjuntar userId al socket para uso posterior
       (client as any).userId = result.userId;
       (client as any).userName = result.userName;
+      (client as any).rol = result.rol;
 
       if (result.tokenRefreshed) {
         this.logger.debug(`Token refrescado para usuario ${result.userName} (${result.userId})`);
