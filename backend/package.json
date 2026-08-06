@@ -21,7 +21,8 @@
     "typeorm": "typeorm-ts-node-commonjs -d src/data-source.ts",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
-    "migration:revert": "npm run typeorm -- migration:revert"
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "seed:locations": "ts-node -r tsconfig-paths/register src/database/seeds/run-locations-seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-rekognition": "^3.932.0",

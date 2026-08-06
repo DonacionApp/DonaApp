@@ -12,6 +12,7 @@ import { UserModule } from './modules/user/user.module';
 import { MailModule } from './core/mail/mail.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CountriesModule } from './modules/countries/countries.module';
+import { ReferenceDataModule } from './modules/reference-data/reference-data.module';
 import { CloudinaryModule } from './core/cloudinary/cloudinary.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { TypepostModule } from './modules/typepost/typepost.module';
@@ -93,6 +94,7 @@ import { StatisticsModule } from './modules/statistics/statistics.module';
     MailModule,
     AuthModule,
     CountriesModule,
+    ReferenceDataModule,
     CloudinaryModule,
     TagsModule,
     TypepostModule,
