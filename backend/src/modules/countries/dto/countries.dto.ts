@@ -10,11 +10,11 @@ export class CountryDto {
   @IsNotEmpty()
   iso2: string;
 
-  @IsNotEmpty()
-  iso3: string;
+  @IsOptional()
+  iso3?: string | null;
 
   @IsOptional()
-  phonecode?: string;
+  phonecode?: string | null;
 
   @IsOptional()
   capital?: string;
