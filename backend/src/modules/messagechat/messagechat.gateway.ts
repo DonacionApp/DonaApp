@@ -100,7 +100,8 @@ export class MessagechatGateway implements OnGatewayConnection, OnGatewayDisconn
 
     try {
       const inChat = await this.userchatService.verifyUserInChat(userId, chatId).catch(() => null);
-      if (!inChat) {
+      const isAdmin = (socket as any).rol === 'admin';
+      if (!inChat && !isAdmin) {
         socket.emit('error', { message: 'No pertenece al chat' });
         return;
       }

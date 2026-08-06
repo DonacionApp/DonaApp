@@ -17,6 +17,7 @@ export class WsTokenRefreshHelper {
     newToken?: string; 
     userName?: string;
     tokenRefreshed?: boolean;
+    rol?: string;
   }> {
     try {
       const token = 
@@ -114,7 +115,8 @@ export class WsTokenRefreshHelper {
             userId, 
             newToken, 
             userName: user.username,
-            tokenRefreshed: true 
+            tokenRefreshed: true,
+            rol: user.rol?.rol || 'user',
           };
 
         } catch (refreshError) {
@@ -133,7 +135,8 @@ export class WsTokenRefreshHelper {
         valid: true, 
         userId, 
         userName: payload.userName,
-        tokenRefreshed: false 
+        tokenRefreshed: false,
+        rol: payload.rol || 'user',
       };
 
     } catch (error) {
