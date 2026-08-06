@@ -1,9 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcryptjs';
 import { MailDto } from 'src/core/mail/dto/mail.dto';
 import { MailService } from 'src/core/mail/mail.service';
 import { ArticleEntity } from 'src/modules/article/entity/article.entity';
 import { ChatStatusEntity } from 'src/modules/chatstatus/entity/chat.status.entity';
+import { PeopleEntity } from 'src/modules/people/entity/people.entity';
 import { RolEntity } from 'src/modules/rol/entity/rol.entity';
 import { StatusPostDonationArticle } from 'src/modules/statusarticledonation/entity/status.postdonationarticle.entity';
 import { StatusDonationEntity } from 'src/modules/statusdonation/entity/status.donation.entity';
@@ -15,6 +18,7 @@ import { TypeMessageEntity } from 'src/modules/typemessage/entity/type.message.e
 import { TypeNotifyEntity } from 'src/modules/typenotify/entity/type.notify.entity';
 import { TypePostEntity } from 'src/modules/typepost/entity/type.port.entity';
 import { TypeReportEntity } from 'src/modules/typeReport/entity/type.report.entity';
+import { UserEntity } from 'src/modules/user/entity/user.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -46,6 +50,11 @@ export class SederServiceService {
         private readonly systemRepository: Repository<systemEntity>,
         @InjectRepository(ChatStatusEntity)
         private readonly chatStatusRepository: Repository<ChatStatusEntity>,
+        @InjectRepository(UserEntity)
+        private readonly userRepository: Repository<UserEntity>,
+        @InjectRepository(PeopleEntity)
+        private readonly peopleRepository: Repository<PeopleEntity>,
+        private readonly configService: ConfigService,
     ) { }
 
     async onModuleInit() {
@@ -267,5 +276,53 @@ export class SederServiceService {
             }
             console.log('Chat Status iniciales creados');
         }
+
+        const adminUsername = this.configService.get<string>('ADMIN_USERNAME');
+        const adminPassword = this.configService.get<string>('ADMIN_PASSWORD');
+        if (!adminUsername || !adminPassword) {
+            console.log('Usuario admin no configurado (ADMIN_USERNAME / ADMIN_PASSWORD)');
+            return;
+        }
+
+        const adminExists = await this.userRepository.findOne({
+            where: { username: adminUsername }
+        });
+        if (adminExists) {
+            return;
+        }
+
+        const adminRol = await this.rolRepository.findOneBy({ rol: 'admin' });
+        const adminTypeDni = await this.typeDniRepository.findOneBy({ type: 'CC' });
+        if (!adminRol || !adminTypeDni) {
+            console.log('Usuario admin no creado: rol admin o tipo DNI CC no encontrados');
+            return;
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(adminPassword, salt);
+
+        const people = this.peopleRepository.create({
+            name: this.configService.get<string>('ADMIN_NAME') ?? 'Administrador',
+            lastName: this.configService.get<string>('ADMIN_LAST_NAME') ?? null,
+            birdthDate: new Date(this.configService.get<string>('ADMIN_BIRTHDATE') ?? '1990-01-01'),
+            typeDni: adminTypeDni,
+            dni: this.configService.get<string>('ADMIN_DNI') ?? '0000000000',
+            residencia: this.configService.get<string>('ADMIN_RESIDENCIA') ?? 'Sin residencia',
+            telefono: this.configService.get<string>('ADMIN_TELEFONO') ?? '0000000000',
+        });
+        await this.peopleRepository.save(people);
+
+        const adminUser = this.userRepository.create({
+            username: adminUsername,
+            email: this.configService.get<string>('ADMIN_EMAIL') ?? `${adminUsername}@donarapp.com`,
+            password: hashedPassword,
+            rol: adminRol,
+            people,
+            emailVerified: true,
+            verified: true,
+            block: false,
+        });
+        await this.userRepository.save(adminUser);
+        console.log('Usuario admin inicial creado');
     }
 }

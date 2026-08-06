@@ -15,11 +15,13 @@ import { StatusPostDonationArticle } from 'src/modules/statusarticledonation/ent
 import { StatusSupportIdEntity } from 'src/modules/statussupportid/entity/status.supportid.entity';
 import { systemEntity } from 'src/modules/system/entity/system.entity';
 import { ChatStatusEntity } from 'src/modules/chatstatus/entity/chat.status.entity';
+import { UserEntity } from 'src/modules/user/entity/user.entity';
+import { PeopleEntity } from 'src/modules/people/entity/people.entity';
 
 @Module({
   imports:[TypeOrmModule.forFeature([RolEntity,TypeDniEntity,TagsEntity,StatusDonationEntity,
      TypeMessageEntity, TypeNotifyEntity,TypePostEntity,TypeReportEntity, ArticleEntity, StatusPostDonationArticle, StatusSupportIdEntity,
-     systemEntity,TypeReportEntity,ChatStatusEntity,
+     systemEntity,TypeReportEntity,ChatStatusEntity,UserEntity,PeopleEntity,
     ]), MailModule],
   providers: [SederServiceService]
 })
