@@ -53,6 +53,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { MessagechatModule } from './modules/messagechat/messagechat.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { StatisticsModule } from './modules/statistics/statistics.module';
+import { SharedModule } from './shared/shared.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -129,6 +130,7 @@ import { StatisticsModule } from './modules/statistics/statistics.module';
     ChatModule,
     MessagechatModule,
     StatisticsModule,
+    SharedModule,
   ],
   controllers: [AppController],
   providers: [
