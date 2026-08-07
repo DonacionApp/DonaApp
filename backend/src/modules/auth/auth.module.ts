@@ -7,6 +7,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { jwtStrategy,  } from "./strategies/jwt.strategy";
 import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
+import { SocialAuthService } from "./social-auth.service";
 import { UserModule } from "../user/user.module";
 import { MailModule } from "src/core/mail/mail.module";
 import { RefreshTokenMiddleware } from "src/shared/middleware/refresh-token.middleware";
@@ -36,7 +37,8 @@ import { AuditModule } from '../audit/audit.module';
    providers: [
       AuthService,
       jwtStrategy,
-      RefreshTokenMiddleware
+      RefreshTokenMiddleware,
+      SocialAuthService,
    ],
    controllers: [AuthController],
    exports: [AuthService, RefreshTokenMiddleware],

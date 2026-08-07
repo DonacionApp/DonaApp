@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Post, Req, UnauthorizedException, UploadedFile, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Post, Req, Res, Query, UnauthorizedException, UploadedFile, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Response } from 'express';
 import { AuthService } from "./auth.service";
 import { CreateUserDto } from "../user/dto/create.user.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -8,6 +9,9 @@ import { JwtAuthGuard } from "src/shared/guards/jwt-auth.guard";
 import { UpdateUserDto } from "../user/dto/update.user.dto";
 import { JwtService } from "@nestjs/jwt";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { ConfigService } from "@nestjs/config";
+import { SocialAuthService, SocialProvider } from "./social-auth.service";
+import { URL_FRONTEND } from "src/config/constants";
 
 @UsePipes(new ValidationPipe({ transform: true }))
 @Controller('auth')
@@ -15,6 +19,8 @@ export class AuthController {
    constructor(
       private readonly authService: AuthService,
       private readonly jwtService: JwtService,
+      private readonly configService: ConfigService,
+      private readonly socialAuthService: SocialAuthService,
    ) { }
 
    @Post('register')
@@ -27,6 +33,44 @@ export class AuthController {
    @HttpCode(HttpStatus.OK)
    async login(@Body() dto: LoginDto): Promise<any> {
       return await this.authService.login(dto);
+   }
+
+   @Get('google/login')
+   async googleLogin(@Res() res: Response): Promise<void> {
+      res.redirect(this.socialAuthService.getAuthUrl('google'));
+   }
+
+   @Get('google/callback')
+   async googleCallback(@Query('code') code: string | undefined, @Res() res: Response): Promise<void> {
+      await this.handleSocialCallback('google', code, res);
+   }
+
+   @Get('microsoft/login')
+   async microsoftLogin(@Res() res: Response): Promise<void> {
+      res.redirect(this.socialAuthService.getAuthUrl('microsoft'));
+   }
+
+   @Get('microsoft/callback')
+   async microsoftCallback(@Query('code') code: string | undefined, @Res() res: Response): Promise<void> {
+      await this.handleSocialCallback('microsoft', code, res);
+   }
+
+   private async handleSocialCallback(
+      provider: SocialProvider,
+      code: string | undefined,
+      res: Response,
+   ): Promise<void> {
+      const redirectBase = this.configService.get<string>(URL_FRONTEND) ?? 'http://localhost:4200';
+      try {
+         if (!code) {
+            throw new UnauthorizedException('Código de autorización no proporcionado.');
+         }
+         const profile = await this.socialAuthService.getProfile(provider, code);
+         const response = await this.authService.loginOrRegisterWithSocial(profile);
+         res.redirect(`${redirectBase}?social=success&provider=${provider}&token=${encodeURIComponent(response.access_token)}`);
+      } catch (error) {
+         res.redirect(`${redirectBase}?social=error&provider=${provider}&code=${encodeURIComponent(error?.message ?? 'error')}`);
+      }
    }
 
    @Post('verify-email-token')

@@ -17,6 +17,7 @@ import { UpdateUserDto } from "../user/dto/update.user.dto";
 import { UsersystemService } from "../usersystem/usersystem.service";
 
 import { AuditService } from '../audit/audit.service';
+import type { SocialProfile } from './social-auth.service';
 
 @Injectable()
 export class AuthService {
@@ -542,7 +543,7 @@ export class AuthService {
       }
    }
 
-   async login(dto: LoginDto): Promise<any> {
+    async login(dto: LoginDto): Promise<any> {
       let user: UserEntity | null = null;
       try {
          const { email, password } = dto;
@@ -659,6 +660,63 @@ export class AuthService {
             );
          throw error;
       }
+   }
+
+   async loginOrRegisterWithSocial(profile: SocialProfile): Promise<any> {
+      if (!profile.email) {
+         throw new InternalServerErrorException('El proveedor social no proporcionó un correo electrónico.');
+      }
+      let user = await this.userService.findByEmailOrNull(profile.email);
+      if (!user) {
+         user = await this.userService.createFromSocial(profile);
+      } else {
+         await this.userService.linkSocialProviderIfMissing(user.id, profile.provider, profile.providerId);
+      }
+
+      if (!user.emailVerified) {
+         await this.auditService.createLog(
+            user.id,
+            'loginOrRegisterWithSocial',
+            `Inicio de sesión social fallido: correo no verificado (${profile.provider})`,
+            401,
+            { email: profile.email }
+         );
+         throw new UnauthorizedException('Correo electrónico no verificado.');
+      }
+
+      if (user.block) {
+         await this.auditService.createLog(
+            user.id,
+            'loginOrRegisterWithSocial',
+            `Inicio de sesión social fallido: cuenta bloqueada (${profile.provider})`,
+            401,
+            { email: profile.email }
+         );
+         throw new UnauthorizedException('Cuenta de usuario bloqueada.');
+      }
+
+      await this.updateLastLogin(user.id);
+
+      const token = await this.generateToken(user);
+      const response = {
+         message: 'Inicio de sesión exitoso.',
+         access_token: token.access_token,
+      };
+      if (!user.lastLogin) response['firstLogin'] = true;
+
+      await this.auditService.createLog(
+         user.id,
+         'loginOrRegisterWithSocial',
+         JSON.stringify({
+            message: `Inicio de sesión social exitoso con ${profile.provider}`,
+            payload: { email: profile.email },
+            response
+         }),
+         200,
+         { email: profile.email }
+      );
+
+      return response;
    }
 
     //revisar si el codigo se lo usará mas adelante o no
