@@ -12,16 +12,16 @@ export class PeopleEntity{
     municipio:string | null;
     @Column({type:'varchar', nullable:true})
     lastName:string | null;
-    @Column({type:'date', nullable:false})
-    birdthDate:Date;
-    @ManyToOne(()=>TypeDniEntity,(typeDni)=>typeDni.people, {onDelete:'CASCADE', nullable:false})
-    typeDni:TypeDniEntity;
-    @Column({type:'varchar', length:15, unique:true, nullable:false})
-    dni:string;
-    @Column({type:'varchar', length:100, nullable:false})
-    residencia:string;
-    @Column({type:"varchar", length:10, unique:true, nullable:false})
-    telefono: string;
+    @Column({type:'date', nullable:true})
+    birdthDate:Date | null;
+    @ManyToOne(()=>TypeDniEntity,(typeDni)=>typeDni.people, {onDelete:'CASCADE', nullable:true})
+    typeDni:TypeDniEntity | null;
+    @Column({type:'varchar', length:15, unique:true, nullable:true})
+    dni:string | null;
+    @Column({type:'varchar', length:100, nullable:true})
+    residencia:string | null;
+    @Column({type:"varchar", length:10, unique:true, nullable:true})
+    telefono: string | null;
     @Column({type:'varchar', nullable:true})
     supportId:string | null;
     @Column({type:'timestamp', default:()=> 'CURRENT_TIMESTAMP'})
