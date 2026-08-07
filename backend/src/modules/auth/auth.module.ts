@@ -8,6 +8,7 @@ import { jwtStrategy,  } from "./strategies/jwt.strategy";
 import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
 import { SocialAuthService } from "./social-auth.service";
+import { RecaptchaService } from "./recaptcha.service";
 import { UserModule } from "../user/user.module";
 import { MailModule } from "src/core/mail/mail.module";
 import { RefreshTokenMiddleware } from "src/shared/middleware/refresh-token.middleware";
@@ -39,6 +40,7 @@ import { AuditModule } from '../audit/audit.module';
       jwtStrategy,
       RefreshTokenMiddleware,
       SocialAuthService,
+      RecaptchaService,
    ],
    controllers: [AuthController],
    exports: [AuthService, RefreshTokenMiddleware],
