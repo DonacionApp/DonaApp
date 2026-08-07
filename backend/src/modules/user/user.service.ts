@@ -1,10 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ConflictException, Inject, forwardRef, InternalServerErrorException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository, Brackets } from 'typeorm';
 import { UserEntity } from './entity/user.entity';
 import { CreateUserDto } from './dto/create.user.dto';
 import { UpdateUserDto } from './dto/update.user.dto';
+import type { SocialProfile } from '../auth/social-auth.service';
 import { RolEntity } from '../rol/entity/rol.entity';
 import { PeopleEntity } from '../people/entity/people.entity';
 import { PeopleService } from '../people/people.service';
@@ -78,6 +80,69 @@ export class UserService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async findByEmailOrNull(email: string): Promise<UserEntity | null> {
+    return this.userRepository.findOne({
+      where: { email: email },
+      relations: {
+        rol: true,
+        people: true,
+      },
+    });
+  }
+
+  async createFromSocial(profile: SocialProfile): Promise<UserEntity> {
+    const username = await this.generateUniqueUsername(profile.email);
+    const rol = await this.rolRepository.findOne({ where: { rol: 'user' } });
+    if (!rol) {
+      throw new InternalServerErrorException('El rol por defecto "user" no existe.');
+    }
+    const salt = await bcrypt.genSalt(10);
+    const randomPassword = randomBytes(32).toString('base64url');
+    const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+    const people = this.peopleRepository.create({
+      name: profile.firstName || username,
+      lastName: profile.lastName || null,
+    });
+    const peopleSaved = await this.peopleRepository.save(people);
+
+    const user = this.userRepository.create({
+      username,
+      email: profile.email.toLowerCase(),
+      password: hashedPassword,
+      rol,
+      people: peopleSaved,
+      emailVerified: true,
+      block: false,
+      profilePhoto: profile.avatar || null,
+      socialProvider: profile.provider,
+      socialId: profile.providerId,
+    });
+    return await this.userRepository.save(user);
+  }
+
+  async linkSocialProviderIfMissing(id: number, provider: string, providerId: string): Promise<void> {
+    await this.userRepository
+      .createQueryBuilder()
+      .update(UserEntity)
+      .set({ socialProvider: provider, socialId: providerId })
+      .where('id = :id', { id })
+      .andWhere('socialProvider IS NULL')
+      .execute();
+  }
+
+  private async generateUniqueUsername(email: string): Promise<string> {
+    const base = (email.split('@')[0] || 'usuario').toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 80) || 'usuario';
+    let username = base;
+    let suffix = 1;
+    while (await this.userRepository.findOne({ where: { username } })) {
+      const tail = String(suffix).padStart(2, '0');
+      username = `${base.slice(0, 80 - tail.length)}${tail}`;
+      suffix += 1;
+    }
+    return username;
   }
 
   async normalizeMunicipio(municiosJsonstring: string): Promise<{ countryExist: any, stateExist: any, citiExist: any, municipioJson: any }> {
