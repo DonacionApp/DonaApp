@@ -211,41 +211,63 @@ export class UserNotifyService {
       }
    }
 
-   async getMyNotifications(userId:number, filters?:FiltersNotifyDto):Promise<NotifyEntity[]>{
+   async getMyNotifications(userId: number, filters?: FiltersNotifyDto, page?: number, limit?: number): Promise<any> {
       try {
-         if(!userId || isNaN(Number(userId)) || Number(userId) <= 0){
+         if (!userId || isNaN(Number(userId)) || Number(userId) <= 0) {
             throw new BadRequestException('El id de usuario es inválido');
          }
-         userId=Number(userId);
+         userId = Number(userId);
          await this.userService.findById(userId);
+
          const f: FiltersNotifyDto = (filters as FiltersNotifyDto) || {} as any;
+         const currentPage = Math.max(Number(page ?? f.page) || 1, 1);
+         const pageSize = Math.min(Math.max(Number(limit ?? f.limit) || 20, 1), 100);
+         const offset = (currentPage - 1) * pageSize;
+
          const queryBuilder = this.userNotifyRepository.createQueryBuilder('userNotify')
             .leftJoinAndSelect('userNotify.notify', 'notify')
             .leftJoinAndSelect('notify.type', 'type')
-            .leftJoinAndSelect('userNotify.user','user')
+            .leftJoinAndSelect('userNotify.user', 'user')
             .where('userNotify.userId = :userId', { userId });
-         if(f.read!==undefined){
+         if (f.read !== undefined) {
             queryBuilder.andWhere('userNotify.read = :read', { read: f.read });
          }
-         if(f.type!==undefined){
+         if (f.type !== undefined) {
             queryBuilder.andWhere('type.id = :typeId', { typeId: f.type });
          }
-         if(f.search){
+         if (f.search) {
             queryBuilder.andWhere('(notify.message ILIKE :search OR notify.title ILIKE :search)', { search: `%${f.search}%` });
          }
-         queryBuilder.orderBy('notify.createdAt', 'DESC');
-         if( f.minDate){
+         if (f.minDate) {
             queryBuilder.andWhere('notify.createdAt >= :minDate', { minDate: f.minDate });
          }
-         if( f.maxDate){
+         if (f.maxDate) {
             queryBuilder.andWhere('notify.createdAt <= :maxDate', { maxDate: f.maxDate });
          }
-         const userNotifications = await queryBuilder.getMany();
-         if (!userNotifications || userNotifications.length === 0) {
+         queryBuilder.orderBy('notify.createdAt', 'DESC');
+
+         const [userNotifications, total] = await queryBuilder
+            .skip(offset)
+            .take(pageSize)
+            .getManyAndCount();
+
+         if (total === 0 && currentPage <= 1) {
             throw new NotFoundException('El usuario no tiene notificaciones');
          }
+
+         let unreadTotal = 0;
+         try {
+            unreadTotal = await this.userNotifyRepository.createQueryBuilder('userNotify')
+               .leftJoin('userNotify.notify', 'notify')
+               .where('userNotify.userId = :userId', { userId })
+               .andWhere('userNotify.read = :read', { read: false })
+               .getCount();
+         } catch {
+            unreadTotal = 0;
+         }
+
          const notifications = userNotifications.map((un) => {
-            const u:any = un.user || {};
+            const u: any = un.user || {};
             const sanitizedUser = {
                id: u.id,
                username: u.username,
@@ -266,7 +288,15 @@ export class UserNotifyService {
                createdAt: un.notify?.createdAt,
             } as any;
          });
-         return notifications as any;
+
+         return {
+            items: notifications,
+            total,
+            page: currentPage,
+            limit: pageSize,
+            hasMore: offset + notifications.length < total,
+            unreadTotal,
+         };
       } catch (error) {
          throw error;
       }
