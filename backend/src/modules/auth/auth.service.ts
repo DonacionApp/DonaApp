@@ -17,6 +17,7 @@ import { UpdateUserDto } from "../user/dto/update.user.dto";
 import { UsersystemService } from "../usersystem/usersystem.service";
 
 import { AuditService } from '../audit/audit.service';
+import { RecaptchaService } from './recaptcha.service';
 import type { SocialProfile } from './social-auth.service';
 
 @Injectable()
@@ -31,6 +32,7 @@ export class AuthService {
    @Inject(forwardRef(() => UsersystemService))
    private readonly userSystemService: UsersystemService,
    private readonly auditService: AuditService,
+   private readonly recaptchaService: RecaptchaService,
    ) { }
 
    async generateToken(user: any): Promise<{ access_token: string }> {
@@ -547,6 +549,19 @@ export class AuthService {
       let user: UserEntity | null = null;
       try {
          const { email, password } = dto;
+
+         const captchaOk = await this.recaptchaService.verify(dto.captchaToken);
+         if (!captchaOk) {
+            await this.auditService.createLog(
+               0,
+               'login',
+               'Intento de login fallido: captcha inválido',
+               401,
+               { email }
+            );
+            throw new UnauthorizedException('Validación de captcha fallida. Intenta de nuevo.');
+         }
+
          user = await this.userRepository.findOne({
             where: { email },
             relations: ['rol'],
